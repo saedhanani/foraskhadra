@@ -1,0 +1,90 @@
+﻿@model List<Foras_Khadra.Models.Organization>
+@using System.Globalization
+@using Microsoft.AspNetCore.Mvc.Localization
+@inject IViewLocalizer Localizer
+
+@{
+    ViewData["Title"] = Localizer["PageTitle"];
+    ViewData["HideNavAndFooter"] = User.IsInRole("Admin");
+    var culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var dir = culture == "ar" ? "rtl" : "ltr";
+
+    
+}
+
+<link rel="stylesheet" asp-append-version="true" href="~/css/organizations-list.css" />
+@if (User.IsInRole("Admin"))
+{
+    <style>
+        nav,
+        footer {
+            display: none !important;
+        }
+    </style>
+}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<div class="container py-5 org-list-page" dir="@dir">
+    <div class="row align-items-center mb-4 g-3">
+        <div class="col-md-6 @(culture == "ar" ? "text-end" : "text-start")">
+            <h2 class="main-title mb-0">@Localizer["PageTitle"]</h2>
+        </div>
+
+        <div class="col-md-6 d-flex justify-content-md-end align-items-center gap-3 d-flex-mobile">
+            <a asp-controller="Admin" asp-action="Dashboard" class="btn-back-dashboard">
+                <i class="fa-solid fa-gauge"></i>
+                @Localizer["BackToDashboard"]
+            </a>
+        </div>
+    </div>
+
+    <p class="section-hint">@Localizer["Hint"]</p>
+
+    <div class="row g-4">
+        @foreach (var org in Model)
+        {
+            <div class="col-xl-4 col-lg-6">
+                <div class="org-card h-100">
+                    <a asp-controller="Admin"
+                       asp-action="OrganizationDetails"
+                       asp-route-id="@org.Id"
+                       class="org-card-body-link">
+                        <div class="org-card-body">
+                            <div class="org-head">
+                                <div class="org-text">
+                                    <h5 class="org-title">@org.Name</h5>
+                                    <p class="org-meta"><strong>@Localizer["SectorLabel"]</strong> @org.Sector</p>
+                                    <p class="org-meta"><strong>@Localizer["CountryLabel"]</strong> @org.Country</p>
+                                    <p class="org-meta"><strong>@Localizer["ContactLabel"]</strong> @org.ContactName</p>
+                                </div>
+                                <div class="org-logo-wrap">
+                                    @if (!string.IsNullOrEmpty(org.LogoPath))
+                                    {
+                                        <img src="@org.LogoPath"
+                                             width="64"
+                                             height="64"
+                                             class="org-logo"
+                                             alt="@Localizer["OrganizationLogoAlt"]" />
+                                    }
+                                    else
+                                    {
+                                        <div class="org-logo-placeholder">@Localizer["NoLogo"]</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    <div class="org-card-footer">
+                        <a asp-controller="Admin"
+                           asp-action="EditOrganization"
+                           asp-route-id="@org.Id"
+                           class="btn-edit-logo">
+                            @Localizer["EditLogo"]
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
