@@ -86,7 +86,7 @@
                             <div class="opp-img-container">
                                 <img src="@(string.IsNullOrEmpty(opp.ImagePath) ? "/images/default.jpg" : opp.ImagePath)" alt="Opp Image" />
                             </div>
-                            <span class="opp-title-text">@opp.TitleAr</span>
+                            <span class="opp-title-text">@opp.TitleAr</span>@if (opp.Status == OpportunityStatus.Draft) { <span class="badge bg-warning text-dark ms-2">مسودة من منصة الفريق</span> }
                         </div>
 
                          <div class="info-col">

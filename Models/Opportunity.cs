@@ -83,6 +83,16 @@ namespace Foras_Khadra.Models
         public bool IsExpired { get; set; }
         public virtual ICollection<ReelsRequest> ReelsRequests { get; set; }
 
+        // ===== منصة الفريق (team.foraskhadra.com) =====
+        /// <summary>Published للفرص العادية؛ Draft لما تنشئه منصة الفريق بانتظار التدقيق.</summary>
+        public OpportunityStatus Status { get; set; } = OpportunityStatus.Published;
+        /// <summary>الرابط الذي رُصدت منه الفرصة (قد يختلف عن رابط التقديم).</summary>
+        public string? SourceUrl { get; set; }
+        /// <summary>رقم الفرصة في مسار الفرص على منصة الفريق.</summary>
+        public int? PipeId { get; set; }
+        /// <summary>كُتب نصها آليًا ثم دققه بشر.</summary>
+        public bool AiGenerated { get; set; }
+
         [NotMapped]
         public string AvailableCountriesNames
         {

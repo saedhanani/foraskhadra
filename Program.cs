@@ -1,4 +1,4 @@
-﻿using Foras_Khadra.Data;
+using Foras_Khadra.Data;
 using Foras_Khadra.Models;
 using Foras_Khadra.Services;
 using Microsoft.AspNetCore.Identity;
@@ -9,8 +9,6 @@ using Microsoft.Extensions.Options;
 using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
-Console.WriteLine("CONNECTION STRING:");
-Console.WriteLine(builder.Configuration.GetConnectionString("DefaultConnection"));
 
 // ===== إعداد قاعدة البيانات =====
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -93,11 +91,12 @@ try
                 await roleManager.CreateAsync(new IdentityRole(role));
         }
 
-        string adminEmail = "admin@org.com";
-        string adminPassword = "Admin@123";
+        // حساب الأدمن الأول يُزرع فقط إذا ضُبط في الإعدادات (Seed:AdminEmail / Seed:AdminPassword) — لا كلمات مرور في الكود
+        string? adminEmail = builder.Configuration["Seed:AdminEmail"];
+        string? adminPassword = builder.Configuration["Seed:AdminPassword"];
 
-        var adminUser = await userManager.FindByEmailAsync(adminEmail);
-        if (adminUser == null)
+        var adminUser = string.IsNullOrWhiteSpace(adminEmail) ? null : await userManager.FindByEmailAsync(adminEmail);
+        if (adminUser == null && !string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword))
         {
             adminUser = new ApplicationUser
             {
@@ -163,7 +162,6 @@ else
 // ❗ خليها بعد exception handling مباشرة
 app.UseStatusCodePages();
 
-app.UseDeveloperExceptionPage(); 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 // ===== Use Localization =====
@@ -181,6 +179,9 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// واجهة منصة الفريق: Controllers/Api (توجيه بالسمات)
+app.MapControllers();
 
 app.MapRazorPages();
 

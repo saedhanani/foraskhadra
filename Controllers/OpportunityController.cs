@@ -380,6 +380,9 @@ public async Task<IActionResult> Create()
                 .FirstOrDefaultAsync(o => o.Id == id);
 
             if (opp == null) return NotFound();
+            // المسودات القادمة من منصة الفريق لا تظهر للزوار قبل اعتمادها
+            if (opp.Status == OpportunityStatus.Draft && !(User.Identity?.IsAuthenticated == true && User.IsInRole("Admin")))
+                return NotFound();
 
             var creator = await _userManager.FindByIdAsync(opp.CreatedByUserId);
             opp.IsPublishedByAdmin = creator != null && await _userManager.IsInRoleAsync(creator, "Admin");
@@ -392,7 +395,7 @@ public async Task<IActionResult> Create()
         public IActionResult ByType(OpportunityType type)
         {
             var data = _context.Opportunities
-                .Where(x => x.Type == type)
+                .Where(x => x.Status == OpportunityStatus.Published && x.Type == type)
                 .ToList();
 
             ViewBag.Type = type;

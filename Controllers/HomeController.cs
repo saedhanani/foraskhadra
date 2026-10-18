@@ -30,7 +30,7 @@ namespace Foras_Khadra.Controllers
 //تحذير استلام الفرص
 //اذا تم تفعيل الفلتره في الواجهه الاماميه نقوم بفلتره الوصف
 
-    var opportunitiesQuery = _context.Opportunities.AsQueryable();
+    var opportunitiesQuery = _context.Opportunities.Where(o => o.Status == OpportunityStatus.Published).AsQueryable();
 
     if (filterByAvailable)
     {
@@ -128,7 +128,7 @@ namespace Foras_Khadra.Controllers
         {
             var query = _context.Opportunities
                                 .Include(o => o.AvailableCountries)
-                                .Where(o => o.Type == type);
+                                .Where(o => o.Status == OpportunityStatus.Published && o.Type == type);
 
             if (!string.IsNullOrEmpty(country))
             {
@@ -197,6 +197,7 @@ namespace Foras_Khadra.Controllers
         {
             var query = _context.Opportunities
                                 .Include(o => o.AvailableCountries)
+                                .Where(o => o.Status == OpportunityStatus.Published)
                                 .AsQueryable();
 
             if (!string.IsNullOrEmpty(search))
