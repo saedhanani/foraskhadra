@@ -39,4 +39,12 @@
     <Folder Include="wwwroot\uploads\opportunities\" />
   </ItemGroup>
 
+  <!-- لا تُنشر من الجهاز المحلي: الرفوعات مصدرها الخادم، وإعدادات التطوير والسجلات والمفاتيح محلية -->
+  <ItemGroup>
+    <Content Update="wwwroot\uploads\**;wwwroot\logos\**" CopyToPublishDirectory="Never" />
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+    <None Remove="logs\**;App_Data\**" />
+    <Content Remove="logs\**;App_Data\**" />
+  </ItemGroup>
+
 </Project>

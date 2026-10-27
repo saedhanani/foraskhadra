@@ -32,6 +32,9 @@ secrets.json
 *.env
 .env
 
+# Data-protection keys (auth cookies / CSRF) are per-server secrets
+App_Data/
+
 # User uploads (opportunity images, logos, article/team photos) live on the server, not in git
 wwwroot/uploads/**
 !wwwroot/uploads/**/

@@ -1,6 +1,7 @@
 using Foras_Khadra.Data;
 using Foras_Khadra.Models;
 using Foras_Khadra.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
@@ -30,6 +31,11 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+// ===== مفاتيح حماية البيانات (كوكي الدخول ورموز CSRF) تُحفظ في App_Data حتى لا يُطرد الجميع عند كل إعادة تشغيل للتطبيق على الاستضافة =====
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "App_Data", "DataProtection-Keys")))
+    .SetApplicationName("Foras_Khadra");
 
 // ===== إعداد Identity =====
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>

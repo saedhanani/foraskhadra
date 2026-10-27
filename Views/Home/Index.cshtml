@@ -463,6 +463,9 @@ html[dir="ltr"] #heroBg1 {
                     var desc = culture == "ar" ? opp.DescriptionAr
                     : culture == "en" ? opp.DescriptionEn
                     : opp.DescriptionFr;
+                    // الوصف HTML من المحرر: نعرض نصه فقط في البطاقة (كما في صفحة كل الفرص)
+                    desc = System.Net.WebUtility.HtmlDecode(
+                        System.Text.RegularExpressions.Regex.Replace(desc ?? "", "<.*?>", " ")).Trim();
 
                     // تحديد اسم الناشر وعلامة التوثيق للأدمن
                     var publisher = opp.PublishedBy.ToLower() == "admin"
