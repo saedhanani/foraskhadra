@@ -2,11 +2,13 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Foras_Khadra.Data;
+using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace Foras_Khadra.Controllers.Api
@@ -19,6 +21,8 @@ namespace Foras_Khadra.Controllers.Api
     [Route("api/team")]
     [AllowAnonymous]
     [TeamApiKey]
+    [IgnoreAntiforgeryToken] // المصادقة بالمفتاح لا بالكوكي، فلا ينطبق عليها CSRF
+    [EnableRateLimiting("api")]
     public class TeamApiController : ControllerBase
     {
         private readonly ApplicationDbContext _db;
@@ -210,6 +214,12 @@ namespace Foras_Khadra.Controllers.Api
                 if (!DateTime.TryParse(d.EndDate, out var e)) return BadRequest(new { error = "bad_end_date" });
                 end = e.Date;
             }
+            // تعقيم HTML المولّد آليًا قبل التخزين (يُعرض لاحقًا بـ Html.Raw)
+            d.DescriptionAr = SafeHtml.Clean(d.DescriptionAr); d.DescriptionEn = SafeHtml.Clean(d.DescriptionEn); d.DescriptionFr = SafeHtml.Clean(d.DescriptionFr);
+            d.DetailsAr = SafeHtml.Clean(d.DetailsAr); d.DetailsEn = SafeHtml.Clean(d.DetailsEn); d.DetailsFr = SafeHtml.Clean(d.DetailsFr);
+            d.EligibilityCriteriaAr = SafeHtml.Clean(d.EligibilityCriteriaAr); d.EligibilityCriteriaEn = SafeHtml.Clean(d.EligibilityCriteriaEn); d.EligibilityCriteriaFr = SafeHtml.Clean(d.EligibilityCriteriaFr);
+            d.BenefitsAr = SafeHtml.Clean(d.BenefitsAr); d.BenefitsEn = SafeHtml.Clean(d.BenefitsEn); d.BenefitsFr = SafeHtml.Clean(d.BenefitsFr);
+
             // الفرنسية والإنجليزية: إن غابت، تُملأ بالإنجليزية/العربية حتى لا يفشل العرض
             string Or(string v, string fb) => string.IsNullOrWhiteSpace(v) ? fb : v;
             var countries = d.CountryIds is { Count: > 0 }

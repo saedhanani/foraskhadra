@@ -34,7 +34,6 @@ namespace Foras_Khadra.Services
             email.MessageId = MimeUtils.GenerateMessageId();
 
             using var smtp = new SmtpClient();
-            smtp.ServerCertificateValidationCallback = (s, c, h, e) => true; // للتطوير فقط
             await smtp.ConnectAsync(_mailSettings.Host, _mailSettings.Port, SecureSocketOptions.StartTls);
             await smtp.AuthenticateAsync(_mailSettings.Mail, _mailSettings.Password);
             await smtp.SendAsync(email);

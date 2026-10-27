@@ -1,21 +1,27 @@
 ﻿
 using Foras_Khadra.Data;
+using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
+using Foras_Khadra.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+// الإنشاء والتعديل والحذف للأدمن فقط؛ العرض (Index/Details) عام
+[Authorize(Roles = "Admin")]
 public class ArticlesController : Controller
 {
     private readonly ApplicationDbContext _context;
-    private readonly IWebHostEnvironment _env;
+    private readonly IImageUploadService _images;
 
-    public ArticlesController(ApplicationDbContext context, IWebHostEnvironment env)
+    public ArticlesController(ApplicationDbContext context, IImageUploadService images)
     {
         _context = context;
-        _env = env;
+        _images = images;
     }
 
     // INDEX
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> Index(string search, int page = 1)
     {
@@ -49,6 +55,7 @@ public class ArticlesController : Controller
     }
 
     // DETAILS
+    [AllowAnonymous]
     public async Task<IActionResult> Details(int id)
     {
         var article = await _context.Articles
@@ -84,15 +91,20 @@ public class ArticlesController : Controller
 
         if (Image != null)
         {
-            string uploads = Path.Combine(_env.WebRootPath, "uploads");
-            string fileName = Guid.NewGuid() + Path.GetExtension(Image.FileName);
-            string filePath = Path.Combine(uploads, fileName);
-
-            using var stream = new FileStream(filePath, FileMode.Create);
-            await Image.CopyToAsync(stream);
-
-            article.ImagePath = "/uploads/" + fileName;
+            var error = _images.Validate(Image);
+            if (error != null)
+            {
+                ModelState.AddModelError("Image", error);
+                ViewBag.IsAdmin = User.IsInRole("Admin");
+                return View(article);
+            }
+            article.ImagePath = await _images.SaveAsync(Image, "uploads");
         }
+
+        // تعقيم HTML القادم من المحرر قبل التخزين
+        article.ContentAr = SafeHtml.Clean(article.ContentAr);
+        article.ContentEn = SafeHtml.Clean(article.ContentEn);
+        article.ContentFr = SafeHtml.Clean(article.ContentFr);
 
         article.PublishDate = DateTime.Now;
 
@@ -115,25 +127,26 @@ public class ArticlesController : Controller
     public async Task<IActionResult> Edit(int id, Article article, IFormFile Image)
     {
         var existing = await _context.Articles.FindAsync(id);
+        if (existing == null) return NotFound();
 
         if (Image != null)
         {
-            string uploads = Path.Combine(_env.WebRootPath, "uploads");
-            string fileName = Guid.NewGuid() + Path.GetExtension(Image.FileName);
-            string filePath = Path.Combine(uploads, fileName);
-
-            using var stream = new FileStream(filePath, FileMode.Create);
-            await Image.CopyToAsync(stream);
-
-            existing.ImagePath = "/uploads/" + fileName;
+            var error = _images.Validate(Image);
+            if (error != null)
+            {
+                ModelState.AddModelError("Image", error);
+                ViewBag.IsAdmin = User.IsInRole("Admin");
+                return View(article);
+            }
+            existing.ImagePath = await _images.SaveAsync(Image, "uploads");
         }
 
         existing.TitleAr = article.TitleAr;
         existing.TitleEn = article.TitleEn;
         existing.TitleFr = article.TitleFr;
-        existing.ContentAr = article.ContentAr;
-        existing.ContentEn = article.ContentEn;
-        existing.ContentFr = article.ContentFr;
+        existing.ContentAr = SafeHtml.Clean(article.ContentAr);
+        existing.ContentEn = SafeHtml.Clean(article.ContentEn);
+        existing.ContentFr = SafeHtml.Clean(article.ContentFr);
         existing.Author = article.Author;
 
         await _context.SaveChangesAsync();

@@ -1,20 +1,26 @@
 ﻿using Foras_Khadra.Data;
 using Foras_Khadra.Models;
+using Foras_Khadra.Services;
 using Foras_Khadra.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 namespace Foras_Khadra.Controllers
 {
+    // إدارة أعضاء الفريق للأدمن فقط (الصفحة العامة هي Home/AboutUs)
+    [Authorize(Roles = "Admin")]
     public class TeamController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _hostEnvironment;
+        private readonly IImageUploadService _images;
 
-        public TeamController(ApplicationDbContext context, IWebHostEnvironment hostEnvironment)
+        public TeamController(ApplicationDbContext context, IWebHostEnvironment hostEnvironment, IImageUploadService images)
         {
             _context = context;
             _hostEnvironment = hostEnvironment;
+            _images = images;
         }
 
         // عرض كل الأعضاء
@@ -71,7 +77,7 @@ namespace Foras_Khadra.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Create(TeamMemberCreateViewModel model)
+        public async Task<IActionResult> Create(TeamMemberCreateViewModel model)
         {
             if (!ModelState.IsValid)
                 return View(model);
@@ -92,18 +98,13 @@ namespace Foras_Khadra.Controllers
 
             if (model.ImageFile != null && model.ImageFile.Length > 0)
             {
-                string uploadsFolder = Path.Combine(_hostEnvironment.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + model.ImageFile.FileName;
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                var error = _images.Validate(model.ImageFile);
+                if (error != null)
                 {
-                    model.ImageFile.CopyTo(fileStream);
+                    ModelState.AddModelError("ImageFile", error);
+                    return View(model);
                 }
-
-                member.ImagePath = "/uploads/" + uniqueFileName;
+                member.ImagePath = await _images.SaveAsync(model.ImageFile, "uploads");
             }
 
             _context.TeamMember.Add(member);
@@ -141,7 +142,7 @@ namespace Foras_Khadra.Controllers
         // POST: Edit
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult Edit(TeamMemberEditViewModel model)
+        public async Task<IActionResult> Edit(TeamMemberEditViewModel model)
         {
             var member = _context.TeamMember.Find(model.Id);
             if (member == null) return NotFound();
@@ -169,16 +170,14 @@ namespace Foras_Khadra.Controllers
             // رفع صورة جديدة إذا تم اختيارها
             if (model.ImageFile != null && model.ImageFile.Length > 0)
             {
-                string uploadsFolder = Path.Combine(_hostEnvironment.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + model.ImageFile.FileName;
-                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                var error = _images.Validate(model.ImageFile);
+                if (error != null)
                 {
-                    model.ImageFile.CopyTo(fileStream);
+                    ModelState.AddModelError("ImageFile", error);
+                    ViewBag.ExistingImage = member.ImagePath;
+                    return View(model);
                 }
+                var newPath = await _images.SaveAsync(model.ImageFile, "uploads");
 
                 // حذف الصورة القديمة إذا موجودة
                 if (!string.IsNullOrEmpty(member.ImagePath))
@@ -188,7 +187,7 @@ namespace Foras_Khadra.Controllers
                         System.IO.File.Delete(oldPath);
                 }
 
-                member.ImagePath = "/uploads/" + uniqueFileName;
+                member.ImagePath = newPath;
             }
 
             _context.Update(member);

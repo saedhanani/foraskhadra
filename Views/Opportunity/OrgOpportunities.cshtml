@@ -436,7 +436,7 @@ else
 </td>
 
 <td>@title</td>
-<td class="description-cell">@Html.Raw(description)</td>
+<td class="description-cell">@Html.SanitizedRaw(description)</td>
 
 <td>
 @if (opp.AvailableCountries != null && opp.AvailableCountries.Any())

@@ -107,9 +107,9 @@
                     <!-- ===== Main Content ===== -->
                     <div class="news-main-content">
                         <div class="news-content">
-                            @(culture == "ar" ? Html.Raw(Model.ContentAr) :
-                            culture == "en" ? Html.Raw(Model.ContentEn) :
-                            Html.Raw(Model.ContentFr))
+                            @(culture == "ar" ? Html.SanitizedRaw(Model.ContentAr) :
+                            culture == "en" ? Html.SanitizedRaw(Model.ContentEn) :
+                            Html.SanitizedRaw(Model.ContentFr))
                         </div>
                     </div>
 

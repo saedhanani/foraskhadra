@@ -1,7 +1,9 @@
 ﻿using Foras_Khadra.Models;
 using Foras_Khadra.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Localization;
 using NETCore.MailKit.Core;
 using System.Collections.Generic;
@@ -17,10 +19,6 @@ namespace Foras_Khadra.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly Microsoft.AspNetCore.Identity.UI.Services.IEmailSender _emailSender;
         private readonly IStringLocalizer<AccountController> _localizer;
-
-        // بيانات Admin الثابت
-        private const string AdminEmail = "admin@org.com";
-        private const string AdminPassword = "Admin@123";
 
         public AccountController(
             Microsoft.AspNetCore.Identity.UI.Services.IEmailSender emailSender,
@@ -50,6 +48,7 @@ namespace Foras_Khadra.Controllers
         // ===== POST: RegisterUser =====
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> RegisterUser(RegisterViewModel model)
         {
             var culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
@@ -109,6 +108,7 @@ namespace Foras_Khadra.Controllers
         // ===== POST: Login =====
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid) return View(model);
@@ -132,8 +132,14 @@ namespace Foras_Khadra.Controllers
                 user,
                 model.Password,
                 isPersistent: false,
-                lockoutOnFailure: false
+                lockoutOnFailure: true // يُقفل الحساب مؤقتًا بعد محاولات فاشلة متكررة
             );
+
+            if (result.IsLockedOut)
+            {
+                ModelState.AddModelError("", "تم قفل الحساب مؤقتًا بسبب محاولات دخول فاشلة متكررة، حاول مجددًا بعد 15 دقيقة");
+                return View(model);
+            }
 
             if (!result.Succeeded)
             {
@@ -216,6 +222,7 @@ namespace Foras_Khadra.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> ForgotPassword(string email)
         {
             if (string.IsNullOrEmpty(email))
@@ -336,6 +343,7 @@ namespace Foras_Khadra.Controllers
             return View();
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<IActionResult> ProfileSettings()
         {
@@ -360,6 +368,7 @@ namespace Foras_Khadra.Controllers
             return View(model);
         }
 
+        [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ProfileSettings(EditProfileViewModel model)

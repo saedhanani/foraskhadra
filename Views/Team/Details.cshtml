@@ -80,7 +80,7 @@
         <small class="text-muted d-block mb-2">النبذة (عربي)</small>
     </div>
     <div class="col-md-8 lh-lg">
-        @Html.Raw(string.IsNullOrWhiteSpace(Model.BioAr)
+        @Html.SanitizedRaw(string.IsNullOrWhiteSpace(Model.BioAr)
             ? "لا يوجد نبذة بالعربي."
             : Model.BioAr)
     </div>
@@ -91,7 +91,7 @@
         <small class="text-muted d-block mb-2">Bio (English)</small>
     </div>
     <div class="col-md-8 lh-lg">
-        @Html.Raw(string.IsNullOrWhiteSpace(Model.BioEn)
+        @Html.SanitizedRaw(string.IsNullOrWhiteSpace(Model.BioEn)
             ? "No English bio provided."
             : Model.BioEn)
     </div>
@@ -102,7 +102,7 @@
         <small class="text-muted d-block mb-2">Bio (Français)</small>
     </div>
     <div class="col-md-8 lh-lg">
-        @Html.Raw(string.IsNullOrWhiteSpace(Model.BioFr)
+        @Html.SanitizedRaw(string.IsNullOrWhiteSpace(Model.BioFr)
             ? "Aucune biographie en français."
             : Model.BioFr)
     </div>

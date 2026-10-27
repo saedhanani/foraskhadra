@@ -412,7 +412,7 @@
 
               <div id="bio-@member.Id" class="bio" style="background-image:url(@member.ImagePath)">
                 <div class="bio-overlay">
-                  @Html.Raw(
+                  @Html.SanitizedRaw(
                     culture == "ar" ? member.BioAr :
                     culture == "fr" ? member.BioFr :
                     member.BioEn

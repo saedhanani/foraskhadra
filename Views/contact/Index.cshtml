@@ -66,7 +66,8 @@
 
     <div class="contact-container">
         <div class="contact-form-box">
-            <form id="contactForm" class="contact-form" novalidate>
+            <form id="contactForm" class="contact-form" method="post" novalidate>
+                @Html.AntiForgeryToken()
                 <div class="row mb-4">
                     <div class="col-md-6 mb-3 mb-md-0">
                         <input asp-for="FirstName" class="form-control" placeholder="@Localizer["FirstNamePlaceholder"]" required />

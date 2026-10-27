@@ -431,30 +431,30 @@
 
         // =================== Load Existing Data from Model into Editors and Hidden Inputs ===================
         // Arabic
-        quillEligibilityAr.root.innerHTML = '@Html.Raw(Model.EligibilityCriteriaAr ?? "")';
-        quillBenefitsAr.root.innerHTML    = '@Html.Raw(Model.BenefitsAr ?? "")';
-        quillDescriptionAr.root.innerHTML = '@Html.Raw(Model.DescriptionAr ?? "")';
-        quillAr.root.innerHTML            = '@Html.Raw(Model.DetailsAr ?? "")';
+        quillEligibilityAr.root.innerHTML = @Json.Serialize(SafeHtml.Clean(Model.EligibilityCriteriaAr));
+        quillBenefitsAr.root.innerHTML    = @Json.Serialize(SafeHtml.Clean(Model.BenefitsAr));
+        quillDescriptionAr.root.innerHTML = @Json.Serialize(SafeHtml.Clean(Model.DescriptionAr));
+        quillAr.root.innerHTML            = @Json.Serialize(SafeHtml.Clean(Model.DetailsAr));
         document.getElementById('eligibilityAr').value = quillEligibilityAr.root.innerHTML;
         document.getElementById('benefitsAr').value    = quillBenefitsAr.root.innerHTML;
         document.getElementById('descriptionAr').value = quillDescriptionAr.root.innerHTML;
         document.getElementById('detailsAr').value     = quillAr.root.innerHTML;
 
         // English
-        quillEligibilityEn.root.innerHTML = '@Html.Raw(Model.EligibilityCriteriaEn ?? "")';
-        quillBenefitsEn.root.innerHTML    = '@Html.Raw(Model.BenefitsEn ?? "")';
-        quillDescriptionEn.root.innerHTML = '@Html.Raw(Model.DescriptionEn ?? "")';
-        quillEn.root.innerHTML            = '@Html.Raw(Model.DetailsEn ?? "")';
+        quillEligibilityEn.root.innerHTML = @Json.Serialize(SafeHtml.Clean(Model.EligibilityCriteriaEn));
+        quillBenefitsEn.root.innerHTML    = @Json.Serialize(SafeHtml.Clean(Model.BenefitsEn));
+        quillDescriptionEn.root.innerHTML = @Json.Serialize(SafeHtml.Clean(Model.DescriptionEn));
+        quillEn.root.innerHTML            = @Json.Serialize(SafeHtml.Clean(Model.DetailsEn));
         document.getElementById('eligibilityEn').value = quillEligibilityEn.root.innerHTML;
         document.getElementById('benefitsEn').value    = quillBenefitsEn.root.innerHTML;
         document.getElementById('descriptionEn').value = quillDescriptionEn.root.innerHTML;
         document.getElementById('detailsEn').value     = quillEn.root.innerHTML;
 
         // French
-        quillEligibilityFr.root.innerHTML = '@Html.Raw(Model.EligibilityCriteriaFr ?? "")';
-        quillBenefitsFr.root.innerHTML    = '@Html.Raw(Model.BenefitsFr ?? "")';
-        quillDescriptionFr.root.innerHTML = '@Html.Raw(Model.DescriptionFr ?? "")';
-        quillFr.root.innerHTML            = '@Html.Raw(Model.DetailsFr ?? "")';
+        quillEligibilityFr.root.innerHTML = @Json.Serialize(SafeHtml.Clean(Model.EligibilityCriteriaFr));
+        quillBenefitsFr.root.innerHTML    = @Json.Serialize(SafeHtml.Clean(Model.BenefitsFr));
+        quillDescriptionFr.root.innerHTML = @Json.Serialize(SafeHtml.Clean(Model.DescriptionFr));
+        quillFr.root.innerHTML            = @Json.Serialize(SafeHtml.Clean(Model.DetailsFr));
         document.getElementById('eligibilityFr').value = quillEligibilityFr.root.innerHTML;
         document.getElementById('benefitsFr').value    = quillBenefitsFr.root.innerHTML;
         document.getElementById('descriptionFr').value = quillDescriptionFr.root.innerHTML;

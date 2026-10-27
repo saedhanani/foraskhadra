@@ -1,5 +1,6 @@
 ﻿using Foras_Khadra.Data;
 using Foras_Khadra.Models;
+using Foras_Khadra.Services;
 using Foras_Khadra.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,10 +16,12 @@ namespace Foras_Khadra.Controllers
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IImageUploadService _images;
 
-        public AdminController(ApplicationDbContext context)
+        public AdminController(ApplicationDbContext context, IImageUploadService images)
         {
             _context = context;
+            _images = images;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -138,15 +141,13 @@ namespace Foras_Khadra.Controllers
             // رفع اللوجو
             if (logoFile != null && logoFile.Length > 0)
             {
-                var fileName = Guid.NewGuid() + Path.GetExtension(logoFile.FileName);
-                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/logos", fileName);
-
-                using (var stream = new FileStream(path, FileMode.Create))
+                var error = _images.Validate(logoFile);
+                if (error != null)
                 {
-                    await logoFile.CopyToAsync(stream);
+                    ModelState.AddModelError("logoFile", error);
+                    return View(org);
                 }
-
-                org.LogoPath = "/logos/" + fileName;
+                org.LogoPath = await _images.SaveAsync(logoFile, "logos");
             }
 
             // تحديث البيانات من formModel (مش model)
@@ -190,15 +191,13 @@ namespace Foras_Khadra.Controllers
 
             if (logoFile != null && logoFile.Length > 0)
             {
-                var fileName = Guid.NewGuid() + Path.GetExtension(logoFile.FileName);
-                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/logos", fileName);
-
-                using (var stream = new FileStream(path, FileMode.Create))
+                var error = _images.Validate(logoFile);
+                if (error != null)
                 {
-                    await logoFile.CopyToAsync(stream);
+                    ModelState.AddModelError("logoFile", error);
+                    return View(model);
                 }
-
-                model.LogoPath = "/logos/" + fileName;
+                model.LogoPath = await _images.SaveAsync(logoFile, "logos");
             }
 
             _context.ManualOrganizations.Add(model);
@@ -228,15 +227,13 @@ namespace Foras_Khadra.Controllers
 
             if (logoFile != null && logoFile.Length > 0)
             {
-                var fileName = Guid.NewGuid() + Path.GetExtension(logoFile.FileName);
-                var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/logos", fileName);
-
-                using (var stream = new FileStream(path, FileMode.Create))
+                var error = _images.Validate(logoFile);
+                if (error != null)
                 {
-                    await logoFile.CopyToAsync(stream);
+                    ModelState.AddModelError("logoFile", error);
+                    return View(model);
                 }
-
-                org.LogoPath = "/logos/" + fileName;
+                org.LogoPath = await _images.SaveAsync(logoFile, "logos");
             }
 
             org.OrganizationName = model.OrganizationName;

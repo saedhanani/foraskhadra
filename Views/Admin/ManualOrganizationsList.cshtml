@@ -86,6 +86,7 @@
 
                                     <form method="post"
                                           action="/Admin/DeleteManualOrganization"
+                                          asp-antiforgery="true"
                                           class="d-inline"
                                           id="deleteForm-@item.Id">
                                         <input type="hidden" name="id" value="@item.Id" />

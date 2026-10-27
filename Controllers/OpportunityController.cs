@@ -1,5 +1,7 @@
 using Foras_Khadra.Data;
+using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
+using Foras_Khadra.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -21,15 +23,19 @@ namespace Foras_Khadra.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IWebHostEnvironment _env;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IImageUploadService _images;
 
-        public OpportunityController(ApplicationDbContext context, IWebHostEnvironment env, UserManager<ApplicationUser> userManager)
+        public OpportunityController(ApplicationDbContext context, IWebHostEnvironment env, UserManager<ApplicationUser> userManager, IImageUploadService images)
         {
             _context = context;
             _env = env;
             _userManager = userManager;
+            _images = images;
         }
 
         // ================= INDEX =================
+        // قائمة الإدارة (تشمل المسودات) — للأدمن فقط
+        [Authorize(Roles = "Admin")]
         public IActionResult Index(bool availableOnly)
         {
             var query = _context.Opportunities.AsQueryable();
@@ -98,6 +104,10 @@ public async Task<IActionResult> Create()
             {
                 ModelState.AddModelError("EndDate", "End date is required when selecting specific date.");
             }
+            if (model.Image != null && _images.Validate(model.Image) is string imageError)
+            {
+                ModelState.AddModelError("Image", imageError);
+            }
             if (!ModelState.IsValid)
             {
                 // إعادة ملء قائمة الدول حسب لغة الموقع
@@ -122,11 +132,7 @@ public async Task<IActionResult> Create()
             string imagePath = null;
             if (model.Image != null)
             {
-                var fileName = Guid.NewGuid() + Path.GetExtension(model.Image.FileName);
-                var path = Path.Combine(_env.WebRootPath, "uploads/opportunities", fileName);
-                using var stream = new FileStream(path, FileMode.Create);
-                await model.Image.CopyToAsync(stream);
-                imagePath = "/uploads/opportunities/" + fileName;
+                imagePath = await _images.SaveAsync(model.Image, "uploads/opportunities");
             }
 
             var currentUser = await _userManager.GetUserAsync(User);
@@ -139,23 +145,24 @@ public async Task<IActionResult> Create()
                 TitleAr = model.TitleAr,
                 TitleEn = model.TitleEn,
                 TitleFr = model.TitleFr,
-                DescriptionAr = model.DescriptionAr,
-                DescriptionEn = model.DescriptionEn,
-                DescriptionFr = model.DescriptionFr,
-                DetailsAr = model.DetailsAr,
-                DetailsEn = model.DetailsEn,
-                DetailsFr = model.DetailsFr,
+                // تعقيم HTML القادم من المحرر قبل التخزين
+                DescriptionAr = SafeHtml.Clean(model.DescriptionAr),
+                DescriptionEn = SafeHtml.Clean(model.DescriptionEn),
+                DescriptionFr = SafeHtml.Clean(model.DescriptionFr),
+                DetailsAr = SafeHtml.Clean(model.DetailsAr),
+                DetailsEn = SafeHtml.Clean(model.DetailsEn),
+                DetailsFr = SafeHtml.Clean(model.DetailsFr),
                 AvailableCountries = model.AvailableCountryIds != null
                     ? await _context.Countries
                         .Where(c => model.AvailableCountryIds.Contains(c.Id))
                         .ToListAsync()
                     : new List<Country>(),
-                EligibilityCriteriaAr = model.EligibilityCriteriaAr,
-                EligibilityCriteriaEn = model.EligibilityCriteriaEn,
-                EligibilityCriteriaFr = model.EligibilityCriteriaFr,
-                BenefitsAr = model.BenefitsAr,
-                BenefitsEn = model.BenefitsEn,
-                BenefitsFr = model.BenefitsFr,
+                EligibilityCriteriaAr = SafeHtml.Clean(model.EligibilityCriteriaAr),
+                EligibilityCriteriaEn = SafeHtml.Clean(model.EligibilityCriteriaEn),
+                EligibilityCriteriaFr = SafeHtml.Clean(model.EligibilityCriteriaFr),
+                BenefitsAr = SafeHtml.Clean(model.BenefitsAr),
+                BenefitsEn = SafeHtml.Clean(model.BenefitsEn),
+                BenefitsFr = SafeHtml.Clean(model.BenefitsFr),
                 ApplyLink = model.ApplyLink,
                 ImagePath = imagePath,
                 DeadlineType = model.DeadlineType,
@@ -180,6 +187,11 @@ public async Task<IActionResult> Create()
         [Authorize(Roles = "Admin,Organization")]
         public async Task<IActionResult> Edit(OpportunityEditVM model)
         {
+            if (model.Image != null && _images.Validate(model.Image) is string imageError)
+            {
+                ModelState.AddModelError("Image", imageError);
+            }
+
             // أولاً تحقق من صحة الموديل
             if (!ModelState.IsValid)
             {
@@ -221,18 +233,19 @@ public async Task<IActionResult> Create()
             opportunity.TitleAr = model.TitleAr;
             opportunity.TitleEn = model.TitleEn;
             opportunity.TitleFr = model.TitleFr;
-            opportunity.DescriptionAr = model.DescriptionAr;
-            opportunity.DescriptionEn = model.DescriptionEn;
-            opportunity.DescriptionFr = model.DescriptionFr;
-            opportunity.DetailsAr = model.DetailsAr;
-            opportunity.DetailsEn = model.DetailsEn;
-            opportunity.DetailsFr = model.DetailsFr;
-            opportunity.EligibilityCriteriaAr = model.EligibilityCriteriaAr;
-            opportunity.EligibilityCriteriaEn = model.EligibilityCriteriaEn;
-            opportunity.EligibilityCriteriaFr = model.EligibilityCriteriaFr;
-            opportunity.BenefitsAr = model.BenefitsAr;
-            opportunity.BenefitsEn = model.BenefitsEn;
-            opportunity.BenefitsFr = model.BenefitsFr;
+            // تعقيم HTML القادم من المحرر قبل التخزين
+            opportunity.DescriptionAr = SafeHtml.Clean(model.DescriptionAr);
+            opportunity.DescriptionEn = SafeHtml.Clean(model.DescriptionEn);
+            opportunity.DescriptionFr = SafeHtml.Clean(model.DescriptionFr);
+            opportunity.DetailsAr = SafeHtml.Clean(model.DetailsAr);
+            opportunity.DetailsEn = SafeHtml.Clean(model.DetailsEn);
+            opportunity.DetailsFr = SafeHtml.Clean(model.DetailsFr);
+            opportunity.EligibilityCriteriaAr = SafeHtml.Clean(model.EligibilityCriteriaAr);
+            opportunity.EligibilityCriteriaEn = SafeHtml.Clean(model.EligibilityCriteriaEn);
+            opportunity.EligibilityCriteriaFr = SafeHtml.Clean(model.EligibilityCriteriaFr);
+            opportunity.BenefitsAr = SafeHtml.Clean(model.BenefitsAr);
+            opportunity.BenefitsEn = SafeHtml.Clean(model.BenefitsEn);
+            opportunity.BenefitsFr = SafeHtml.Clean(model.BenefitsFr);
             opportunity.ApplyLink = model.ApplyLink;
             opportunity.Type = model.Type ?? opportunity.Type;
             opportunity.DeadlineType = model.DeadlineType;
@@ -243,11 +256,7 @@ public async Task<IActionResult> Create()
             // تحديث الصورة فقط إذا تم رفعها
             if (model.Image != null)
             {
-                var fileName = Guid.NewGuid() + Path.GetExtension(model.Image.FileName);
-                var path = Path.Combine(_env.WebRootPath, "uploads/opportunities", fileName);
-                using var stream = new FileStream(path, FileMode.Create);
-                await model.Image.CopyToAsync(stream);
-                opportunity.ImagePath = "/uploads/opportunities/" + fileName;
+                opportunity.ImagePath = await _images.SaveAsync(model.Image, "uploads/opportunities");
             }
 
             // تحديث الدول المتاحة
@@ -352,6 +361,8 @@ public async Task<IActionResult> Create()
 
 
         // ================= DELETE =================
+        // POST فقط: الحذف عبر GET يُستغل بمجرد رابط/صورة في صفحة خارجية
+        [HttpPost]
         [Authorize(Roles = "Admin,Organization")]
         public async Task<IActionResult> Delete(int id)
         {

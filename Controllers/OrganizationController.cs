@@ -3,10 +3,12 @@ using Foras_Khadra.Data;
 using Foras_Khadra.Models;
 using Foras_Khadra.Resources.Views.Organization;
 using Foras_Khadra.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 using Nager.Country;
@@ -96,6 +98,7 @@ namespace Foras_Khadra.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Register(RegisterOrganizationViewModel model)
         {
             model.Countries = GetCountries();
@@ -187,6 +190,7 @@ namespace Foras_Khadra.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> Login(OrganizationLoginViewModel model)
         {
             if (!ModelState.IsValid)
@@ -218,8 +222,14 @@ namespace Foras_Khadra.Controllers
                 user,
                 model.Password,
                 isPersistent: false,
-                lockoutOnFailure: false
+                lockoutOnFailure: true // يُقفل الحساب مؤقتًا بعد محاولات فاشلة متكررة
             );
+
+            if (result.IsLockedOut)
+            {
+                ModelState.AddModelError("", "تم قفل الحساب مؤقتًا بسبب محاولات دخول فاشلة متكررة، حاول مجددًا بعد 15 دقيقة");
+                return View(model);
+            }
 
             if (!result.Succeeded)
             {
@@ -245,6 +255,7 @@ namespace Foras_Khadra.Controllers
         }
 
         // ====== PROFILE SETTING ======
+        [Authorize(Roles = "Organization")]
         [HttpGet]
         public async Task<IActionResult> ProfileSetting()
         {
@@ -276,6 +287,7 @@ namespace Foras_Khadra.Controllers
             return View(model);
         }
 
+        [Authorize(Roles = "Organization")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ProfileSetting(OrganizationProfileViewModel model)
@@ -332,6 +344,8 @@ namespace Foras_Khadra.Controllers
         public IActionResult ForgotPassword() => View();
 
         [HttpPost]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
         public async Task<IActionResult> ForgotPassword(string email)
         {
             if (string.IsNullOrEmpty(email))
@@ -415,7 +429,7 @@ namespace Foras_Khadra.Controllers
 
             // احصل على المستخدم من Identity وليس من Organization
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if (!await _userManager.IsInRoleAsync(user, "Organization"))
+            if (user == null || !await _userManager.IsInRoleAsync(user, "Organization"))
             {
                 await _signInManager.SignOutAsync();
                 ModelState.AddModelError("", "يجب تسجيل الدخول كمنظمة للوصول لهذه الصفحة.");

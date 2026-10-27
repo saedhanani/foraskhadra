@@ -226,9 +226,9 @@
         quillFr.root.setAttribute('dir', 'ltr');
 
         // تحميل المحتوى القديم
-        quillAr.root.innerHTML = `@Html.Raw((Model.ContentAr ?? "").Replace("`", "\\`"))`;
-        quillEn.root.innerHTML = `@Html.Raw((Model.ContentEn ?? "").Replace("`", "\\`"))`;
-        quillFr.root.innerHTML = `@Html.Raw((Model.ContentFr ?? "").Replace("`", "\\`"))`;
+        quillAr.root.innerHTML = @Json.Serialize(SafeHtml.Clean(Model.ContentAr));
+        quillEn.root.innerHTML = @Json.Serialize(SafeHtml.Clean(Model.ContentEn));
+        quillFr.root.innerHTML = @Json.Serialize(SafeHtml.Clean(Model.ContentFr));
 
         // قبل الإرسال
         document.querySelector('form').addEventListener('submit', function () {

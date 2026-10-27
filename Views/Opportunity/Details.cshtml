@@ -179,7 +179,7 @@
                         _ => Model.DescriptionAr
                     };
                 }
-                <span class="info-value">@Html.Raw(description)</span>
+                <span class="info-value">@Html.SanitizedRaw(description)</span>
 
             </div>
         </div>
@@ -198,7 +198,7 @@
             };
             string detailsClass = (lang == "en" || lang == "fr") ? "section-content ltr-content" : "section-content";
         }
-        <div class="@detailsClass">@Html.Raw(details)</div>
+        <div class="@detailsClass">@Html.SanitizedRaw(details)</div>
 
         <div class="section-title @(lang == "ar" ? "rtl-label" : "ltr-label")">@Localizer["EligibilityCriteria"]</div>
         @{
@@ -210,7 +210,7 @@
             };
             string eligibilityClass = (lang == "en" || lang == "fr") ? "section-content ltr-content" : "section-content";
         }
-        <div class="@eligibilityClass">@Html.Raw(eligibilitycriteria)</div>
+        <div class="@eligibilityClass">@Html.SanitizedRaw(eligibilitycriteria)</div>
 
         <div class="section-title @(lang == "ar" ? "rtl-label" : "ltr-label")">@Localizer["Benefits"]</div>
         @{
@@ -222,7 +222,7 @@
             };
             string benefitsClass = (lang == "en" || lang == "fr") ? "section-content ltr-content" : "section-content";
         }
-        <div class="@benefitsClass">@Html.Raw(benefits)</div>
+        <div class="@benefitsClass">@Html.SanitizedRaw(benefits)</div>
     </div>
 
 </div>

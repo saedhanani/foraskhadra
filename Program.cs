@@ -4,9 +4,12 @@ using Foras_Khadra.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Globalization;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +27,11 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireUppercase = true;
     options.Password.RequireLowercase = true;
     options.Password.RequiredUniqueChars = 1;
+
+    // قفل الحساب 15 دقيقة بعد 5 محاولات فاشلة (ضد تخمين كلمات المرور)
+    options.Lockout.AllowedForNewUsers = true;
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
@@ -39,6 +47,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.AddScoped<IMailService, MailService>();
+builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
 
 // ===== Session & Cache =====
 builder.Services.AddDistributedMemoryCache();
@@ -50,7 +59,8 @@ builder.Services.AddSession(options =>
 });
 
 builder.Services
-    .AddControllersWithViews()
+    // التحقق من رمز CSRF تلقائيًا في كل POST/PUT/DELETE (واجهة المنصة مستثناة بـ IgnoreAntiforgeryToken)
+    .AddControllersWithViews(options => options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()))
     .AddViewLocalization()
     .AddDataAnnotationsLocalization();
 builder.Services.AddRazorPages();
@@ -69,6 +79,26 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.DefaultRequestCulture = new RequestCulture("ar"); // الافتراضي عربي
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;
+});
+
+// ===== Rate limiting: الدخول/التسجيل/استعادة كلمة المرور، نموذج التواصل، وواجهة المنصة (لكل عنوان IP) =====
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (ctx, token) =>
+    {
+        ctx.HttpContext.Response.ContentType = "text/plain; charset=utf-8";
+        await ctx.HttpContext.Response.WriteAsync("محاولات كثيرة جدًا، حاول مرة أخرى بعد قليل.", token);
+    };
+
+    static string ClientKey(HttpContext ctx) => ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+    options.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(ClientKey(ctx),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    options.AddPolicy("contact", ctx => RateLimitPartition.GetFixedWindowLimiter(ClientKey(ctx),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(10), QueueLimit = 0 }));
+    options.AddPolicy("api", ctx => RateLimitPartition.GetFixedWindowLimiter(ClientKey(ctx),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 
 var app = builder.Build();
@@ -172,6 +202,7 @@ var localizationOptions = app.Services
 app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
+app.UseRateLimiter();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();

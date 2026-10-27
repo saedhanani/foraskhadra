@@ -1,6 +1,7 @@
 ﻿using Foras_Khadra.Models;
 using Foras_Khadra.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using PhoneNumbers;
 
 namespace Foras_Khadra.Controllers
@@ -20,6 +21,7 @@ namespace Foras_Khadra.Controllers
         }
 
         [HttpPost]
+        [EnableRateLimiting("contact")]
         public async Task<IActionResult> Index(Contact contact)
         {
             if (!string.IsNullOrEmpty(contact.Honeypot))

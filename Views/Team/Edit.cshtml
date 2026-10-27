@@ -186,7 +186,7 @@
             modules: { toolbar: toolbarOptions }
         });
         quillAr.root.setAttribute('dir', 'rtl');
-        quillAr.root.innerHTML = `@Html.Raw(Model.BioAr ?? "")`;
+        quillAr.root.innerHTML = @Json.Serialize(Model.BioAr ?? "");
 
         // English
         var quillEn = new Quill('#editorEn', {
@@ -194,7 +194,7 @@
             modules: { toolbar: toolbarOptions }
         });
         quillEn.root.setAttribute('dir', 'ltr');
-        quillEn.root.innerHTML = `@Html.Raw(Model.BioEn ?? "")`;
+        quillEn.root.innerHTML = @Json.Serialize(Model.BioEn ?? "");
 
         // French
         var quillFr = new Quill('#editorFr', {
@@ -202,7 +202,7 @@
             modules: { toolbar: toolbarOptions }
         });
         quillFr.root.setAttribute('dir', 'ltr');
-        quillFr.root.innerHTML = `@Html.Raw(Model.BioFr ?? "")`;
+        quillFr.root.innerHTML = @Json.Serialize(Model.BioFr ?? "");
 
         // On submit
         document.querySelector('form').addEventListener('submit', function () {
