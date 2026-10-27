@@ -8,6 +8,8 @@
 	  <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
 	  <RepositoryType>git</RepositoryType>
 	  <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
+    <!-- مشروع الاختبارات مجلد فرعي؛ لا يُضم إلى تجميع الموقع -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);Foras_Khadra.Tests\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,10 +24,12 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" Version="8.0.8" />
     <PackageReference Include="MimeKit" Version="4.18.2" />
     <PackageReference Include="Nager.Country" Version="4.3.4" />
     <PackageReference Include="NETCore.MailKit" Version="2.1.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
     <PackageReference Include="TanvirArjel.CustomValidation.AspNetCore" Version="1.2.2" />
   </ItemGroup>
 

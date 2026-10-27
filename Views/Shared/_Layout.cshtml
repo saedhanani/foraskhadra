@@ -21,9 +21,6 @@
 
 <body>
 
-@using Microsoft.AspNetCore.Identity
-@inject UserManager<ApplicationUser> UserManager
-@inject SignInManager<ApplicationUser> SignInManager
 @using Microsoft.AspNetCore.Mvc.Localization
 @inject IViewLocalizer Localizer
 
@@ -34,20 +31,10 @@
 
     bool hideNavAndFooter = hideFromViewData;
 
-    var userIsAuthenticated = User.Identity.IsAuthenticated;
-    var isAdmin = false;
-    var isOrganization = false;
-
-    if (userIsAuthenticated)
-    {
-        var userEmail = User.Identity.Name;
-        var appUser = await UserManager.FindByEmailAsync(userEmail);
-        if (appUser != null)
-        {
-            isAdmin = await UserManager.IsInRoleAsync(appUser, "Admin");
-            isOrganization = await UserManager.IsInRoleAsync(appUser, "Organization");
-        }
-    }
+    var userIsAuthenticated = User.Identity?.IsAuthenticated == true;
+    // الأدوار موجودة في كوكي الدخول (claims) — لا حاجة لاستعلامات قاعدة البيانات في كل طلب
+    var isAdmin = userIsAuthenticated && User.IsInRole("Admin");
+    var isOrganization = userIsAuthenticated && User.IsInRole("Organization");
 
     if (!hideNavAndFooter && currentController == "Admin" && currentAction == "ReelsRequestsDashboard")
     {

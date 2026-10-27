@@ -423,16 +423,26 @@ public async Task<IActionResult> Create()
             var org = await _context.Organizations.FirstOrDefaultAsync(o => o.UserId == user.Id);
             var opportunities = await _context.Opportunities
     .Where(o => o.CreatedByUserId == user.Id)
-    .Include(o => o.AvailableCountries) 
+    .Include(o => o.AvailableCountries)
+    .AsNoTracking()
     .ToListAsync();
+
+            // طلبات الريلز للمنظمة كلها باستعلام واحد بدل استعلام لكل فرصة
+            var requestsByOpportunity = org == null
+                ? new Dictionary<int, ReelsRequest>()
+                : (await _context.ReelsRequests
+                        .Where(r => r.OrganizationId == org.Id)
+                        .AsNoTracking()
+                        .ToListAsync())
+                    .GroupBy(r => r.OpportunityId)
+                    .ToDictionary(g => g.Key, g => g.First());
 
             var model = new OrgOpportunityPageVM
             {
                 OrganizationName = org?.Name,
                 Opportunities = opportunities.Select(o =>
                 {
-                    var request = _context.ReelsRequests
-                                          .FirstOrDefault(r => r.OpportunityId == o.Id && r.OrganizationId == org.Id);
+                    requestsByOpportunity.TryGetValue(o.Id, out var request);
 
                     return new OrgOpportunityVM
                     {

@@ -6,12 +6,25 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Serilog;
+using Serilog.Events;
 using System.Globalization;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ===== Logging (Serilog): الكونسول + ملف يومي في logs/ (يُحتفظ بـ 30 يومًا) =====
+builder.Host.UseSerilog((ctx, cfg) => cfg
+    .ReadFrom.Configuration(ctx.Configuration)
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.Hosting.Lifetime", LogEventLevel.Information)
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day, retainedFileCountLimit: 30));
 
 // ===== إعداد قاعدة البيانات =====
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -101,6 +114,15 @@ builder.Services.AddRateLimiter(options =>
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 
+// ===== ضغط الاستجابات + فحص الصحة (/health يتحقق من الاتصال بقاعدة البيانات) =====
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+});
+builder.Services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>();
+
 var app = builder.Build();
 
 // ===== إنشاء الأدوار وحساب الأدمن وربط المنظمات =====
@@ -145,40 +167,29 @@ try
 }
 catch (Exception ex)
 {
-    Console.WriteLine("Startup Identity Error: " + ex.Message);
-}
-// ✅ Seed Articles (Test Data)
-// =========================
-using (var scope = app.Services.CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    try
-    {
-        DbInitializer.SeedArticles(context);
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("Articles Seed Error: " + ex.Message);
-    }
+    app.Logger.LogError(ex, "Startup Identity Error");
 }
 
-// ✅ معاينة شبكة المنظمات وبيانات تجريبية أخرى (Development فقط — لا تُضاف في Production)
+// ✅ بيانات تجريبية (مقالات، معاينة شبكة المنظمات، منظمات، فرص) — Development فقط، لا تُضاف في Production
 if (app.Environment.IsDevelopment())
 {
     using var previewScope = app.Services.CreateScope();
     var previewDb = previewScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     try
     {
+        DbInitializer.SeedArticles(previewDb);
         DbInitializer.SeedOrganizationsMapPreview(previewDb);
         DbInitializer.SeedOrganizations(previewDb);
         DbInitializer.SeedOpportunities(previewDb);
     }
     catch (Exception ex)
     {
-        Console.WriteLine("Seed Error: " + ex.Message);
+        app.Logger.LogError(ex, "Seed Error");
     }
 }
 // ===== Configure the HTTP request pipeline =====
+app.UseResponseCompression();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -189,11 +200,29 @@ else
     app.UseHsts();
 }
 
+app.UseSerilogRequestLogging();
+
 // ❗ خليها بعد exception handling مباشرة
 app.UseStatusCodePages();
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// ===== ترويسات أمنية أساسية (بدون CSP لأن الصفحات تعتمد على سكربتات مضمّنة وCDN متعددة) =====
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers["X-Content-Type-Options"] = "nosniff";
+    headers["X-Frame-Options"] = "SAMEORIGIN";
+    headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    await next();
+});
+
+// الملفات الثابتة تُخزَّن في المتصفح يومًا واحدًا (الرفوعات تأخذ أسماء عشوائية جديدة عند التغيير)
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "public,max-age=86400"
+});
 // ===== Use Localization =====
 var localizationOptions = app.Services
     .GetRequiredService<IOptions<RequestLocalizationOptions>>()
@@ -215,5 +244,8 @@ app.MapControllerRoute(
 app.MapControllers();
 
 app.MapRazorPages();
+
+// فحص الصحة للمراقبة الخارجية (UptimeRobot وأمثاله)
+app.MapHealthChecks("/health");
 
 app.Run();

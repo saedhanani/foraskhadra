@@ -101,6 +101,7 @@ namespace Foras_Khadra.Controllers
         public IActionResult AboutUs()
         {
             var members = _context.TeamMember
+                                  .AsNoTracking()
                                   .OrderByDescending(m => m.Membership)
                                   .ToList();
             return View(members); // ستبحث عن Views/Home/AboutUs.cshtml
@@ -109,6 +110,7 @@ namespace Foras_Khadra.Controllers
         public IActionResult Articles()
         {
             var articles = _context.Articles
+            .AsNoTracking()
             .OrderByDescending(a => a.PublishDate)
             .ToList();
 
@@ -128,6 +130,7 @@ namespace Foras_Khadra.Controllers
         {
             var query = _context.Opportunities
                                 .Include(o => o.AvailableCountries)
+                                .AsNoTracking()
                                 .Where(o => o.Status == OpportunityStatus.Published && o.Type == type);
 
             if (!string.IsNullOrEmpty(country))
@@ -197,6 +200,7 @@ namespace Foras_Khadra.Controllers
         {
             var query = _context.Opportunities
                                 .Include(o => o.AvailableCountries)
+                                .AsNoTracking()
                                 .Where(o => o.Status == OpportunityStatus.Published)
                                 .AsQueryable();
 

@@ -32,6 +32,14 @@ secrets.json
 *.env
 .env
 
+# User uploads (opportunity images, logos, article/team photos) live on the server, not in git
+wwwroot/uploads/**
+!wwwroot/uploads/**/
+!wwwroot/uploads/**/.gitkeep
+wwwroot/logos/**
+!wwwroot/logos/**/
+!wwwroot/logos/**/.gitkeep
+
 # Test / coverage results
 [Tt]est[Rr]esult*/
 *.trx

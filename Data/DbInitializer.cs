@@ -251,6 +251,19 @@ namespace Foras_Khadra.Data
                 }
             };
 
+            // الفرص تحتاج منشئًا: أول حساب أدمن (يُزرع من Seed:AdminEmail)؛ بدونه لا تُضاف بيانات التجربة
+            var adminId = (from ur in context.UserRoles
+                           join r in context.Roles on ur.RoleId equals r.Id
+                           where r.Name == "Admin"
+                           select ur.UserId).FirstOrDefault();
+            if (adminId == null)
+                return;
+            foreach (var opportunity in opportunities)
+            {
+                opportunity.CreatedByUserId = adminId;
+                opportunity.ImagePath ??= ""; // العمود لا يقبل NULL
+            }
+
             context.Opportunities.AddRange(opportunities);
             context.SaveChanges();
         }
