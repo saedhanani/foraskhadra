@@ -525,7 +525,7 @@
                                 "fr" => opp.TitleFr,
                                 _ => opp.TitleAr
                             };
-                            <img src="@opp.ImagePath" class="opp-image" alt="@title">
+                            <img src="@opp.ImagePath" class="opp-image" alt="@title" loading="lazy" decoding="async">
                         }
 
                         <div class="opp-category-row">

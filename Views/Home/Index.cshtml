@@ -477,7 +477,7 @@ html[dir="ltr"] #heroBg1 {
                     <div class="swiper-slide">
                         <div class="article-card">
                             <div class="article-img">
-                                <img src="@(!string.IsNullOrEmpty(opp.ImagePath) ? opp.ImagePath : "/images/default-opportunity.jpg")" alt="@title" />
+                                <img src="@(!string.IsNullOrEmpty(opp.ImagePath) ? opp.ImagePath : "/images/default-opportunity.jpg")" alt="@title" loading="lazy" decoding="async" />
                             </div>
 
                             <div class="article-body">
@@ -580,7 +580,7 @@ html[dir="ltr"] #heroBg1 {
                                 <img src="@(!string.IsNullOrEmpty(article.ImagePath)
                                                                                                       ? article.ImagePath
                                                                                                       : "/images/default-article.jpg")"
-                                                                                                                                      alt="@title" />
+                                                                                                                                      alt="@title" loading="lazy" decoding="async" />
                                                                                                                              </div>
 
                             <div class="article-body">
@@ -666,7 +666,7 @@ html[dir="ltr"] #heroBg1 {
                         <div class="article-card org-card" data-org-id="@org.Id">
 
                             <div class="article-img org-logo-wrap">
-                                <img src="@logoSrc" alt="@org.Name" />
+                                <img src="@logoSrc" alt="@org.Name" loading="lazy" decoding="async" />
                             </div>
 
                             <div class="article-body">
