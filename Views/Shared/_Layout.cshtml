@@ -64,6 +64,13 @@
     <meta name="twitter:description" content="@metaDescription" />
     <meta name="twitter:image" content="@ogImage" />
 
+    @* PWA: قابل للتثبيت على الهاتف وسطح المكتب (wwwroot/manifest.webmanifest + sw.js) *@
+    <link rel="manifest" href="~/manifest.webmanifest" />
+    <meta name="theme-color" content="#25652C" />
+    <meta name="application-name" content="@siteName" />
+    <meta name="apple-mobile-web-app-title" content="@siteName" />
+    <link rel="apple-touch-icon" href="~/images/icon-180.png" />
+
     @RenderSection("Styles", required: false)
     <link rel="icon" type="image/x-icon" href="~/images/favicon.ico" />
 

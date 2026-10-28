@@ -69,6 +69,10 @@ builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
 builder.Services.AddScoped<ISavedOpportunityService, SavedOpportunityService>();
 
+// الواجهة العامة للقراءة (api/v1) تُستدعى من مواقع أخرى بالمتصفح: GET فقط من أي أصل
+builder.Services.AddCors(options => options.AddPolicy("public-api", policy =>
+    policy.AllowAnyOrigin().WithMethods("GET").WithHeaders("Accept", "Accept-Language")));
+
 // ===== Session & Cache =====
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
@@ -194,6 +198,27 @@ if (app.Environment.IsDevelopment())
         app.Logger.LogError(ex, "Seed Error");
     }
 }
+// ===== ملء نص البحث للفرص القديمة (مرة واحدة بعد إضافة العمود؛ الحفظ اللاحق يحدّثه تلقائيًا) =====
+using (var scope = app.Services.CreateScope())
+{
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var missing = await db.Opportunities.Where(o => o.SearchText == null).ToListAsync();
+        if (missing.Count > 0)
+        {
+            foreach (var o in missing) o.SearchText = Foras_Khadra.Helpers.SearchIndexer.Build(o);
+            await db.SaveChangesAsync();
+            app.Logger.LogInformation("SearchText backfilled for {Count} opportunities", missing.Count);
+        }
+    }
+    catch (Exception ex)
+    {
+        // لا يوقف التشغيل: مثلًا العمود لم يُضف بعد على الخادم (شغّل Migrations/Sql/2026-10-search-text.sql)
+        app.Logger.LogError(ex, "SearchText backfill failed");
+    }
+}
+
 // ===== Configure the HTTP request pipeline =====
 app.UseResponseCompression();
 
@@ -255,6 +280,7 @@ var localizationOptions = app.Services
 app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
+app.UseCors();
 app.UseRateLimiter();
 app.UseSession();
 app.UseAuthentication();

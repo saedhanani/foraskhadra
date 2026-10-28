@@ -101,6 +101,9 @@ namespace Foras_Khadra.Models
         /// <summary>كُتب نصها آليًا ثم دققه بشر.</summary>
         public bool AiGenerated { get; set; }
 
+        /// <summary>نص البحث المطبّع (كل الحقول بالثلاث لغات) — يملؤه ApplicationDbContext عند الحفظ؛ انظر Helpers/SearchIndexer.</summary>
+        public string? SearchText { get; set; }
+
         [NotMapped]
         public string AvailableCountriesNames
         {

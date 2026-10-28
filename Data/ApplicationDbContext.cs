@@ -22,6 +22,28 @@ namespace Foras_Khadra.Data
         public DbSet<ReelsRequest> ReelsRequests { get; set; }
         public DbSet<SavedOpportunity> SavedOpportunities { get; set; }
 
+        // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            RefreshSearchText();
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+        {
+            RefreshSearchText();
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        private void RefreshSearchText()
+        {
+            foreach (var entry in ChangeTracker.Entries<Opportunity>())
+            {
+                if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
+                    entry.Entity.SearchText = Helpers.SearchIndexer.Build(entry.Entity);
+            }
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

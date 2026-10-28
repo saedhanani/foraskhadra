@@ -528,6 +528,9 @@ namespace Foras_Khadra.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("SearchText")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("SourceUrl")
                         .HasColumnType("nvarchar(max)");
 

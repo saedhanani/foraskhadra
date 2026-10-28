@@ -33,6 +33,26 @@ dotnet test
 
 مشروع `Foras_Khadra.Tests` (xUnit) يغطي تعقيم HTML، التحقق من الصور المرفوعة، تطبيع الروابط في واجهة المنصة، توليد الـ slug، حالة طلبات الريلز، وخدمة الفرص المحفوظة (SQLite في الذاكرة بالمخطط الحقيقي).
 
+## البحث
+
+- بحث نصي كامل بلا Full-Text Search (غير متاح على الاستضافة المشتركة): `Helpers/SearchIndexer` يطبّع نص الفرصة كله بالثلاث لغات (همزات، تاء مربوطة، ألف مقصورة، تشكيل، HTML) ويخزّنه في `Opportunities.SearchText` عند كل حفظ (`ApplicationDbContext.SaveChanges`)؛ كلمات البحث تُطبَّع بالطريقة نفسها ويُشترط ورودها كلها.
+- العمود من هجرة `OpportunitySearchText`؛ للإنتاج شغّل `Migrations/Sql/2026-10-search-text.sql` قبل النشر. الصفوف القديمة يملؤها التطبيق تلقائيًا عند أول تشغيل بعد إضافة العمود.
+
+## الواجهة العامة (API)
+
+قراءة فقط، بلا مفتاح، JSON بالثلاث لغات، 120 طلبًا في الدقيقة لكل IP، وCORS مفتوح لطلبات GET (`Controllers/Api/PublicApiController`):
+
+| المسار | الوصف |
+|---|---|
+| `GET /api/v1/opportunities?type=Jobs&country=فلسطين&q=منحة&page=1&pageSize=20` | الفرص المنشورة (الأحدث أولًا). `type` من `OpportunityType`، `pageSize` حتى 50 |
+| `GET /api/v1/opportunities/{id}` | فرصة واحدة مع التفاصيل والشروط والمزايا |
+| `GET /api/v1/articles?page=1&pageSize=20` | المقالات |
+| `GET /api/v1/articles/{id}` | مقال واحد مع المحتوى |
+
+## تطبيق ويب تقدمي (PWA)
+
+`wwwroot/manifest.webmanifest` وأيقونات `images/icon-*.png` تجعل الموقع قابلًا للتثبيت؛ `wwwroot/sw.js` يحفظ الملفات الثابتة للعمل بلا اتصال ويعرض `offline.html` عند انقطاع الشبكة (صفحات HTML لا تُخزَّن). عند تغيير قائمة الملفات المسبقة غيّر `CACHE_NAME` في `sw.js`.
+
 ## الفرص المحفوظة
 
 - المستخدم المسجّل يحفظ أي فرصة منشورة بزر الإشارة المرجعية (بطاقات "كل الفرص" وصفحة التفاصيل) ويراها في `/Opportunity/Saved` من قائمة الحساب.

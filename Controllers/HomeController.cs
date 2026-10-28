@@ -237,12 +237,11 @@ namespace Foras_Khadra.Controllers
                                 .Where(o => o.Status == OpportunityStatus.Published)
                                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(search))
+            // بحث نصي كامل: كل كلمة (مطبّعة) يجب أن ترد في نص الفرصة المطبّع — انظر Helpers/SearchIndexer
+            foreach (var term in SearchIndexer.Terms(search))
             {
-                query = query.Where(o =>
-                    EF.Functions.Like(o.TitleAr, $"%{search}%") ||
-                    EF.Functions.Like(o.TitleEn, $"%{search}%") ||
-                    EF.Functions.Like(o.TitleFr, $"%{search}%"));
+                var pattern = $"%{term}%";
+                query = query.Where(o => EF.Functions.Like(o.SearchText, pattern));
             }
 
             // فلترة حسب النوع
