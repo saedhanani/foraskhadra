@@ -1,26 +1,92 @@
-﻿@model Foras_Khadra.Models.ErrorViewModel
-@using Microsoft.AspNetCore.Localization;
-@using Microsoft.Extensions.Options;
-@using System.Globalization;
-@using Microsoft.AspNetCore.Mvc.Localization
-@inject IViewLocalizer Localizer
+﻿@model Foras_Khadra.Models.ActivitiesPageViewModel
+@using Foras_Khadra.Helpers
 @{
-    ViewData["Title"] = Localizer["Title"];
-    Layout = "_Layout";
-    var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-    var dir = culture == "ar" ? "rtl" : "ltr";
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var pageTitle = lang == "en" ? "Our Activities" : lang == "fr" ? "Nos activités" : "نشاطاتنا";
+    ViewData["Title"] = pageTitle;
+    ViewData["Description"] = lang == "en"
+        ? "Workshops, webinars and campaigns organized by Foras Khadra for Arab youth."
+        : lang == "fr" ? "Ateliers, webinaires et campagnes organisés par Foras Khadra pour la jeunesse arabe."
+        : "ورش العمل والندوات والحملات التي تنظمها فرص خضراء للشباب العربي.";
+
+    string TitleOf(Activity a) => lang switch { "en" => a.TitleEn, "fr" => a.TitleFr, _ => a.TitleAr };
+    string Plain(string? html) => System.Text.RegularExpressions.Regex.Replace(
+        System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(html ?? "", "<.*?>", " ")), @"\s+", " ").Trim();
+    string Excerpt(Activity a)
+    {
+        var text = Plain(lang switch { "en" => a.DescriptionEn, "fr" => a.DescriptionFr, _ => a.DescriptionAr });
+        return text.Length > 140 ? text.Substring(0, 137) + "..." : text;
+    }
+    string DateOf(Activity a)
+    {
+        var start = a.StartDate.ToString("dd MMM yyyy");
+        return a.EndDate.HasValue && a.EndDate.Value.Date != a.StartDate.Date ? $"{start} – {a.EndDate.Value:dd MMM yyyy}" : start;
+    }
 }
-<html lang="@culture" dir="@dir">
 
-<head>
-<link rel="stylesheet" href="~/css/_Error.css" />
-</head>
+<link rel="stylesheet" asp-append-version="true" href="~/css/activities.css" />
 
-<body>
-<div class="container-404">
-        <img asp-append-version="true" src="~/images/errors/underDevelopment.svg" alt="underDevelopment" />
+<div class="activities-page container">
+    <header class="activities-header">
+        <i class="bi bi-calendar-event"></i>
+        <div>
+            <h1>@pageTitle</h1>
+            <p>@ViewData["Description"]</p>
+        </div>
+    </header>
 
-        <p class="text-container">@Localizer["This page is under development"] </p>
+    @if (!Model.Upcoming.Any() && !Model.Past.Any())
+    {
+        <div class="activities-empty">
+            <i class="bi bi-calendar-x"></i>
+            <p>@(lang == "en" ? "No activities have been published yet. Check back soon!" : lang == "fr" ? "Aucune activité n'a encore été publiée. Revenez bientôt !" : "لم تُنشر أي نشاطات بعد، تابعونا قريبًا!")</p>
+        </div>
+    }
+
+    @foreach (var (list, heading, isUpcoming) in new[]
+    {
+        (Model.Upcoming, lang == "en" ? "Upcoming" : lang == "fr" ? "À venir" : "النشاطات القادمة", true),
+        (Model.Past, lang == "en" ? "Past activities" : lang == "fr" ? "Activités passées" : "نشاطات سابقة", false)
+    })
+    {
+        if (!list.Any()) { continue; }
+
+        <section class="activities-section">
+            <h2 class="activities-section-title">@heading <span class="count">(@list.Count)</span></h2>
+            <div class="row g-4">
+                @foreach (var a in list)
+                {
+                    var title = TitleOf(a);
+                    var url = Url.Action("Details", "Activities", new { id = a.Id, slug = SlugHelper.Make(title) });
+                    <div class="col-lg-4 col-md-6">
+                        <article class="activity-card @(isUpcoming ? "" : "is-past")">
+                            <a href="@url" class="activity-card-image">
+                                @if (!string.IsNullOrEmpty(a.ImagePath))
+                                {
+                                    <img src="@a.ImagePath" alt="@title" loading="lazy" decoding="async" />
+                                }
+                                else
+                                {
+                                    <span class="activity-card-placeholder"><i class="bi bi-calendar-event"></i></span>
+                                }
+                                <span class="activity-date-badge"><i class="bi bi-calendar3"></i> @DateOf(a)</span>
+                            </a>
+                            <div class="activity-card-body">
+                                <h3><a href="@url">@title</a></h3>
+                                @if (!string.IsNullOrWhiteSpace(a.Location))
+                                {
+                                    <p class="activity-location"><i class="bi bi-geo-alt"></i> @a.Location</p>
+                                }
+                                <p class="activity-excerpt">@Excerpt(a)</p>
+                                <a href="@url" class="activity-more">
+                                    @(lang == "en" ? "Read more" : lang == "fr" ? "En savoir plus" : "اقرأ المزيد")
+                                    <i class="bi @(lang == "ar" ? "bi-arrow-left" : "bi-arrow-right")"></i>
+                                </a>
+                            </div>
+                        </article>
+                    </div>
+                }
+            </div>
+        </section>
+    }
 </div>
-</body>
-</html>

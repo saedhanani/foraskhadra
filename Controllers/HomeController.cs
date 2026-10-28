@@ -75,9 +75,21 @@ namespace Foras_Khadra.Controllers
 
     return View(model);
 }
-        public IActionResult News()
+        /// <summary>صفحة "نشاطاتنا": النشاطات المنشورة، القادمة ثم السابقة.</summary>
+        public async Task<IActionResult> News()
         {
-            return View();
+            var today = DateTime.Today;
+            var activities = await _context.Activities
+                .AsNoTracking()
+                .Where(a => a.IsPublished)
+                .ToListAsync();
+
+            var model = new ActivitiesPageViewModel
+            {
+                Upcoming = activities.Where(a => a.IsUpcoming).OrderBy(a => a.StartDate).ToList(),
+                Past = activities.Where(a => !a.IsUpcoming).OrderByDescending(a => a.StartDate).ToList()
+            };
+            return View(model);
         }
 
         public IActionResult PolicyPrivacy()
@@ -98,14 +110,14 @@ namespace Foras_Khadra.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return View(new ErrorViewModel { RequestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
         public IActionResult StatusCode(int code)
         {
             var model = new ErrorViewModel
             {
-                RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier
+                RequestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier
             };
 
             return View("Error", model);

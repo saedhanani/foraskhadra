@@ -1,0 +1,36 @@
+@model Activity
+@{
+    ViewData["Title"] = "إضافة نشاط";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link rel="stylesheet" asp-append-version="true" href="~/css/articles-create.css" />
+    <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet" />
+    <link rel="stylesheet" asp-append-version="true" href="~/css/activities.css" />
+}
+
+<div class="main-container">
+    <div class="create-wrapper">
+        <div class="create-page-header header-inline">
+            <h1 class="page-title">إضافة نشاط</h1>
+            <div class="header-actions">
+                <a asp-action="Index" class="btn-back-dashboard"><i class="fa-solid fa-calendar-days"></i> عرض النشاطات</a>
+                <a asp-controller="Admin" asp-action="Dashboard" class="btn-back-dashboard"><i class="fa-solid fa-gauge"></i> لوحة التحكم</a>
+            </div>
+        </div>
+
+        <div class="create-article-card">
+            <div class="side-illustration">
+                <img class="left-illustration" src="~/images/Writer-illustration.svg" alt="Illustration" />
+            </div>
+            <div class="form-section">
+                <partial name="_ActivityForm" model="Model" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ActivityFormScripts" model="Model" />
+}

@@ -298,6 +298,11 @@ app.MapControllerRoute(
     defaults: new { controller = "Articles", action = "Details" });
 
 app.MapControllerRoute(
+    name: "activity-details",
+    pattern: "Activities/Details/{id:int}/{slug?}",
+    defaults: new { controller = "Activities", action = "Details" });
+
+app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 

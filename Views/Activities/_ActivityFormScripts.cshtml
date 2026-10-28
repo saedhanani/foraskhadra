@@ -1,0 +1,57 @@
+@* سكربتات نموذج النشاط: محررات Quill الثلاثة (بمحتوى موجود عند التعديل) ومنطقة رفع الصورة *@
+@model Activity
+<partial name="_ValidationScriptsPartial" />
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.min.js"></script>
+<script>
+    const toolbarOptions = [
+        [{ header: [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        [{ align: [] }],
+        ['link'],
+        ['clean']
+    ];
+
+    function editor(selector, placeholder, hiddenId) {
+        const q = new Quill(selector, { theme: 'snow', placeholder, modules: { toolbar: toolbarOptions } });
+        const hidden = document.getElementById(hiddenId);
+        if (hidden.value) q.root.innerHTML = hidden.value;
+        return { q, hidden };
+    }
+
+    const editors = [
+        editor('#editorAr', 'اكتب وصف النشاط بالعربي...', 'DescriptionAr'),
+        editor('#editorEn', 'Write the activity description in English...', 'DescriptionEn'),
+        editor('#editorFr', "Décrivez l'activité en français...", 'DescriptionFr')
+    ];
+
+    // بالمعرّف لا بـ querySelector('form'): القالب يحوي نماذج أخرى قبل هذا (الخروج، اللغة)
+    document.getElementById('activityForm').addEventListener('submit', function () {
+        // نقرأ من DOM مباشرة (لا من نموذج Quill الداخلي) حتى لا يضيع محتوى أُدرج لتوّه
+        editors.forEach(e => { e.hidden.value = e.q.root.innerText.trim() ? e.q.root.innerHTML : ''; });
+    });
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const previewContainer = document.getElementById('previewContainer');
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', e => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) { fileInput.files = e.dataTransfer.files; handleFiles(e.dataTransfer.files[0]); }
+    });
+    fileInput.addEventListener('change', e => { if (e.target.files.length > 0) handleFiles(e.target.files[0]); });
+
+    function handleFiles(file) {
+        if (file && file.type.startsWith('image/')) {
+            fileNameDisplay.textContent = `تم اختيار: ${file.name}`;
+            previewContainer.classList.remove('d-none');
+        } else {
+            alert('يرجى اختيار صورة فقط');
+        }
+    }
+</script>

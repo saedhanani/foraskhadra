@@ -1,0 +1,95 @@
+@model Activity
+@using Foras_Khadra.Helpers
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var title = lang switch { "en" => Model.TitleEn, "fr" => Model.TitleFr, _ => Model.TitleAr };
+    var description = lang switch { "en" => Model.DescriptionEn, "fr" => Model.DescriptionFr, _ => Model.DescriptionAr };
+    ViewData["Title"] = title;
+
+    var plain = System.Text.RegularExpressions.Regex.Replace(
+        System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(description ?? "", "<.*?>", " ")), @"\s+", " ").Trim();
+    ViewData["Description"] = plain.Length > 160 ? plain.Substring(0, 157) + "..." : plain;
+    ViewData["OgType"] = "article";
+    if (!string.IsNullOrEmpty(Model.ImagePath)) ViewData["OgImage"] = Model.ImagePath;
+    var canonicalUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}"
+        + Url.Action("Details", "Activities", new { id = Model.Id, slug = SlugHelper.Make(title) });
+    ViewData["Canonical"] = canonicalUrl;
+
+    var dateText = Model.EndDate.HasValue && Model.EndDate.Value.Date != Model.StartDate.Date
+        ? $"{Model.StartDate:dd MMM yyyy} – {Model.EndDate.Value:dd MMM yyyy}"
+        : Model.StartDate.ToString("dd MMM yyyy");
+
+    // بيانات Event المنظمة لمحركات البحث
+    var eventJson = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "Event",
+        ["name"] = title,
+        ["description"] = ViewData["Description"],
+        ["startDate"] = Model.StartDate.ToString("yyyy-MM-dd"),
+        ["endDate"] = (Model.EndDate ?? Model.StartDate).ToString("yyyy-MM-dd"),
+        ["eventStatus"] = "https://schema.org/EventScheduled",
+        ["location"] = string.IsNullOrWhiteSpace(Model.Location) ? null : new Dictionary<string, object?> { ["@type"] = "Place", ["name"] = Model.Location },
+        ["image"] = string.IsNullOrEmpty(Model.ImagePath) ? null : $"{Context.Request.Scheme}://{Context.Request.Host}{Model.ImagePath}",
+        ["organizer"] = new Dictionary<string, object?> { ["@type"] = "Organization", ["name"] = "فرص خضراء" },
+        ["url"] = canonicalUrl
+    }, new System.Text.Json.JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
+}
+
+<link rel="stylesheet" asp-append-version="true" href="~/css/activities.css" />
+<script type="application/ld+json">@Html.Raw(eventJson)</script>
+
+<div class="activity-details container">
+    <a href="@Url.Action("News", "Home")" class="activity-back">
+        <i class="bi @(lang == "ar" ? "bi-arrow-right" : "bi-arrow-left")"></i>
+        @(lang == "en" ? "All activities" : lang == "fr" ? "Toutes les activités" : "كل النشاطات")
+    </a>
+
+    <article class="activity-details-card">
+        @if (!string.IsNullOrEmpty(Model.ImagePath))
+        {
+            <img src="@Model.ImagePath" alt="@title" class="activity-details-image" />
+        }
+
+        <div class="activity-details-body">
+            @if (!Model.IsPublished)
+            {
+                <span class="activity-badge badge-draft">@(lang == "en" ? "Draft — visible to admins only" : lang == "fr" ? "Brouillon — visible par les admins seulement" : "مسودة — يراها الأدمن فقط")</span>
+            }
+            <span class="activity-badge @(Model.IsUpcoming ? "badge-upcoming" : "badge-past")">
+                @(Model.IsUpcoming
+                    ? (lang == "en" ? "Upcoming" : lang == "fr" ? "À venir" : "قادم")
+                    : (lang == "en" ? "Past activity" : lang == "fr" ? "Activité passée" : "نشاط سابق"))
+            </span>
+
+            <h1>@title</h1>
+
+            <ul class="activity-meta">
+                <li><i class="bi bi-calendar3"></i> @dateText</li>
+                @if (!string.IsNullOrWhiteSpace(Model.Location))
+                {
+                    <li><i class="bi bi-geo-alt"></i> @Model.Location</li>
+                }
+            </ul>
+
+            <div class="activity-content">
+                @Html.SanitizedRaw(description)
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.ExternalLink))
+            {
+                <a href="@Model.ExternalLink" target="_blank" rel="noopener" class="activity-link-btn">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                    @(Model.IsUpcoming
+                        ? (lang == "en" ? "Register / learn more" : lang == "fr" ? "S'inscrire / en savoir plus" : "التسجيل / المزيد")
+                        : (lang == "en" ? "See the coverage" : lang == "fr" ? "Voir la couverture" : "شاهد التغطية"))
+                </a>
+            }
+
+            @if (User.IsInRole("Admin"))
+            {
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="activity-admin-edit"><i class="bi bi-pencil"></i> تعديل</a>
+            }
+        </div>
+    </article>
+</div>

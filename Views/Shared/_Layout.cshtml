@@ -116,6 +116,8 @@
 
     if (!hideNavAndFooter && isAdmin && currentController == "Articles") hideNavAndFooter = true;
     if (!hideNavAndFooter && isAdmin && currentController == "Team") hideNavAndFooter = true;
+    // صفحات إدارة النشاطات بلا قائمة كالمقالات؛ صفحة التفاصيل عامة فتبقى القائمة
+    if (!hideNavAndFooter && isAdmin && currentController == "Activities" && currentAction != "Details") hideNavAndFooter = true;
 
     if (currentController == "Home" && currentAction == "DetailsOrganization")
     {

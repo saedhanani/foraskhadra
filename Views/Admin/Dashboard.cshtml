@@ -567,7 +567,21 @@
                         <i class="bi bi-plus-circle"></i>
                         <span>@(isArabic ? "إضافة مقال" : "Add article")</span>
                     </a>
-                    
+
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <span class="sidebar-label">Activities</span>
+                <div class="nav-list">
+                    <a asp-controller="Activities" asp-action="Index" class="nav-link-item">
+                        <i class="bi bi-calendar-event"></i>
+                        <span>@(isArabic ? "عرض النشاطات" : "All activities")</span>
+                    </a>
+                    <a asp-controller="Activities" asp-action="Create" class="nav-link-item">
+                        <i class="bi bi-plus-circle"></i>
+                        <span>@(isArabic ? "إضافة نشاط" : "Add activity")</span>
+                    </a>
                 </div>
             </div>
 

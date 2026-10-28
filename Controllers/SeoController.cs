@@ -44,6 +44,7 @@ namespace Foras_Khadra.Controllers
             foreach (var typePage in new[] { "Jobs", "Trainings", "Scholarships", "Fellowships", "Volunteering", "Conferences", "Competitions" })
                 Add($"/Home/{typePage}", null, "daily", "0.8");
             Add("/Home/Articles", null, "weekly", "0.7");
+            Add("/Home/News", null, "weekly", "0.7");
             Add("/Home/OrganizationsMap", null, "weekly", "0.6");
             Add("/Home/AboutUs", null, "monthly", "0.4");
             Add("/contact/Index", null, "monthly", "0.4");
@@ -70,6 +71,16 @@ namespace Foras_Khadra.Controllers
             foreach (var a in articles)
                 Add(Url.Action("Details", "Articles", new { id = a.Id, slug = SlugHelper.Make(a.TitleAr) })!, a.PublishDate, "monthly", "0.6");
 
+            var activities = await _context.Activities
+                .AsNoTracking()
+                .Where(a => a.IsPublished)
+                .OrderByDescending(a => a.StartDate)
+                .Select(a => new { a.Id, a.TitleAr, a.StartDate })
+                .ToListAsync();
+
+            foreach (var a in activities)
+                Add(Url.Action("Details", "Activities", new { id = a.Id, slug = SlugHelper.Make(a.TitleAr) })!, a.StartDate, "monthly", "0.6");
+
             var document = new XDocument(new XDeclaration("1.0", "utf-8", null), new XElement(ns + "urlset", urls));
             return Content(document.Declaration + document.ToString(), "application/xml", Encoding.UTF8);
         }
@@ -95,6 +106,9 @@ namespace Foras_Khadra.Controllers
                 "Disallow: /Articles/Index",
                 "Disallow: /Articles/Create",
                 "Disallow: /Articles/Edit",
+                "Disallow: /Activities/Index",
+                "Disallow: /Activities/Create",
+                "Disallow: /Activities/Edit",
                 "",
                 $"Sitemap: {BaseUrl}/sitemap.xml",
                 ""

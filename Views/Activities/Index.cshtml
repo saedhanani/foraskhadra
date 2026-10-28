@@ -1,0 +1,160 @@
+@model IEnumerable<Activity>
+@{
+    ViewData["Title"] = "النشاطات";
+    Layout = "_Layout";
+
+    int page = ViewBag.Page ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    string? search = ViewBag.Search as string;
+}
+
+@section Styles {
+    <link rel="stylesheet" asp-append-version="true" href="~/css/articles-index.css" />
+    <link rel="stylesheet" asp-append-version="true" href="~/css/activities.css" />
+}
+
+<div class="container py-5" dir="rtl">
+
+    <div class="row align-items-center mb-4 g-3">
+        <div class="col-md-5 text-center text-md-start">
+            <h2 class="main-title mb-0">نشاطاتنا</h2>
+        </div>
+
+        <div class="col-md-7 d-flex justify-content-md-end align-items-center gap-3 d-flex-mobile">
+            <form method="get" class="search-wrapper d-flex align-items-center flex-grow-1 flex-md-grow-0">
+                <i class="fa-solid fa-magnifying-glass text-muted ms-2"></i>
+                <input type="text" name="search" value="@search" class="form-control border-0 shadow-none bg-transparent" placeholder="البحث..." style="min-width: 150px;">
+                <button type="submit" class="btn p-0 me-2" style="border:0;background:transparent;">
+                    <i class="fa-solid fa-sliders text-muted cursor-pointer" title="بحث"></i>
+                </button>
+            </form>
+
+            <a asp-action="Create" class="btn btn-add" style="background:#f99d27; color:#fff;">
+                <i class="fa-solid fa-plus ms-1"></i> إضافة نشاط
+            </a>
+            <a asp-controller="Home" asp-action="News" class="btn-back-dashboard" target="_blank">
+                <i class="fa-solid fa-eye"></i> الصفحة العامة
+            </a>
+            <a asp-controller="Admin" asp-action="Dashboard" class="btn-back-dashboard">
+                <i class="fa-solid fa-gauge"></i> لوحة التحكم
+            </a>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <div class="table-responsive" style="overflow-x: visible;">
+            <table class="table articles-table">
+                <thead>
+                    <tr class="text-muted">
+                        <th style="width:80px;"></th>
+                        <th>النشاط</th>
+                        <th>التاريخ</th>
+                        <th>المكان</th>
+                        <th>الحالة</th>
+                        <th class="text-center">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">لا توجد نشاطات بعد — ابدأ بإضافة أول نشاط.</td></tr>
+                    }
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.ImagePath))
+                                {
+                                    <img src="@item.ImagePath" class="rounded" style="width:50px;height:50px;object-fit:cover;" alt="نشاط" />
+                                }
+                                else
+                                {
+                                    <span class="activity-thumb-placeholder"><i class="fa-solid fa-calendar-days"></i></span>
+                                }
+                            </td>
+                            <td class="fw-bold text-dark">@item.TitleAr</td>
+                            <td class="text-muted">
+                                @item.StartDate.ToString("dd MMM yyyy")
+                                @if (item.EndDate.HasValue && item.EndDate.Value.Date != item.StartDate.Date)
+                                {
+                                    <span> – @item.EndDate.Value.ToString("dd MMM yyyy")</span>
+                                }
+                            </td>
+                            <td class="text-muted">@(item.Location ?? "—")</td>
+                            <td>
+                                @if (!item.IsPublished)
+                                {
+                                    <span class="activity-badge badge-draft">مسودة</span>
+                                }
+                                else if (item.IsUpcoming)
+                                {
+                                    <span class="activity-badge badge-upcoming">قادم</span>
+                                }
+                                else
+                                {
+                                    <span class="activity-badge badge-past">سابق</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-center">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="action-icon icon-view" title="عرض"><i class="fa-solid fa-eye"></i></a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="action-icon icon-edit" title="تعديل"><i class="fa-solid fa-pen"></i></a>
+                                    <button type="button" class="action-icon icon-delete" onclick="confirmDelete(@item.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(item.TitleAr))')" title="حذف">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                    <form id="deleteForm-@item.Id" asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-none">
+                                        @Html.AntiForgeryToken()
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (totalPages > 1)
+    {
+        <div class="articles-pagination d-flex align-items-center justify-content-between mt-4" dir="rtl">
+            <p class="pagination-label m-0">انتقل إلى الصفحة التالية</p>
+            <nav aria-label="Page navigation">
+                <ul class="pagination m-0" style="direction:ltr;">
+                    <li class="page-item @(page == 1 ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(page - 1)" asp-route-search="@search"><i class="fa-solid fa-chevron-right"></i></a>
+                    </li>
+                    @for (int i = 1; i <= totalPages; i++)
+                    {
+                        <li class="page-item @(i == page ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@i" asp-route-search="@search">@i</a>
+                        </li>
+                    }
+                    <li class="page-item @(page == totalPages ? "disabled" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@(page + 1)" asp-route-search="@search"><i class="fa-solid fa-chevron-left"></i></a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmDelete(id, title) {
+            Swal.fire({
+                html: `<div style="text-align:center;"><img src="/images/delete.svg" style="margin-bottom:14px;" />
+                       <h5 style="margin:0 0 10px 0;font-weight:700;color:#000;">هل أنت متأكد من حذف النشاط التالي؟</h5></div>`,
+                input: 'text',
+                inputValue: title,
+                inputAttributes: { readonly: true },
+                showCancelButton: true,
+                confirmButtonText: 'حذف',
+                cancelButtonText: 'تراجع',
+                reverseButtons: true,
+                buttonsStyling: false,
+                customClass: { popup: 'swal-rtl-popup', input: 'swal-rtl-input', confirmButton: 'swal-btn swal-btn-danger', cancelButton: 'swal-btn swal-btn-cancel' }
+            }).then((result) => { if (result.isConfirmed) document.getElementById('deleteForm-' + id).submit(); });
+        }
+    </script>
+}
