@@ -34,8 +34,29 @@
 | GET | `opportunities/examples?n=8&type=` | أمثلة أسلوب من المنشور (لتغذية الكتابة الآلية) |
 | GET | `opportunities/{id}` | حالة فرصة |
 | POST | `opportunities` | إنشاء **مسودة** بكل الحقول (15 نصًا × 3 لغات، النوع، الموعد، الدول، الرابط) |
+| POST | `opportunities/{id}/image` | صورة غلاف المسودة (انظر أدناه) |
 | POST | `opportunities/{id}/publish` | نشر المسودة؛ يرد `no_image` إن لم تُرفع الصورة، و`expired` إن مضى الموعد |
 | POST | `opportunities/{id}/discard` | حذف مسودة لم تُنشر |
 
 المسودات لا تظهر للزوار، ولا في الصفحة الرئيسية ولا في صفحات الأنواع ولا البحث؛ تظهر في `Opportunity/Index`
 لحساب Admin بوسم، وتُعدَّل من `Opportunity/Edit/{id}` كأي فرصة (هناك يرفع المدقق الصورة).
+
+### صورة الغلاف: `POST opportunities/{id}/image`
+الجسم JSON: `{"imageBase64": "...", "contentType", "fileName", "width", "height", "imageUrl", "alt", "pipeId"}`.
+يُستعمل `imageBase64` وحده؛ الباقي معلومات لا يُعتمد عليها، و`imageUrl` لا يُجلب.
+تُحفظ الصورة كالرفع اليدوي (`ImageUploadService` → `wwwroot/uploads/opportunities/` باسم عشوائي) وتصير `ImagePath`
+للفرصة بدل السابقة (الملف السابق يبقى على القرص كما في الرفع اليدوي)، فينجح `publish` بعدها.
+
+| الرد | متى |
+|---|---|
+| `200 {"ok":true,"imageUrl":"..."}` | حُفظت |
+| `401 {"error":"unauthorized"}` | المفتاح خاطئ |
+| `404 {"error":"not_found"}` | لا فرصة بهذا الرقم (المنصة تميّزه بجسمه عن «الموقع لا يدعم الصور») |
+| `409 {"error":"not_draft"}` | الفرصة منشورة |
+| `400 {"error":"bad_json"}` | الجسم ليس JSON |
+| `413 {"error":"too_large"}` | أكبر من 10 ميغابايت بعد الفك، أو أبعادها فوق 50 ميغابكسل، أو الجسم فوق 20 ميغابايت |
+| `422 {"error":"bad_image"}` | ليست base64، أو ليست JPEG/PNG/WEBP بالتوقيع، أو لا تُفتح كاملة (تفك بـ SkiaSharp) |
+
+حد جسم الطلب: 20 ميغابايت لهذه النقطة (`[RequestSizeLimit]`)، و32 ميغابايت في IIS (`web.config` →
+`requestLimits maxAllowedContentLength`). حد IIS يجب أن يبقى أعلى من حد التطبيق، وإلا ردّ IIS بـ 404.13
+فظنّت المنصة أن الموقع لا يستقبل الصور.

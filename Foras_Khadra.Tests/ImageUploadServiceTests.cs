@@ -1,6 +1,7 @@
 using System.Text;
 using Foras_Khadra.Services;
 using Microsoft.AspNetCore.Http;
+using SkiaSharp;
 using Xunit;
 
 namespace Foras_Khadra.Tests
@@ -78,6 +79,105 @@ namespace Foras_Khadra.Tests
             Assert.True(System.IO.File.Exists(Path.Combine(root, path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))));
 
             Directory.Delete(root, recursive: true);
+        }
+
+        // ---------------------------------------------------------- ValidateBytes / SaveAsync(bytes): واجهة منصة الفريق
+
+        private static byte[] Encode(SKEncodedImageFormat format, int w = 64, int h = 40)
+        {
+            using var bmp = new SKBitmap(w, h);
+            bmp.Erase(new SKColor(30, 140, 80));
+            using var data = bmp.Encode(format, 85);
+            return data.ToArray();
+        }
+
+        [Theory]
+        [InlineData(SKEncodedImageFormat.Jpeg, ".jpg")]
+        [InlineData(SKEncodedImageFormat.Png, ".png")]
+        [InlineData(SKEncodedImageFormat.Webp, ".webp")]
+        public void ValidateBytes_AcceptsRealImages(SKEncodedImageFormat format, string ext)
+        {
+            var check = _service.ValidateBytes(Encode(format));
+
+            Assert.Null(check.Error);
+            Assert.Equal(ext, check.Extension);
+            Assert.Equal(64, check.Width);
+            Assert.Equal(40, check.Height);
+        }
+
+        [Fact]
+        public void ValidateBytes_RejectsNonImagesAndHeaderOnlyFakes()
+        {
+            Assert.Equal("bad_image", _service.ValidateBytes(Array.Empty<byte>()).Error);
+            Assert.Equal("bad_image", _service.ValidateBytes(Html).Error);
+            Assert.Equal("bad_image", _service.ValidateBytes(Gif).Error);  // GIF غير مسموح في الواجهة
+            Assert.Equal("bad_image", _service.ValidateBytes(Jpg).Error);  // توقيع JPEG وحده دون صورة
+            Assert.Equal("bad_image", _service.ValidateBytes(Png).Error);
+            Assert.Equal("bad_image", _service.ValidateBytes(Webp).Error);
+        }
+
+        [Fact]
+        public void ValidateBytes_RejectsTruncatedImage()
+        {
+            var jpg = Encode(SKEncodedImageFormat.Jpeg, 400, 300);
+            Assert.Equal("bad_image", _service.ValidateBytes(jpg[..(jpg.Length / 2)]).Error);
+        }
+
+        [Fact]
+        public void ValidateBytes_RejectsOversizedBytesAndDimensions()
+        {
+            var big = new byte[ImageUploadService.ApiMaxBytes + 1];
+            Encode(SKEncodedImageFormat.Png).CopyTo(big, 0);
+            Assert.Equal("too_large", _service.ValidateBytes(big).Error);
+
+            Assert.Equal("too_large", _service.ValidateBytes(PngWithHeader(10_000, 10_000)).Error);
+        }
+
+        [Fact]
+        public async Task SaveBytes_WritesRandomNameUnderSubfolderAndChecksSignature()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "fk-upload-tests", Guid.NewGuid().ToString("N"));
+            var service = new ImageUploadService(new FakeEnv(root));
+            var webp = Encode(SKEncodedImageFormat.Webp);
+
+            var path = await service.SaveAsync(webp, ".webp", "uploads/opportunities");
+
+            Assert.StartsWith("/uploads/opportunities/", path);
+            Assert.EndsWith(".webp", path);
+            Assert.Equal(webp, System.IO.File.ReadAllBytes(Path.Combine(root, path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar))));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => service.SaveAsync(webp, ".jpg", "uploads/opportunities"));
+
+            Directory.Delete(root, recursive: true);
+        }
+
+        /// <summary>PNG صالح البنية بأبعاد معطاة (IHDR) دون بكسلات كافية: يكفي لاختبار حد الأبعاد دون حجز ذاكرتها.</summary>
+        private static byte[] PngWithHeader(int w, int h)
+        {
+            static byte[] Chunk(string type, byte[] body)
+            {
+                var t = Encoding.ASCII.GetBytes(type);
+                var len = BitConverter.GetBytes(System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(body.Length));
+                var crc = BitConverter.GetBytes(System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(Crc32(t.Concat(body).ToArray())));
+                return len.Concat(t).Concat(body).Concat(crc).ToArray();
+            }
+            var ihdr = BitConverter.GetBytes(System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(w))
+                .Concat(BitConverter.GetBytes(System.Buffers.Binary.BinaryPrimitives.ReverseEndianness(h)))
+                .Concat(new byte[] { 8, 2, 0, 0, 0 }).ToArray(); // 8 بت، RGB
+            var idat = new MemoryStream();
+            using (var z = new System.IO.Compression.ZLibStream(idat, System.IO.Compression.CompressionLevel.Fastest, leaveOpen: true))
+                z.Write(new byte[64]);
+            return Png[..8].Concat(Chunk("IHDR", ihdr)).Concat(Chunk("IDAT", idat.ToArray())).Concat(Chunk("IEND", Array.Empty<byte>())).ToArray();
+        }
+
+        private static uint Crc32(byte[] data)
+        {
+            var crc = 0xFFFFFFFFu;
+            foreach (var b in data)
+            {
+                crc ^= b;
+                for (var k = 0; k < 8; k++) crc = (crc & 1) != 0 ? (crc >> 1) ^ 0xEDB88320u : crc >> 1;
+            }
+            return ~crc;
         }
 
         private sealed class FakeEnv : Microsoft.AspNetCore.Hosting.IWebHostEnvironment

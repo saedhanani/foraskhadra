@@ -1,9 +1,11 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Foras_Khadra.Data;
 using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
+using Foras_Khadra.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -28,13 +30,20 @@ namespace Foras_Khadra.Controllers.Api
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _users;
         private readonly IConfiguration _cfg;
+        private readonly IImageUploadService _images;
+        private readonly ILogger<TeamApiController> _log;
 
-        public TeamApiController(ApplicationDbContext db, UserManager<ApplicationUser> users, IConfiguration cfg)
+        public TeamApiController(ApplicationDbContext db, UserManager<ApplicationUser> users, IConfiguration cfg, IImageUploadService images, ILogger<TeamApiController> log)
         {
             _db = db;
             _users = users;
             _cfg = cfg;
+            _images = images;
+            _log = log;
         }
+
+        /// <summary>حد جسم طلب صورة الغلاف: 10 ميغابايت بعد الفك ≈ 14 بترميز base64، مع هامش للحقول الأخرى.</summary>
+        public const long ImageRequestMaxBytes = 20 * 1024 * 1024;
 
         private string BaseUrl => (_cfg["BaseUrl"] ?? "https://www.foraskhadra.com/").TrimEnd('/');
 
@@ -253,7 +262,7 @@ namespace Foras_Khadra.Controllers.Api
             return Ok(Shape(o));
         }
 
-        /// <summary>اعتماد مسودة ونشرها. يتطلب صورة مرفوعة من صفحة التعديل.</summary>
+        /// <summary>اعتماد مسودة ونشرها. يتطلب صورة (ImagePath) مرفوعة من صفحة التعديل أو من opportunities/{id}/image.</summary>
         [HttpPost("opportunities/{id:int}/publish")]
         public async Task<IActionResult> Publish(int id)
         {
@@ -269,6 +278,92 @@ namespace Foras_Khadra.Controllers.Api
                 await _db.SaveChangesAsync();
             }
             return Ok(Shape(o));
+        }
+
+        public class ImageDto
+        {
+            /// <summary>بايتات الصورة بترميز base64 دون بادئة data:. الحقول الأخرى معلومات مساعدة لا يُعتمد عليها.</summary>
+            public string? ImageBase64 { get; set; }
+            public string? ContentType { get; set; }
+            public string? FileName { get; set; }
+            public int? Width { get; set; }
+            public int? Height { get; set; }
+            /// <summary>يُتجاهل: لا تُجلب روابط من الطلب.</summary>
+            public string? ImageUrl { get; set; }
+            public string? Alt { get; set; }
+            public int? PipeId { get; set; }
+        }
+
+        private static readonly JsonSerializerOptions ImageJson = new(JsonSerializerDefaults.Web);
+
+        /// <summary>
+        /// صورة غلاف المسودة من منصة الفريق: تُحفظ كما يحفظها الرفع اليدوي في صفحة التعديل وتحل محل السابقة.
+        /// تنبيه: المنصة تفهم 404/405/501 دون {"error":"not_found"} على أن الموقع لا يستقبل الصور، فلا يُعاد غيرها هنا.
+        /// </summary>
+        [HttpPost("opportunities/{id:int}/image")]
+        [RequestSizeLimit(ImageRequestMaxBytes)]
+        public async Task<IActionResult> SetImage(int id)
+        {
+            var o = await _db.Opportunities.FirstOrDefaultAsync(x => x.Id == id);
+            if (o == null) return NotFound(new { error = "not_found" });
+            if (o.Status != OpportunityStatus.Draft) return Conflict(new { error = "not_draft" });
+
+            // الجسم يُقرأ هنا لا بالربط التلقائي، فلا يُقرأ قبل التحقق من المفتاح
+            ImageDto? d;
+            try
+            {
+                d = await JsonSerializer.DeserializeAsync<ImageDto>(Request.Body, ImageJson, HttpContext.RequestAborted);
+            }
+            catch (BadHttpRequestException ex) when (ex.StatusCode == StatusCodes.Status413PayloadTooLarge)
+            {
+                _log.LogWarning("Team API image {Id}: request body over {Limit} bytes", id, ImageRequestMaxBytes);
+                return StatusCode(413, new { error = "too_large" });
+            }
+            catch (JsonException)
+            {
+                return BadRequest(new { error = "bad_json" });
+            }
+
+            var b64 = d?.ImageBase64?.Trim() ?? "";
+            if (b64.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && b64.IndexOf(',') is var comma and > 0)
+                b64 = b64[(comma + 1)..];
+            byte[] bytes;
+            try
+            {
+                bytes = Convert.FromBase64String(b64);
+            }
+            catch (FormatException)
+            {
+                _log.LogWarning("Team API image {Id}: rejected bad_image (base64)", id);
+                return UnprocessableEntity(new { error = "bad_image" });
+            }
+
+            var check = _images.ValidateBytes(bytes);
+            if (check.Error != null)
+            {
+                _log.LogWarning("Team API image {Id}: rejected {Error} ({Bytes} bytes, {Detail})", id, check.Error, bytes.Length, check.Detail);
+                return check.Error == "too_large"
+                    ? StatusCode(413, new { error = "too_large" })
+                    : UnprocessableEntity(new { error = "bad_image" });
+            }
+
+            // الحفظ كالرفع اليدوي في صفحة التعديل: المجلد نفسه واسم عشوائي (fileName من الطلب لا يُستعمل)،
+            // والصورة السابقة تبقى على القرص كما في الرفع اليدوي
+            var previous = o.ImagePath;
+            try
+            {
+                o.ImagePath = await _images.SaveAsync(bytes, check.Extension, "uploads/opportunities");
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "Team API image {Id}: save failed", id);
+                return StatusCode(500, new { error = "save_failed" });
+            }
+
+            _log.LogInformation("Team API image {Id} (pipe {PipeId}): {Path} {Width}x{Height} {Bytes} bytes, replaced {Previous}",
+                id, o.PipeId, o.ImagePath, check.Width, check.Height, bytes.Length, string.IsNullOrEmpty(previous) ? "-" : previous);
+            return Ok(new { ok = true, imageUrl = BaseUrl + o.ImagePath });
         }
 
         /// <summary>إلغاء مسودة لم تُنشر (عند رفض الفرصة في المنصة). المنشور لا يُحذف من هنا.</summary>
