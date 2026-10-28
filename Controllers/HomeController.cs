@@ -126,7 +126,27 @@ namespace Foras_Khadra.Controllers
         // ================= الفرص حسب النوع مع فلترة الدولة =================
 
         // ================= الفرص حسب النوع مع فلترة الدولة =================
-        private IActionResult GetOpportunitiesByType(OpportunityType type, string country, string typeName)
+        private const int OpportunitiesPageSize = 12;
+
+        /// <summary>يقطع الاستعلام إلى صفحة واحدة ويحسب حالة الانتهاء لعناصرها.</summary>
+        private static List<Opportunity> PageOf(IQueryable<Opportunity> query, int page, out int totalCount)
+        {
+            totalCount = query.Count();
+            var items = query
+                .OrderByDescending(o => o.PublishDate)   // من الأحدث للأقدم
+                .Skip((page - 1) * OpportunitiesPageSize)
+                .Take(OpportunitiesPageSize)
+                .ToList();
+
+            // ================== إضافة حالة الانتهاء ==================
+            foreach (var opp in items)
+            {
+                opp.IsExpired = opp.EndDate.HasValue && opp.EndDate.Value < DateTime.Now;
+            }
+            return items;
+        }
+
+        private IActionResult GetOpportunitiesByType(OpportunityType type, string country, string typeName, int page)
         {
             var query = _context.Opportunities
                                 .Include(o => o.AvailableCountries)
@@ -142,61 +162,60 @@ namespace Foras_Khadra.Controllers
                         c.NameFr == country));
             }
 
-            var opportunities = query.ToList();
+            page = Math.Max(1, page);
+            var opportunities = PageOf(query, page, out var totalCount);
 
-            // ================== إضافة حالة الانتهاء ==================
-            foreach (var opp in opportunities)
-            {
-                opp.IsExpired = opp.EndDate.HasValue && opp.EndDate.Value < DateTime.Now;
-            }
             var model = new AllOpportunitiesViewModel
             {
                 Opportunities = opportunities,
                 SelectedCountry = country,
-                SelectedTypes = new List<OpportunityType> { type } 
+                SelectedTypes = new List<OpportunityType> { type },
+                Page = page,
+                PageSize = OpportunitiesPageSize,
+                TotalCount = totalCount
             };
 
             ViewBag.TypeName = typeName;
             return View("AllOpportunities", model);
         }
         // مثال لكل نوع:
-        public IActionResult Trainings(string country = null)
+        public IActionResult Trainings(string country = null, int page = 1)
         {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Internships, country, "فرص التدريب");
+            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Internships, country, "فرص التدريب", page);
         }
 
-        public IActionResult Jobs(string country = null)
+        public IActionResult Jobs(string country = null, int page = 1)
         {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Jobs, country, "الوظائف");
+            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Jobs, country, "الوظائف", page);
         }
 
-        public IActionResult Competitions(string country = null)
+        public IActionResult Competitions(string country = null, int page = 1)
         {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Competitions, country, "المسابقات");
+            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Competitions, country, "المسابقات", page);
         }
 
-        public IActionResult Conferences(string country = null)
+        public IActionResult Conferences(string country = null, int page = 1)
         {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Conferences, country, "المؤتمرات");
+            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Conferences, country, "المؤتمرات", page);
         }
 
-        public IActionResult Volunteering(string country = null)
+        public IActionResult Volunteering(string country = null, int page = 1)
         {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Volunteering, country, "فرص التطوع");
+            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Volunteering, country, "فرص التطوع", page);
         }
 
-        public IActionResult Fellowships(string country = null)
+        public IActionResult Fellowships(string country = null, int page = 1)
         {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Fellowships, country, "الزمالات");
+            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Fellowships, country, "الزمالات", page);
         }
 
-        public IActionResult Scholarships(string country = null)
+        public IActionResult Scholarships(string country = null, int page = 1)
         {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Scholarships, country, "المنح الدراسية");
+            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Scholarships, country, "المنح الدراسية", page);
         }
 
         // ================= صفحة كل الفرص العامة =================
-        public IActionResult AllOpportunities(string country, string[] type, string search)
+        public IActionResult AllOpportunities(string country, string[] type, string search, int page = 1)
         {
             var query = _context.Opportunities
                                 .Include(o => o.AvailableCountries)
@@ -234,14 +253,9 @@ namespace Foras_Khadra.Controllers
                         c.NameFr == country));
             }
 
-            var allOpportunities = query
-                .OrderByDescending(o => o.PublishDate)   // من الأحدث للأقدم
-                .ToList();
-            // ================== إضافة حالة الانتهاء ==================
-            foreach (var opp in allOpportunities)
-            {
-                opp.IsExpired = opp.EndDate.HasValue && opp.EndDate.Value < DateTime.Now;
-            }
+            page = Math.Max(1, page);
+            var allOpportunities = PageOf(query, page, out var totalCount);
+
             var countries = _context.Countries
                                     .OrderBy(c => c.NameAr)
                                     .Select(c => c.NameAr)
@@ -251,8 +265,11 @@ namespace Foras_Khadra.Controllers
             {
                 Opportunities = allOpportunities,
                 SelectedCountry = country,
-                SelectedTypes = type?.Select(t => Enum.Parse<OpportunityType>(t)).ToList() ?? new List<OpportunityType>(),
-                Countries = countries
+                SelectedTypes = type?.Where(t => Enum.TryParse<OpportunityType>(t, out _)).Select(t => Enum.Parse<OpportunityType>(t)).ToList() ?? new List<OpportunityType>(),
+                Countries = countries,
+                Page = page,
+                PageSize = OpportunitiesPageSize,
+                TotalCount = totalCount
             };
 
             return View(model);

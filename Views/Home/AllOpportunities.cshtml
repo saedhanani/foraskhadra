@@ -8,9 +8,24 @@
 @{
     ViewData["Title"] = Localizer["PageTitle"];
     var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+
+    // الرابط القانوني يتجاهل الفلاتر ويبقي رقم الصفحة فقط
+    ViewData["Canonical"] = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}{Context.Request.Path}"
+        + (Model.Page > 1 ? $"?page={Model.Page}" : "");
+
+    // روابط الصفحات تحافظ على فلاتر البحث الحالية وتغيّر page فقط (type قد تتكرر، لذا لا نجمعها في نص واحد)
+    string PageUrl(int p)
+    {
+        var kept = Context.Request.Query.Where(kv => kv.Key != "page").ToList();
+        kept.Add(new KeyValuePair<string, Microsoft.Extensions.Primitives.StringValues>("page", p.ToString()));
+        return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(Context.Request.Path.Value ?? "/", kept);
+    }
+
+    var pageNumbers = Enumerable.Range(1, Model.TotalPages)
+        .Where(i => i == 1 || i == Model.TotalPages || Math.Abs(i - Model.Page) <= 2)
+        .ToList();
 }
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 <link rel="stylesheet" href="~/css/all-opportunities.css" />
 
 <style>
@@ -306,6 +321,17 @@
         color: #dc2626;
     }
 
+    .status-soon {
+        background: #fff3e0;
+        color: #c2410c;
+    }
+
+    .page-ellipsis {
+        padding: 0 4px;
+        color: #94a3b8;
+        font-weight: 700;
+    }
+
     .opp-info-row {
         padding: 18px;
     }
@@ -579,13 +605,14 @@
                             @{
                                 bool isExpired = opp.DeadlineType == DeadlineType.SpecificDate && opp.EndDate.HasValue && opp.EndDate.Value.Date < DateTime.Now.Date;
 
-                                string statusText = opp.DeadlineType == DeadlineType.SpecificDate
-                                ? (isExpired
+                                // ثلاث حالات: منتهية، تنتهي خلال 7 أيام، متاحة
+                                string statusText = isExpired
                                     ? (lang == "en" ? "Application Closed" : lang == "fr" ? "Candidature Terminée" : "انتهت فترة التقديم")
-                                    : (lang == "en" ? "Available" : lang == "fr" ? "Disponible" : "متاح التقديم"))
-                                : (lang == "en" ? "Available" : lang == "fr" ? "Disponible" : "متاح التقديم");
+                                    : opp.IsDeadlineSoon
+                                        ? (lang == "en" ? "Closing soon" : lang == "fr" ? "Bientôt clôturé" : "ينتهي قريبًا")
+                                        : (lang == "en" ? "Available" : lang == "fr" ? "Disponible" : "متاح التقديم");
 
-                                string statusClass = isExpired ? "status-expired" : "status-available";
+                                string statusClass = isExpired ? "status-expired" : opp.IsDeadlineSoon ? "status-soon" : "status-available";
                             }
 
                             <div class="status-wrapper">
@@ -594,7 +621,7 @@
                         </div>
 
                         <div class="opp-info-row">
-                            <a href="@Url.Action("Details", "Opportunity", new { id = opp.Id })" class="btn-details">@Localizer["view_details"]</a>
+                            <a href="@Url.Action("Details", "Opportunity", new { id = opp.Id, slug = SlugHelper.Make(title1) })" class="btn-details">@Localizer["view_details"]</a>
                         </div>
                     </div>
                 </div>
@@ -602,14 +629,33 @@
         }
     </div>
 
-    <div class="pagination-container mt-5 mb-5">
-        <div class="next-page-prompt">
-            <a href="#" id="nextPrompt">@Localizer["next_page"]</a>
-        </div>
+    @if (Model.TotalPages > 1)
+    {
+        <div class="pagination-container mt-5 mb-5">
+            <div class="next-page-prompt" style="visibility:@(Model.Page < Model.TotalPages ? "visible" : "hidden")">
+                <a href="@PageUrl(Model.Page + 1)">@Localizer["next_page"]</a>
+            </div>
 
-        <div class="pagination-controls" id="paginationControls">
+            <nav class="pagination-controls" aria-label="pagination">
+                <a href="@PageUrl(Model.Page - 1)" rel="prev" class="pagination-arrow prev-arrow @(Model.Page == 1 ? "disabled-link" : "")">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+                @{ int? previousNumber = null; }
+                @foreach (var i in pageNumbers)
+                {
+                    if (previousNumber.HasValue && i - previousNumber.Value > 1)
+                    {
+                        <span class="page-ellipsis">…</span>
+                    }
+                    <a href="@PageUrl(i)" class="page-link-num @(i == Model.Page ? "active" : "")">@i</a>
+                    previousNumber = i;
+                }
+                <a href="@PageUrl(Model.Page + 1)" rel="next" class="pagination-arrow next-arrow @(Model.Page == Model.TotalPages ? "disabled-link" : "")">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </nav>
         </div>
-    </div>
+    }
 </div>
 
 <script>
@@ -694,69 +740,4 @@
         }
     });
 
-    document.addEventListener('DOMContentLoaded', function () {
-        const cardsPerPage = 12;
-        const cardContainers = document.querySelectorAll('.row.g-4 > .col-lg-4');
-        const totalCards = cardContainers.length;
-        const totalPages = Math.ceil(totalCards / cardsPerPage);
-        const controlsContainer = document.getElementById('paginationControls');
-        const nextPrompt = document.getElementById('nextPrompt');
-
-        let currentPage = 1;
-
-        function showPage(page) {
-            currentPage = page;
-            const start = (page - 1) * cardsPerPage;
-            const end = start + cardsPerPage;
-
-            cardContainers.forEach((card, index) => {
-                card.style.display = (index >= start && index < end) ? 'block' : 'none';
-            });
-
-            renderControls();
-
-            nextPrompt.parentElement.style.visibility = (currentPage === totalPages) ? 'hidden' : 'visible';
-
-            document.querySelector('.row.g-4').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        function renderControls() {
-            let html = '';
-
-            html += `<a href="#" class="pagination-arrow prev-arrow ${currentPage === 1 ? 'disabled-link' : ''}" data-page="${currentPage - 1}">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>`;
-
-            for (let i = 1; i <= totalPages; i++) {
-                html += `<a href="#" class="page-link-num ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</a>`;
-            }
-
-            html += `<a href="#" class="pagination-arrow next-arrow ${currentPage === totalPages ? 'disabled-link' : ''}" data-page="${currentPage + 1}">
-                        <i class="bi bi-chevron-left"></i>
-                     </a>`;
-
-            controlsContainer.innerHTML = html;
-
-            controlsContainer.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const targetPage = parseInt(link.getAttribute('data-page'));
-                    if (targetPage >= 1 && targetPage <= totalPages) {
-                        showPage(targetPage);
-                    }
-                });
-            });
-        }
-
-        nextPrompt.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (currentPage < totalPages) showPage(currentPage + 1);
-        });
-
-        if (totalCards > 0) {
-            showPage(1);
-        } else {
-            document.querySelector('.pagination-container').style.display = 'none';
-        }
-    });
 </script>

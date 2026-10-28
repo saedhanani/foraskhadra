@@ -213,7 +213,21 @@ app.UseStatusCodePages();
 
 app.UseHttpsRedirection();
 
-// ===== ترويسات أمنية أساسية (بدون CSP لأن الصفحات تعتمد على سكربتات مضمّنة وCDN متعددة) =====
+// ===== ترويسات أمنية أساسية =====
+// CSP: الصفحات تعتمد على سكربتات وأنماط مضمّنة، لذا 'unsafe-inline' مسموح لهما؛ القيمة الحقيقية هنا هي حصر
+// مصادر السكربتات والإطارات والاتصالات في قائمة معروفة (لا يمكن لسكربت محقون تحميل كود من خادم غريب أو تسريب بيانات إليه).
+const string ContentSecurityPolicy =
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://code.iconify.design https://cdn.quilljs.com https://www.google.com https://www.gstatic.com; " +
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com https://cdn.quilljs.com; " +
+    "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
+    "img-src 'self' data: blob: https:; " +
+    "connect-src 'self' https://ipapi.co https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com; " +
+    "frame-src https://www.google.com; " +
+    "frame-ancestors 'self'; " +
+    "object-src 'none'; " +
+    "base-uri 'self'";
+
 app.Use(async (context, next) =>
 {
     var headers = context.Response.Headers;
@@ -221,6 +235,7 @@ app.Use(async (context, next) =>
     headers["X-Frame-Options"] = "SAMEORIGIN";
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
+    headers["Content-Security-Policy"] = ContentSecurityPolicy;
     await next();
 });
 
@@ -243,6 +258,17 @@ app.UseRateLimiter();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// روابط وصفية لمحركات البحث: /Opportunity/Details/12/منحة-ماجستير — المقطع الأخير تجميلي ويُتجاهل
+app.MapControllerRoute(
+    name: "opportunity-details",
+    pattern: "Opportunity/Details/{id:int}/{slug?}",
+    defaults: new { controller = "Opportunity", action = "Details" });
+
+app.MapControllerRoute(
+    name: "article-details",
+    pattern: "Articles/Details/{id:int}/{slug?}",
+    defaults: new { controller = "Articles", action = "Details" });
 
 app.MapControllerRoute(
     name: "default",

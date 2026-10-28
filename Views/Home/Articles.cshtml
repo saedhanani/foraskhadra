@@ -37,7 +37,7 @@
     string CoverFor(Article a) =>
         !string.IsNullOrWhiteSpace(a.ImagePath) ? Url.Content(a.ImagePath) : DefaultCover;
 
-    Func<Article, string> ArticleLink = (a) => Url.Action("Details", "Articles", new { id = a.Id }) ?? "#";
+    Func<Article, string> ArticleLink = (a) => Url.Action("Details", "Articles", new { id = a.Id, slug = SlugHelper.Make(a.TitleAr) }) ?? "#";
 }
 
 @section Styles {
@@ -163,7 +163,7 @@
             if (plain.Length > 220) plain = plain.Substring(0, 220) + "...";
 
             var href = canRead
-            ? Url.Action("Details", "Articles", new { id = article.Id })
+            ? Url.Action("Details", "Articles", new { id = article.Id, slug = SlugHelper.Make(article.TitleAr) })
             : "javascript:void(0);";
 
             <div class="readalso-item">

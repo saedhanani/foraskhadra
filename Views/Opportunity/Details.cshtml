@@ -32,9 +32,68 @@
         "fr" => Model.TitleFr,
         _ => Model.TitleAr
     };
+
+    // ===== SEO: وصف الصفحة وصورتها ورابطها القانوني (بالـ slug) وبيانات JobPosting المنظمة =====
+    string seoDescriptionHtml = lang switch { "en" => Model.DescriptionEn, "fr" => Model.DescriptionFr, _ => Model.DescriptionAr };
+    string seoDetailsHtml = lang switch { "en" => Model.DetailsEn, "fr" => Model.DetailsFr, _ => Model.DetailsAr };
+    string Plain(string? html) => System.Text.RegularExpressions.Regex.Replace(
+        System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(html ?? "", "<.*?>", " ")), @"\s+", " ").Trim();
+
+    var plainDescription = Plain(seoDescriptionHtml);
+    ViewData["Description"] = plainDescription.Length > 160 ? plainDescription.Substring(0, 157) + "..." : plainDescription;
+    ViewData["OgType"] = "article";
+    if (!string.IsNullOrEmpty(Model.ImagePath)) ViewData["OgImage"] = Model.ImagePath;
+
+    var canonicalUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}"
+        + Url.Action("Details", "Opportunity", new { id = Model.Id, slug = SlugHelper.Make(title) });
+    ViewData["Canonical"] = canonicalUrl;
+
+    // Google for Jobs يفهم JobPosting للوظائف والتدريب فقط؛ بقية الأنواع تكتفي بوسوم الصفحة
+    string? jobPostingJson = null;
+    if (Model.Type == OpportunityType.Jobs || Model.Type == OpportunityType.Internships)
+    {
+        var publisherName = Model.IsPublishedByAdmin || string.Equals(Model.PublishedBy, "admin", StringComparison.OrdinalIgnoreCase)
+            ? "فرص خضراء"
+            : (string.IsNullOrWhiteSpace(Model.PublishedBy) ? "فرص خضراء" : Model.PublishedBy);
+
+        var countryNames = (Model.AvailableCountries ?? new List<Country>())
+            .Select(c => lang switch { "en" => c.NameEn, "fr" => c.NameFr, _ => c.NameAr })
+            .Where(n => !string.IsNullOrWhiteSpace(n))
+            .ToList();
+
+        var jobPosting = new Dictionary<string, object?>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"] = "JobPosting",
+            ["title"] = title,
+            ["description"] = string.Join("\n\n", new[] { plainDescription, Plain(seoDetailsHtml) }.Where(s => s.Length > 0)),
+            ["datePosted"] = Model.PublishDate.ToString("yyyy-MM-dd"),
+            ["validThrough"] = Model.DeadlineType == DeadlineType.SpecificDate && Model.EndDate.HasValue
+                ? Model.EndDate.Value.ToString("yyyy-MM-dd") : null,
+            ["employmentType"] = Model.Type == OpportunityType.Internships ? "INTERN" : null,
+            ["hiringOrganization"] = new Dictionary<string, object?> { ["@type"] = "Organization", ["name"] = publisherName },
+            ["jobLocation"] = countryNames.Select(n => new Dictionary<string, object?>
+            {
+                ["@type"] = "Place",
+                ["address"] = new Dictionary<string, object?> { ["@type"] = "PostalAddress", ["addressCountry"] = n }
+            }).ToList(),
+            ["url"] = canonicalUrl,
+            ["directApply"] = false
+        };
+
+        // المشفّر الافتراضي يهرّب < و > فلا يمكن كسر وسم script من نص الفرصة
+        jobPostingJson = System.Text.Json.JsonSerializer.Serialize(jobPosting, new System.Text.Json.JsonSerializerOptions
+        {
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        });
+    }
 }
 
 <link href="~/css/opportunity-deatails.css" rel="stylesheet" />
+@if (jobPostingJson != null)
+{
+    <script type="application/ld+json">@Html.Raw(jobPostingJson)</script>
+}
 
 <div class="opp-container" dir="@dir">
 
@@ -114,6 +173,12 @@
                         {
                             deadlineText = Model.EndDate.Value.ToShortDateString();
                             deadlineClass = isExpired ? "deadline-expired" : "deadline-active";
+
+                            if (!isExpired && Model.IsDeadlineSoon)
+                            {
+                                deadlineClass = "deadline-soon";
+                                deadlineText += " · " + (lang == "en" ? "Closing soon" : lang == "fr" ? "Bientôt clôturé" : "ينتهي قريبًا");
+                            }
                         }
                         else if (Model.DeadlineType == DeadlineType.UntilFull)
                         {

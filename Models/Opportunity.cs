@@ -81,6 +81,14 @@ namespace Foras_Khadra.Models
 
         [NotMapped]
         public bool IsExpired { get; set; }
+
+        /// <summary>موعد التقديم محدد ولم ينتهِ بعد لكنه خلال 7 أيام — تعرض البطاقات شارة "ينتهي قريبًا".</summary>
+        [NotMapped]
+        public bool IsDeadlineSoon =>
+            DeadlineType == Foras_Khadra.Models.DeadlineType.SpecificDate
+            && EndDate.HasValue
+            && EndDate.Value.Date >= DateTime.Now.Date
+            && EndDate.Value.Date <= DateTime.Now.Date.AddDays(7);
         public virtual ICollection<ReelsRequest> ReelsRequests { get; set; }
 
         // ===== منصة الفريق (team.foraskhadra.com) =====

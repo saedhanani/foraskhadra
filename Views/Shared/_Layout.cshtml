@@ -2,20 +2,75 @@
 @{
     var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     var dir = culture == "ar" ? "rtl" : "ltr";
+
+    // ===== SEO: العنوان والوصف والرابط القانوني وبطاقات المشاركة (Open Graph) =====
+    // الصفحة تضبط ViewData["Title"] / ["Description"] / ["OgImage"] / ["Canonical"] / ["OgType"]؛ وما لم تضبطه يأخذ قيمة الموقع العامة
+    var siteName = culture == "ar" ? "فرص خضراء" : "Foras Khadra";
+
+    string TitleText(object? value)
+    {
+        switch (value)
+        {
+            case null: return string.Empty;
+            case string s: return s;
+            case Microsoft.AspNetCore.Mvc.Localization.LocalizedHtmlString l: return l.Value;
+            case Microsoft.AspNetCore.Html.IHtmlContent c:
+                using (var sw = new System.IO.StringWriter())
+                {
+                    c.WriteTo(sw, System.Text.Encodings.Web.HtmlEncoder.Default);
+                    return System.Net.WebUtility.HtmlDecode(sw.ToString());
+                }
+            default: return value.ToString() ?? string.Empty;
+        }
+    }
+
+    var pageTitle = TitleText(ViewData["Title"]).Trim();
+    var fullTitle = string.IsNullOrEmpty(pageTitle) ? siteName : $"{pageTitle} - {siteName}";
+    var metaDescription = (ViewData["Description"] as string)?.Trim();
+    if (string.IsNullOrEmpty(metaDescription))
+    {
+        metaDescription = culture switch
+        {
+            "en" => "Foras Khadra gathers scholarships, jobs, internships, volunteering, conferences and competitions for Arab youth in one place.",
+            "fr" => "Foras Khadra réunit bourses, emplois, stages, bénévolat, conférences et concours pour la jeunesse arabe en un seul endroit.",
+            _ => "منصة فرص خضراء تجمع المنح الدراسية والوظائف وفرص التدريب والتطوع والمؤتمرات والمسابقات للشباب العربي في مكان واحد."
+        };
+    }
+
+    var request = Context.Request;
+    var baseUrl = $"{request.Scheme}://{request.Host}{request.PathBase}";
+    var canonicalUrl = ViewData["Canonical"] as string ?? $"{baseUrl}{request.Path}";
+    var ogImage = ViewData["OgImage"] as string ?? "/images/logo.png";
+    if (ogImage.StartsWith("/")) ogImage = baseUrl + ogImage;
+    var ogLocale = culture switch { "en" => "en_US", "fr" => "fr_FR", _ => "ar_AR" };
 }
 <html lang="@culture" dir="@dir">
 
 <head>
-    @RenderSection("Styles", required: false)
-    <link rel="icon" type="image/x-icon" href="~/images/favicon.ico" />
-
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Foras_Khadra</title>
+    <title>@fullTitle</title>
+    <meta name="description" content="@metaDescription" />
+    <link rel="canonical" href="@canonicalUrl" />
+    <meta property="og:site_name" content="@siteName" />
+    <meta property="og:type" content="@(ViewData["OgType"] as string ?? "website")" />
+    <meta property="og:title" content="@(string.IsNullOrEmpty(pageTitle) ? siteName : pageTitle)" />
+    <meta property="og:description" content="@metaDescription" />
+    <meta property="og:url" content="@canonicalUrl" />
+    <meta property="og:image" content="@ogImage" />
+    <meta property="og:locale" content="@ogLocale" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@(string.IsNullOrEmpty(pageTitle) ? siteName : pageTitle)" />
+    <meta name="twitter:description" content="@metaDescription" />
+    <meta name="twitter:image" content="@ogImage" />
+
+    @RenderSection("Styles", required: false)
+    <link rel="icon" type="image/x-icon" href="~/images/favicon.ico" />
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="~/css/layout_style.css">
 </head>
 

@@ -14,6 +14,12 @@ namespace Foras_Khadra.Models
         // ⚡ إضافة هذه الخاصية للقائمة المنسدلة
         public List<string> Countries { get; set; } = new List<string>();
 
+        // ترقيم الصفحات من الخادم: Opportunities تحمل صفحة واحدة فقط
+        public int Page { get; set; } = 1;
+        public int PageSize { get; set; } = 12;
+        public int TotalCount { get; set; }
+        public int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
+
         // لتوليد قائمة الأنواع للـ dropdown
         public List<SelectListItem> TypeSelectList
         {

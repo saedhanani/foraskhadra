@@ -24,15 +24,47 @@
     var shareFacebook = $"https://www.facebook.com/sharer/sharer.php?u={encodedUrl}";
     var shareLinkedIn = $"https://www.linkedin.com/sharing/share-offsite/?url={encodedUrl}";
     var shareWhatsApp = $"https://wa.me/?text={encodedTitle}%20{encodedUrl}";
-    ViewData["Title"] = culture == "ar" ? Model.TitleAr :
+    var articleTitle = culture == "ar" ? Model.TitleAr :
     culture == "en" ? Model.TitleEn :
     Model.TitleFr;
+    ViewData["Title"] = articleTitle;
+
+    // ===== SEO: وصف الصفحة وصورتها ورابطها القانوني (بالـ slug) وبيانات Article المنظمة =====
+    var articleContent = culture == "ar" ? Model.ContentAr : culture == "en" ? Model.ContentEn : Model.ContentFr;
+    var plainContent = System.Text.RegularExpressions.Regex.Replace(
+        System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(articleContent ?? "", "<.*?>", " ")), @"\s+", " ").Trim();
+    ViewData["Description"] = plainContent.Length > 160 ? plainContent.Substring(0, 157) + "..." : plainContent;
+    ViewData["OgType"] = "article";
+    if (!string.IsNullOrEmpty(Model.ImagePath)) ViewData["OgImage"] = Model.ImagePath;
+
+    var canonicalUrl = $"{req.Scheme}://{req.Host}{req.PathBase}"
+        + Url.Action("Details", "Articles", new { id = Model.Id, slug = SlugHelper.Make(articleTitle) });
+    ViewData["Canonical"] = canonicalUrl;
+
+    var articleJson = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object?>
+    {
+        ["@context"] = "https://schema.org",
+        ["@type"] = "Article",
+        ["headline"] = articleTitle,
+        ["description"] = ViewData["Description"],
+        ["datePublished"] = Model.PublishDate.ToString("yyyy-MM-dd"),
+        ["author"] = new Dictionary<string, object?> { ["@type"] = "Person", ["name"] = string.IsNullOrWhiteSpace(Model.Author) ? "فرص خضراء" : Model.Author },
+        ["publisher"] = new Dictionary<string, object?>
+        {
+            ["@type"] = "Organization",
+            ["name"] = "فرص خضراء",
+            ["logo"] = new Dictionary<string, object?> { ["@type"] = "ImageObject", ["url"] = $"{req.Scheme}://{req.Host}/images/logo.png" }
+        },
+        ["image"] = string.IsNullOrEmpty(Model.ImagePath) ? null : $"{req.Scheme}://{req.Host}{Model.ImagePath}",
+        ["mainEntityOfPage"] = canonicalUrl
+    }, new System.Text.Json.JsonSerializerOptions { DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull });
 }
 
 @section Styles {
     <link rel="stylesheet" asp-append-version="true" href="~/css/articles-details.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 }
+
+<script type="application/ld+json">@Html.Raw(articleJson)</script>
 
 <div class="news-article-page">
     <div class="container-fluid ">
@@ -145,7 +177,7 @@
                                     ? $"background-image:url('{a.ImagePath}')"
                                     : "background:#0f172a;"; // غامق في حال لا يوجد صورة
 
-                                    <a class="readalso-card" asp-action="Details" asp-route-id="@a.Id" style="@bgStyle">
+                                    <a class="readalso-card" asp-action="Details" asp-route-id="@a.Id" asp-route-slug="@SlugHelper.Make(a.TitleAr)" style="@bgStyle">
 
                                         <div class="readalso-overlay"></div>
 

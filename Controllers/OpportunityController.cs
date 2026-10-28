@@ -279,11 +279,9 @@ public async Task<IActionResult> Create()
             var existingRequest = await _context.ReelsRequests
     .FirstOrDefaultAsync(r => r.OpportunityId == opportunity.Id);
 
-            if (existingRequest != null && existingRequest.IsRejected)
+            if (existingRequest != null && existingRequest.Status == ReelsRequestStatus.Rejected)
             {
-                existingRequest.IsRejected = false;
-                existingRequest.IsCompleted = false;
-                existingRequest.IsInProgress = false;
+                existingRequest.SetStatus(ReelsRequestStatus.Pending);
                 existingRequest.RejectionReason = null;
                 existingRequest.RequestDate = DateTime.Now; // ترجع Pending تلقائياً
             }

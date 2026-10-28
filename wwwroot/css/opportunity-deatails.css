@@ -1112,3 +1112,6 @@ html[dir="ltr"] .back-arrow{ transform: rotate(180deg); }
 
   .info-grid{ grid-template-columns:1fr; gap:6px; }
 }
+
+/* الموعد النهائي خلال 7 أيام */
+.deadline-soon { background-color: #f99d27; }

@@ -93,15 +93,17 @@ namespace Foras_Khadra.Controllers
             var request = await _context.ReelsRequests.FindAsync(id);
             if (request == null) return NotFound();
 
-            // تعديل الحالات حسب اختيار الادمن
-            request.IsCompleted = newStatus == "completed";
-            request.IsRejected = newStatus == "rejected";
-
-            //  حالة جاري العمل عليها فقط إذا الادمن اختار "pending"
-            request.IsInProgress = newStatus == "pending";
+            // تعديل الحالة حسب اختيار الادمن ("pending" في القائمة تعني "جاري العمل عليها")
+            request.SetStatus(newStatus switch
+            {
+                "completed" => ReelsRequestStatus.Completed,
+                "rejected" => ReelsRequestStatus.Rejected,
+                "pending" => ReelsRequestStatus.InProgress,
+                _ => ReelsRequestStatus.Pending
+            });
 
             // حفظ سبب الرفض إذا تم رفض الطلب
-            request.RejectionReason = request.IsRejected ? rejectionReason : null;
+            request.RejectionReason = request.Status == ReelsRequestStatus.Rejected ? rejectionReason : null;
 
             await _context.SaveChangesAsync();
             return Ok();
