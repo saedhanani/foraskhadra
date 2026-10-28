@@ -8,8 +8,8 @@
 	  <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
 	  <RepositoryType>git</RepositoryType>
 	  <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
-    <!-- مشروع الاختبارات مجلد فرعي؛ لا يُضم إلى تجميع الموقع -->
-    <DefaultItemExcludes>$(DefaultItemExcludes);Foras_Khadra.Tests\**</DefaultItemExcludes>
+    <!-- مشروع الاختبارات مجلد فرعي؛ لا يُضم إلى تجميع الموقع. ومجلد publish (حزم النشر اليدوي، وفيها إعدادات بأسرار) لا يُنشر -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);Foras_Khadra.Tests\**;publish\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
