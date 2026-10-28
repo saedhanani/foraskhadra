@@ -1,9 +1,7 @@
 using Foras_Khadra.Data;
-using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
 using Foras_Khadra.Services;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
@@ -131,10 +129,6 @@ builder.Services.AddResponseCompression(options =>
 });
 builder.Services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>();
 
-// ===== الموقع خلف Cloudflare CDN: عنوان الزائر الحقيقي والبروتوكول من ترويسات Cloudflare (من نطاقاته فقط) =====
-// بدونه تحسب حدود الطلبات (auth/contact/api) كل الزوار زائرًا واحدًا بعنوان Cloudflare
-builder.Services.Configure<ForwardedHeadersOptions>(CloudflareProxies.Configure);
-
 var app = builder.Build();
 
 // ===== إنشاء الأدوار وحساب الأدمن وربط المنظمات =====
@@ -200,7 +194,6 @@ if (app.Environment.IsDevelopment())
     }
 }
 // ===== Configure the HTTP request pipeline =====
-app.UseForwardedHeaders(); // أولًا، حتى يرى كل ما بعده (التحويل إلى HTTPS، حدود الطلبات، السجل) عنوان الزائر الحقيقي
 app.UseResponseCompression();
 
 if (app.Environment.IsDevelopment())
@@ -234,7 +227,9 @@ app.Use(async (context, next) =>
 // الملفات الثابتة تُخزَّن في المتصفح يومًا واحدًا (الرفوعات تأخذ أسماء عشوائية جديدة عند التغيير)
 app.UseStaticFiles(new StaticFileOptions
 {
-    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "public,max-age=86400"
+    // sw.js يُستثنى حتى يلتقط المتصفح أي تحديث له فورًا
+    OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl =
+        ctx.File.Name == "sw.js" ? "no-cache" : "public,max-age=86400"
 });
 // ===== Use Localization =====
 var localizationOptions = app.Services

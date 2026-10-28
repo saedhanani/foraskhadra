@@ -734,6 +734,10 @@ else
 <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
 <script asp-append-version="true" src="~/js/site.js"></script>
+<script>
+    // إعادة محاولة تلقائية للطلبات التي يقطعها الخادم (انظر wwwroot/sw.js)
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js').catch(function () { }); }
+</script>
 
 @RenderSection("Scripts", required: false)
 </body>
