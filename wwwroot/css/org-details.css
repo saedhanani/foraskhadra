@@ -37,7 +37,7 @@
     direction: ltr;
     background:
         linear-gradient(90deg, rgba(15, 52, 28, 0.9) 0%, rgba(25, 90, 48, 0.58) 32%, rgba(90, 165, 175, 0.35) 70%, rgba(180, 220, 230, 0.45) 100%),
-        url("/images/img3.svg") 45% 42%/cover no-repeat;
+        url("/images/img3.webp") 45% 42%/cover no-repeat;
 }
 
 .org-details-slogan {

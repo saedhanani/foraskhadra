@@ -89,7 +89,7 @@
     }
 }
 
-<link href="~/css/opportunity-deatails.css" rel="stylesheet" />
+<link asp-append-version="true" href="~/css/opportunity-deatails.css" rel="stylesheet" />
 @if (jobPostingJson != null)
 {
     <script type="application/ld+json">@Html.Raw(jobPostingJson)</script>

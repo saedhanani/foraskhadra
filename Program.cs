@@ -70,6 +70,7 @@ builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
 builder.Services.AddScoped<ISavedOpportunityService, SavedOpportunityService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IProgramMenu, ProgramMenu>();
+builder.Services.AddScoped<StoredImageOptimizer>();
 
 // الواجهة العامة للقراءة (api/v1) تُستدعى من مواقع أخرى بالمتصفح: GET فقط من أي أصل
 builder.Services.AddCors(options => options.AddPolicy("public-api", policy =>
@@ -133,6 +134,8 @@ builder.Services.AddResponseCompression(options =>
     options.EnableForHttps = true;
     options.Providers.Add<BrotliCompressionProvider>();
     options.Providers.Add<GzipCompressionProvider>();
+    // SVG نص ويُضغط إلى ربعه، وليس ضمن الأنواع الافتراضية
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "image/svg+xml" });
 });
 builder.Services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>();
 
@@ -246,7 +249,13 @@ else
     app.UseHsts();
 }
 
-app.UseSerilogRequestLogging();
+// الملفات الثابتة (صور/css/js) لا تُسجَّل سطرًا سطرًا: عشرات الأسطر لكل صفحة تُكتب على القرص بلا فائدة
+app.UseSerilogRequestLogging(options => options.GetLevel = (ctx, _, ex) =>
+    ex != null || ctx.Response.StatusCode >= 500 ? LogEventLevel.Error
+    : ctx.Request.Path.StartsWithSegments("/uploads") || ctx.Request.Path.StartsWithSegments("/logos")
+      || ctx.Request.Path.StartsWithSegments("/images") || ctx.Request.Path.StartsWithSegments("/css")
+      || ctx.Request.Path.StartsWithSegments("/js") || ctx.Request.Path.StartsWithSegments("/lib") ? LogEventLevel.Debug
+    : LogEventLevel.Information);
 
 // ❗ خليها بعد exception handling مباشرة
 app.UseStatusCodePages();
@@ -279,12 +288,13 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// الملفات الثابتة تُخزَّن في المتصفح يومًا واحدًا (الرفوعات تأخذ أسماء عشوائية جديدة عند التغيير)
+// الملفات الثابتة تُخزَّن في المتصفح 30 يومًا: الرفوعات تأخذ أسماء عشوائية جديدة عند التغيير،
+// وملفات css/js تحمل بصمة المحتوى في الرابط (asp-append-version) فيلتقط المتصفح أي تعديل فورًا
 app.UseStaticFiles(new StaticFileOptions
 {
     // sw.js يُستثنى حتى يلتقط المتصفح أي تحديث له فورًا
     OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl =
-        ctx.File.Name == "sw.js" ? "no-cache" : "public,max-age=86400"
+        ctx.File.Name == "sw.js" ? "no-cache" : "public,max-age=2592000"
 });
 // ===== Use Localization =====
 var localizationOptions = app.Services

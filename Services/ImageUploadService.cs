@@ -49,11 +49,31 @@ namespace Foras_Khadra.Services
             if (error != null)
                 throw new InvalidOperationException(error);
 
-            var (fullPath, webPath) = NewTarget(subfolder, Path.GetExtension(file.FileName));
+            byte[] bytes;
+            using (var buffer = new MemoryStream())
+            {
+                await file.CopyToAsync(buffer);
+                bytes = buffer.ToArray();
+            }
+
+            return await WriteOptimizedAsync(bytes, Path.GetExtension(file.FileName), subfolder);
+        }
+
+        /// <summary>يصغّر الصورة ويعيد ترميزها (ImageOptimizer) ثم يحفظها؛ وإن لم يلزم التحسين أو تعذّر تُحفظ كما وصلت.</summary>
+        private async Task<string> WriteOptimizedAsync(byte[] bytes, string extension, string subfolder)
+        {
+            var optimized = ImageOptimizer.Optimize(bytes, ImageOptimizer.MaxEdgeFor(subfolder));
+            if (optimized != null)
+            {
+                bytes = optimized.Bytes;
+                extension = optimized.Extension;
+            }
+
+            var (fullPath, webPath) = NewTarget(subfolder, extension);
 
             using (var stream = new FileStream(fullPath, FileMode.CreateNew))
             {
-                await file.CopyToAsync(stream);
+                await stream.WriteAsync(bytes);
             }
 
             return webPath;
@@ -113,14 +133,7 @@ namespace Foras_Khadra.Services
             if (DetectSignature(bytes) != extension)
                 throw new InvalidOperationException("الملف ليس صورة صالحة");
 
-            var (fullPath, webPath) = NewTarget(subfolder, extension);
-
-            using (var stream = new FileStream(fullPath, FileMode.CreateNew))
-            {
-                await stream.WriteAsync(bytes);
-            }
-
-            return webPath;
+            return await WriteOptimizedAsync(bytes, extension, subfolder);
         }
 
         /// <summary>المسار على القرص ومسار الويب لملف جديد باسم عشوائي داخل wwwroot/{subfolder}.</summary>

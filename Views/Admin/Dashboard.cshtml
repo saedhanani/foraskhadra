@@ -16,9 +16,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Admin Dashboard</title>
 
-    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link asp-append-version="true" rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
-    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script asp-append-version="true" src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <style>
         :root {
             --bg: #f5f7f4;
@@ -616,6 +616,16 @@
                 </div>
             </div> 
             
+
+            <div class="sidebar-section">
+                <span class="sidebar-label">Maintenance</span>
+                <div class="nav-list">
+                    <a asp-controller="Admin" asp-action="OptimizeImages" class="nav-link-item">
+                        <i class="bi bi-images"></i>
+                        <span>@(isArabic ? "تحسين الصور" : "Optimize images")</span>
+                    </a>
+                </div>
+            </div>
 
             <div class="sidebar-section">
                 <span class="sidebar-label">Member</span>

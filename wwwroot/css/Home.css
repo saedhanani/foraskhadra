@@ -143,7 +143,7 @@ body {
 /* ===== HERO ===== */
 .about-hero {
   height: 260px;
-  background: url("/images/about_us_bg.jpg") center/cover no-repeat;
+  background: url("/images/about_us_bg.webp") center/cover no-repeat;
   position: relative;
   border-radius: 12px;
   margin: 40px 0 40px 0;

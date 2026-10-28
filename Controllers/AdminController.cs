@@ -48,6 +48,25 @@ namespace Foras_Khadra.Controllers
             return View(model);
         }
 
+        // ===== تحسين الصور المخزّنة (تصغير وإعادة ترميز الصور المرفوعة سابقًا) =====
+        [HttpGet]
+        public IActionResult OptimizeImages()
+        {
+            var report = TempData["ImageOptimizeReport"] is string json
+                ? System.Text.Json.JsonSerializer.Deserialize<StoredImageReport>(json)
+                : null;
+            return View(report);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> OptimizeImages([FromServices] StoredImageOptimizer optimizer)
+        {
+            // مهلة أقصر من حد الاستضافة للطلب الواحد؛ الصفحة تطلب إعادة التشغيل إن لم تكتمل الجولة
+            var report = await optimizer.RunAsync(TimeSpan.FromSeconds(45), HttpContext.RequestAborted);
+            TempData["ImageOptimizeReport"] = System.Text.Json.JsonSerializer.Serialize(report);
+            return RedirectToAction(nameof(OptimizeImages));
+        }
+
         public IActionResult ReelsRequestsDashboard(string status = null)
         {
             var lang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;

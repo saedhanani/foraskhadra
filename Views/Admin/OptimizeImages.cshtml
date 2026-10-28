@@ -1,0 +1,50 @@
+@model Foras_Khadra.Services.StoredImageReport?
+@using System.Globalization
+@{
+    var isArabic = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "ar";
+    ViewData["Title"] = isArabic ? "تحسين الصور" : "Optimize images";
+    ViewData["HideNavAndFooter"] = true;
+
+    static string Mb(long bytes) => (bytes / 1024d / 1024d).ToString("0.0", CultureInfo.InvariantCulture);
+}
+
+<div class="container py-5" dir="@(isArabic ? "rtl" : "ltr")" style="max-width: 720px;">
+    <h2 class="mb-3">@ViewData["Title"]</h2>
+
+    <p class="text-muted">
+        @(isArabic
+            ? "تصغّر هذه الأداة الصور المخزّنة (شعارات المنظمات، صور الفرص والمقالات والفريق والنشاطات والمشاريع) إلى أبعاد العرض الفعلية وتعيد ترميزها، فتصبح أصغر بعشرات المرات وتتحمّل الصفحات أسرع. الأصول لا تُحذف بل تُنقل إلى App_Data/image-originals."
+            : "This tool shrinks stored images (organization logos, opportunity, article, team, activity and program images) to their displayed size and re-encodes them, making them many times smaller so pages load faster. Originals are moved to App_Data/image-originals, not deleted.")
+    </p>
+
+    @if (Model != null)
+    {
+        <div class="alert @(Model.Failed > 0 ? "alert-warning" : "alert-success")">
+            <table class="table table-sm mb-2">
+                <tbody>
+                    <tr><th>@(isArabic ? "صور فُحصت" : "Scanned")</th><td>@Model.Scanned</td></tr>
+                    <tr><th>@(isArabic ? "صور صُغّرت" : "Optimized")</th><td>@Model.Optimized</td></tr>
+                    <tr><th>@(isArabic ? "تُركت كما هي (صغيرة أو مفقودة)" : "Left as is (small or missing)")</th><td>@Model.Skipped</td></tr>
+                    <tr><th>@(isArabic ? "فشلت" : "Failed")</th><td>@Model.Failed</td></tr>
+                    <tr><th>@(isArabic ? "الحجم قبل → بعد" : "Size before → after")</th><td>@Mb(Model.BytesBefore) MB → @Mb(Model.BytesAfter) MB</td></tr>
+                </tbody>
+            </table>
+            <strong>
+                @(Model.Finished
+                    ? (isArabic ? "انتهى: كل الصور فُحصت." : "Done: all images were checked.")
+                    : (isArabic ? "لم ينتهِ بعد (انتهت مهلة الطلب): اضغط التشغيل مرة أخرى." : "Not finished yet (request time limit): run again."))
+            </strong>
+            @if (Model.Errors.Count > 0)
+            {
+                <ul class="mb-0 mt-2 small">
+                    @foreach (var error in Model.Errors) { <li>@error</li> }
+                </ul>
+            }
+        </div>
+    }
+
+    <form method="post" class="d-flex gap-3 align-items-center">
+        <button type="submit" class="btn btn-success">@(isArabic ? "تشغيل التحسين" : "Run optimization")</button>
+        <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-secondary">@(isArabic ? "عودة إلى لوحة التحكم" : "Back to dashboard")</a>
+    </form>
+</div>
