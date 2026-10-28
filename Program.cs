@@ -68,6 +68,8 @@ builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailS
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
 builder.Services.AddScoped<ISavedOpportunityService, SavedOpportunityService>();
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<IProgramMenu, ProgramMenu>();
 
 // الواجهة العامة للقراءة (api/v1) تُستدعى من مواقع أخرى بالمتصفح: GET فقط من أي أصل
 builder.Services.AddCors(options => options.AddPolicy("public-api", policy =>
@@ -217,6 +219,18 @@ using (var scope = app.Services.CreateScope())
         // لا يوقف التشغيل: مثلًا العمود لم يُضف بعد على الخادم (شغّل Migrations/Sql/2026-10-search-text.sql)
         app.Logger.LogError(ex, "SearchText backfill failed");
     }
+
+    // المشاريع الرائدة الثلاثة من ملف الشركاء 2026 تُزرع مرة واحدة إن كان الجدول فارغًا (في كل البيئات)
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var seeded = await FlagshipProgramSeeder.SeedAsync(db);
+        if (seeded > 0) app.Logger.LogInformation("Seeded {Count} flagship programs", seeded);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Flagship programs seed failed (run Migrations/Sql/2026-10-flagship-programs.sql)");
+    }
 }
 
 // ===== Configure the HTTP request pipeline =====
@@ -301,6 +315,12 @@ app.MapControllerRoute(
     name: "activity-details",
     pattern: "Activities/Details/{id:int}/{slug?}",
     defaults: new { controller = "Activities", action = "Details" });
+
+// صفحات المشاريع الرائدة: /Programs/rcoy-mena (الصفحات الإدارية Programs/Index|Create|Edit|Delete تسبقها في المطابقة)
+app.MapControllerRoute(
+    name: "program-details",
+    pattern: "Programs/{slug:regex(^(?!(Index|Create|Edit|Delete|Details)$)[a-z0-9-]+$)}",
+    defaults: new { controller = "Programs", action = "Details" });
 
 app.MapControllerRoute(
     name: "default",

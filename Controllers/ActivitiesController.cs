@@ -53,7 +53,7 @@ namespace Foras_Khadra.Controllers
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
-            var activity = await _context.Activities.AsNoTracking().FirstOrDefaultAsync(a => a.Id == id);
+            var activity = await _context.Activities.AsNoTracking().Include(a => a.Program).FirstOrDefaultAsync(a => a.Id == id);
             if (activity == null) return NotFound();
             // غير المنشور يراه الأدمن فقط
             if (!activity.IsPublished && !User.IsInRole("Admin")) return NotFound();
@@ -61,14 +61,32 @@ namespace Foras_Khadra.Controllers
             return View(activity);
         }
 
+        /// <summary>قائمة المشاريع الرائدة لحقل "يتبع المشروع" في النموذج.</summary>
+        private async Task LoadProgramsAsync()
+        {
+            ViewBag.Programs = await _context.FlagshipPrograms
+                .AsNoTracking()
+                .OrderBy(p => p.SortOrder)
+                .Select(p => new Microsoft.AspNetCore.Mvc.Rendering.SelectListItem { Value = p.Id.ToString(), Text = p.MenuTitleAr })
+                .ToListAsync();
+        }
+
         // ================= CREATE =================
         [HttpGet]
-        public IActionResult Create() => View(new Activity());
+        public async Task<IActionResult> Create()
+        {
+            await LoadProgramsAsync();
+            return View(new Activity());
+        }
 
         [HttpPost]
         public async Task<IActionResult> Create(Activity activity, IFormFile? Image)
         {
-            if (!await ApplyAsync(activity, activity, Image)) return View(activity);
+            if (!await ApplyAsync(activity, activity, Image))
+            {
+                await LoadProgramsAsync();
+                return View(activity);
+            }
 
             activity.CreatedAt = DateTime.Now;
             _context.Activities.Add(activity);
@@ -82,6 +100,7 @@ namespace Foras_Khadra.Controllers
         {
             var activity = await _context.Activities.FindAsync(id);
             if (activity == null) return NotFound();
+            await LoadProgramsAsync();
             return View(activity);
         }
 
@@ -91,7 +110,11 @@ namespace Foras_Khadra.Controllers
             var existing = await _context.Activities.FindAsync(id);
             if (existing == null) return NotFound();
 
-            if (!await ApplyAsync(existing, activity, Image)) return View(activity);
+            if (!await ApplyAsync(existing, activity, Image))
+            {
+                await LoadProgramsAsync();
+                return View(activity);
+            }
 
             await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
@@ -143,6 +166,7 @@ namespace Foras_Khadra.Controllers
             target.Location = string.IsNullOrWhiteSpace(form.Location) ? null : form.Location.Trim();
             target.ExternalLink = string.IsNullOrWhiteSpace(form.ExternalLink) ? null : form.ExternalLink.Trim();
             target.IsPublished = form.IsPublished;
+            target.ProgramId = form.ProgramId;
             return true;
         }
     }

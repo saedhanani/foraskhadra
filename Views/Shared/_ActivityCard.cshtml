@@ -1,0 +1,48 @@
+@* بطاقة نشاط واحدة (صفحة "نشاطاتنا" وصفحة المشروع الرائد). Model: Activity — يُعرض وسم المشروع إن كان النشاط تابعًا لمشروع *@
+@model Activity
+@using Foras_Khadra.Helpers
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var title = lang switch { "en" => Model.TitleEn, "fr" => Model.TitleFr, _ => Model.TitleAr };
+    var plain = System.Text.RegularExpressions.Regex.Replace(
+        System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(
+            (lang switch { "en" => Model.DescriptionEn, "fr" => Model.DescriptionFr, _ => Model.DescriptionAr }) ?? "", "<.*?>", " ")), @"\s+", " ").Trim();
+    var excerpt = plain.Length > 140 ? plain.Substring(0, 137) + "..." : plain;
+    var start = Model.StartDate.ToString("dd MMM yyyy");
+    var date = Model.EndDate.HasValue && Model.EndDate.Value.Date != Model.StartDate.Date ? $"{start} – {Model.EndDate.Value:dd MMM yyyy}" : start;
+    var url = Url.Action("Details", "Activities", new { id = Model.Id, slug = SlugHelper.Make(title) });
+    var programTitle = Model.Program == null ? null : (lang switch { "en" => Model.Program.MenuTitleEn, "fr" => Model.Program.MenuTitleFr, _ => Model.Program.MenuTitleAr });
+}
+<article class="activity-card @(Model.IsUpcoming ? "" : "is-past")">
+    <a href="@url" class="activity-card-image">
+        @if (!string.IsNullOrEmpty(Model.ImagePath))
+        {
+            <img src="@Model.ImagePath" alt="@title" loading="lazy" decoding="async" />
+        }
+        else
+        {
+            <span class="activity-card-placeholder"><i class="bi bi-calendar-event"></i></span>
+        }
+        <span class="activity-date-badge"><i class="bi bi-calendar3"></i> @date</span>
+        @if (Model.IsUpcoming)
+        {
+            <span class="activity-upcoming-badge">@(lang == "en" ? "Upcoming" : lang == "fr" ? "À venir" : "قادم")</span>
+        }
+    </a>
+    <div class="activity-card-body">
+        @if (programTitle != null)
+        {
+            <a href="@Url.Action("Details", "Programs", new { slug = Model.Program!.Slug })" class="activity-program-chip"><i class="bi bi-stars"></i> @programTitle</a>
+        }
+        <h3><a href="@url">@title</a></h3>
+        @if (!string.IsNullOrWhiteSpace(Model.Location))
+        {
+            <p class="activity-location"><i class="bi bi-geo-alt"></i> @Model.Location</p>
+        }
+        <p class="activity-excerpt">@excerpt</p>
+        <a href="@url" class="activity-more">
+            @(lang == "en" ? "Read more" : lang == "fr" ? "En savoir plus" : "اقرأ المزيد")
+            <i class="bi @(lang == "ar" ? "bi-arrow-left" : "bi-arrow-right")"></i>
+        </a>
+    </div>
+</article>

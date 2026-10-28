@@ -1,0 +1,176 @@
+@model FlagshipProgram
+@using Foras_Khadra.Helpers
+@inject Foras_Khadra.Services.IProgramMenu ProgramMenu
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string L(string? ar, string? en, string? fr) => (lang == "en" ? en : lang == "fr" ? fr : ar) ?? "";
+
+    var title = L(Model.TitleAr, Model.TitleEn, Model.TitleFr);
+    var subtitle = L(Model.SubtitleAr, Model.SubtitleEn, Model.SubtitleFr);
+    var intro = L(Model.IntroAr, Model.IntroEn, Model.IntroFr);
+    var outcomesHeading = L(Model.OutcomesHeadingAr, Model.OutcomesHeadingEn, Model.OutcomesHeadingFr);
+    var outcomes = L(Model.OutcomesAr, Model.OutcomesEn, Model.OutcomesFr);
+    var partners = L(Model.PartnersAr, Model.PartnersEn, Model.PartnersFr);
+    var headlineLabel = L(Model.HeadlineLabelAr, Model.HeadlineLabelEn, Model.HeadlineLabelFr);
+
+    ViewData["Title"] = title;
+    var plain = System.Text.RegularExpressions.Regex.Replace(
+        System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(intro, "<.*?>", " ")), @"\s+", " ").Trim();
+    ViewData["Description"] = plain.Length > 160 ? plain.Substring(0, 157) + "..." : plain;
+    if (!string.IsNullOrEmpty(Model.HeroImagePath)) ViewData["OgImage"] = Model.HeroImagePath;
+    ViewData["Canonical"] = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}/Programs/{Model.Slug}";
+
+    int position = ViewBag.Position ?? 0;
+    int total = ViewBag.Total ?? 0;
+    var activities = ViewBag.Activities as List<Activity> ?? new List<Activity>();
+    var others = (await ProgramMenu.GetAsync()).Where(p => p.Slug != Model.Slug).ToList();
+    var milestoneHeading = L("المحطات", "Milestones", "Étapes");
+}
+
+<link rel="stylesheet" asp-append-version="true" href="~/css/activities.css" />
+<link rel="stylesheet" asp-append-version="true" href="~/css/programs.css" />
+
+<!-- ===== البانر ===== -->
+<section class="bleed program-hero" style="@(string.IsNullOrEmpty(Model.HeroImagePath) ? "" : $"background-image:url('{Model.HeroImagePath}')")">
+    <div class="program-hero-overlay"></div>
+    <div class="container program-hero-inner">
+        <a href="@Url.Action("News", "Home")" class="program-back"><i class="bi @(lang == "ar" ? "bi-arrow-right" : "bi-arrow-left")"></i> @L("نشاطاتنا", "Our activities", "Nos activités")</a>
+        @if (position > 0)
+        {
+            <span class="program-badge">@L("مشروع رائد", "Flagship project", "Projet phare") @position / @total</span>
+        }
+        @if (!Model.IsPublished)
+        {
+            <span class="program-badge program-badge-draft">@L("مسودة — يراها الأدمن فقط", "Draft — admins only", "Brouillon — admins seulement")</span>
+        }
+        <h1>@title</h1>
+        @if (!string.IsNullOrWhiteSpace(subtitle))
+        {
+            <p class="program-subtitle">@subtitle</p>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.HeadlineValue))
+        {
+            <div class="program-headline">
+                <span class="program-headline-value">@Model.HeadlineValue</span>
+                <span class="program-headline-label">@headlineLabel</span>
+            </div>
+        }
+    </div>
+</section>
+
+<div class="program-page">
+
+    <!-- ===== التعريف + الشركاء ===== -->
+    <section class="program-intro row g-4">
+        <div class="col-lg-8">
+            <div class="program-prose">@Html.SanitizedRaw(intro)</div>
+        </div>
+        <div class="col-lg-4">
+            <aside class="program-aside">
+                @if (!string.IsNullOrWhiteSpace(partners))
+                {
+                    <h3><i class="bi bi-people"></i> @L("الشركاء", "Partners", "Partenaires")</h3>
+                    <p>@partners</p>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.ExternalLink))
+                {
+                    <a href="@Model.ExternalLink" target="_blank" rel="noopener" class="hero-btn hero-btn-primary w-100"><i class="bi bi-box-arrow-up-right"></i> @L("موقع المشروع", "Project website", "Site du projet")</a>
+                }
+                <a href="@Url.Action("Index", "Contact")" class="hero-btn hero-btn-outline w-100"><i class="bi bi-handshake"></i> @L("كن شريكًا في النسخة القادمة", "Partner with us on the next edition", "Devenez partenaire de la prochaine édition")</a>
+                @if (User.IsInRole("Admin"))
+                {
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="program-admin-edit"><i class="bi bi-pencil"></i> تعديل المشروع</a>
+                }
+            </aside>
+        </div>
+    </section>
+
+    <!-- ===== الأرقام ===== -->
+    @if (Model.Stats.Any())
+    {
+        <section class="program-section">
+            <h2 class="program-section-title">@L("بالأرقام", "In numbers", "En chiffres")</h2>
+            <div class="stat-grid">
+                @foreach (var s in Model.Stats)
+                {
+                    <div class="stat-tile">
+                        <span class="stat-value">@s.Value</span>
+                        <span class="stat-label">@L(s.Ar, s.En, s.Fr)</span>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- ===== المحطات ===== -->
+    @if (Model.Timeline.Any())
+    {
+        <section class="program-section">
+            <h2 class="program-section-title">@milestoneHeading</h2>
+            <div class="timeline">
+                @foreach (var (m, i) in Model.Timeline.Select((m, i) => (m, i)))
+                {
+                    <div class="timeline-item @(i == Model.Timeline.Count - 1 ? "is-current" : "")">
+                        <span class="timeline-year">@m.Year</span>
+                        <p>@L(m.Ar, m.En, m.Fr)</p>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- ===== المخرجات ===== -->
+    @if (!string.IsNullOrWhiteSpace(outcomes))
+    {
+        <section class="program-section program-outcomes">
+            <h2 class="program-section-title">@(string.IsNullOrWhiteSpace(outcomesHeading) ? L("المخرجات", "Outputs", "Résultats") : outcomesHeading)</h2>
+            <div class="program-prose">@Html.SanitizedRaw(outcomes)</div>
+        </section>
+    }
+
+    <!-- ===== المعرض ===== -->
+    @if (Model.Gallery.Any())
+    {
+        <section class="program-section">
+            <h2 class="program-section-title">@L("من الميدان", "From the field", "Sur le terrain")</h2>
+            <div class="program-gallery">
+                @foreach (var img in Model.Gallery)
+                {
+                    <a href="@img" target="_blank" rel="noopener"><img src="@img" alt="@title" loading="lazy" decoding="async" /></a>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- ===== النشاطات التابعة ===== -->
+    @if (activities.Any())
+    {
+        <section class="program-section">
+            <h2 class="program-section-title">@L("نشاطات المشروع", "Project activities", "Activités du projet") <span class="count">(@activities.Count)</span></h2>
+            <div class="row g-4">
+                @foreach (var a in activities)
+                {
+                    <div class="col-lg-4 col-md-6">
+                        <partial name="_ActivityCard" model="a" />
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <!-- ===== بقية المشاريع ===== -->
+    @if (others.Any())
+    {
+        <section class="program-section program-others">
+            <h2 class="program-section-title">@L("مشاريع رائدة أخرى", "Other flagship projects", "Autres projets phares")</h2>
+            <div class="program-others-list">
+                @foreach (var o in others)
+                {
+                    <a href="@Url.Action("Details", "Programs", new { slug = o.Slug })" class="program-other"><i class="bi bi-stars"></i> @o.Title(lang) <i class="bi @(lang == "ar" ? "bi-arrow-left" : "bi-arrow-right") ms-auto"></i></a>
+                }
+            </div>
+        </section>
+    }
+</div>
+
+<partial name="_PartnerCta" />

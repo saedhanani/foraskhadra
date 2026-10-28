@@ -35,6 +35,11 @@ namespace Foras_Khadra.Models
         /// <summary>غير المنشور يراه الأدمن فقط.</summary>
         public bool IsPublished { get; set; } = true;
 
+        /// <summary>المشروع الرائد الذي يتبعه النشاط (اختياري) — يظهر في صفحة المشروع وكوسم على البطاقة.</summary>
+        public int? ProgramId { get; set; }
+        [ForeignKey("ProgramId")]
+        public FlagshipProgram? Program { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         /// <summary>قادم ما لم ينقضِ آخر يوم فيه.</summary>

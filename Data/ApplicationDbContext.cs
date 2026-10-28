@@ -22,6 +22,7 @@ namespace Foras_Khadra.Data
         public DbSet<ReelsRequest> ReelsRequests { get; set; }
         public DbSet<SavedOpportunity> SavedOpportunities { get; set; }
         public DbSet<Activity> Activities { get; set; }
+        public DbSet<FlagshipProgram> FlagshipPrograms { get; set; }
 
         // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -48,6 +49,14 @@ namespace Foras_Khadra.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // المشاريع الرائدة: الـ slug فريد، وحذف المشروع يفكّ ربط نشاطاته ولا يحذفها
+            modelBuilder.Entity<FlagshipProgram>().HasIndex(p => p.Slug).IsUnique();
+            modelBuilder.Entity<Activity>()
+                .HasOne(a => a.Program)
+                .WithMany()
+                .HasForeignKey(a => a.ProgramId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // فهارس مسار منصة الفريق (أُنشئت في هجرة TeamPipeline اليدوية؛ تُعلن هنا حتى لا تحذفها الهجرات التالية)
             modelBuilder.Entity<Opportunity>().HasIndex(o => o.PipeId);

@@ -53,11 +53,13 @@ dotnet test
 
 `wwwroot/manifest.webmanifest` وأيقونات `images/icon-*.png` تجعل الموقع قابلًا للتثبيت؛ `wwwroot/sw.js` يحفظ الملفات الثابتة للعمل بلا اتصال ويعرض `offline.html` عند انقطاع الشبكة (صفحات HTML لا تُخزَّن). عند تغيير قائمة الملفات المسبقة غيّر `CACHE_NAME` في `sw.js`.
 
-## نشاطاتنا
+## نشاطاتنا والمشاريع الرائدة
 
-- صفحة `/Home/News` (رابط "نشاطاتنا" في القائمة) تعرض النشاطات المنشورة: القادمة ثم السابقة، وصفحة تفاصيل `/Activities/Details/{id}/{slug}` مع بيانات `Event` المنظمة.
-- الإدارة من لوحة التحكم ← Activities (`ActivitiesController`: قائمة/إضافة/تعديل/حذف، صورة اختيارية، تاريخ بداية ونهاية، مكان، رابط تسجيل أو تغطية، نشر/مسودة).
-- الجدول `Activities` (هجرة `20261028184220_Activities`)؛ للإنتاج شغّل `Migrations/Sql/2026-10-activities.sql` قبل النشر.
+- صفحة `/Home/News` (قائمة "نشاطاتنا" المنسدلة ← "جميع نشاطاتنا"): بانر بأرقام الأثر (ثابتة في العرض من ملف الشركاء 2026 — حدّثها في `Views/Home/News.cshtml`)، ثم بطاقات المشاريع الرائدة، ثم النشاطات (القادمة فالسابقة) مع فلتر بالمشروع `?program=slug`، ثم دعوة للشراكة (`_PartnerCta`).
+- **المشاريع الرائدة** (`FlagshipProgram`): لكل مشروع صفحة `/Programs/{slug}` (بانر بصورة، رقم أبرز، تعريف، أرقام، محطات، مخرجات، معرض، نشاطاته، بقية المشاريع) وبند في القائمة المنسدلة (`Services/ProgramMenu`، مخزّن مؤقتًا 10 دقائق ويُلغى عند الحفظ). الإدارة من لوحة التحكم ← Activities ← المشاريع الرائدة (`ProgramsController`). الأرقام والمحطات والمعرض تُخزَّن JSON في `StatsJson/TimelineJson/GalleryJson`.
+- المشاريع الثلاثة (RCOY MENA، قمة صنّاع المحتوى، برنامج بناء القدرات) تُزرع تلقائيًا عند أول تشغيل إذا كان الجدول فارغًا (`Data/FlagshipProgramSeeder`، صورها في `wwwroot/images/programs`).
+- النشاط يمكن ربطه بمشروع (`Activity.ProgramId`) فيظهر في صفحة المشروع وبوسم على بطاقته. صفحة تفاصيل النشاط `/Activities/Details/{id}/{slug}` مع بيانات `Event` المنظمة.
+- الجداول: `Activities` (هجرة `20261028184220_Activities` → `Migrations/Sql/2026-10-activities.sql`) و`FlagshipPrograms` + `Activities.ProgramId` (هجرة `20261028191535_FlagshipPrograms` → `Migrations/Sql/2026-10-flagship-programs.sql`). شغّلهما بالترتيب على الإنتاج قبل النشر.
 
 ## الفرص المحفوظة
 

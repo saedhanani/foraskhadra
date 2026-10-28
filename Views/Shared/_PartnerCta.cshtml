@@ -1,0 +1,22 @@
+@* شريط "كن شريكًا" أسفل صفحة النشاطات وصفحات المشاريع الرائدة *@
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string L(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+}
+<section class="bleed partner-cta">
+    <div class="container partner-cta-inner">
+        <div class="partner-cta-text">
+            <span class="hero-kicker"><i class="bi bi-handshake"></i> @L("لماذا الشراكة مع فرص خضراء؟", "Why partner with Foras Khadra?", "Pourquoi s'associer à Foras Khadra ?")</span>
+            <h2>@L("الفرص موجودة، لكن الوصول إليها ما يزال محدودًا. لدينا نموذج جاهز، وجمهور فعلي، وشباب مستعد — ما ينقص هو الشريك.", "The opportunities exist, but access to them is still limited. We have a proven model, a real audience and youth who are ready — what is missing is the partner.", "Les opportunités existent, mais l'accès reste limité. Nous avons un modèle éprouvé, un public réel et des jeunes prêts — il ne manque que le partenaire.")</h2>
+            <ul class="partner-cta-points">
+                <li><i class="bi bi-check2-circle"></i> @L("أكثر من مليوني زائر شهريًا لمنصاتنا وفرق قُطرية في 11 دولة", "2M+ monthly visitors to our platforms and country teams in 11 countries", "2M+ de visiteurs mensuels et des équipes nationales dans 11 pays")</li>
+                <li><i class="bi bi-check2-circle"></i> @L("نموذج مُختبَر في دول عدة بمعدلات قبول وتنوّع موثّقة", "A model tested in several countries with documented acceptance and diversity rates", "Un modèle testé dans plusieurs pays avec des taux d'admission et de diversité documentés")</li>
+                <li><i class="bi bi-check2-circle"></i> @L("نتائج موثّقة وقابلة للقياس وإعداد التقارير للممول", "Documented, measurable results that can be reported to funders", "Des résultats documentés, mesurables et rapportables aux bailleurs")</li>
+            </ul>
+        </div>
+        <div class="partner-cta-actions">
+            <a href="@Url.Action("Index", "Contact")" class="hero-btn hero-btn-primary">@L("تواصل معنا", "Contact us", "Contactez-nous")</a>
+            <a href="mailto:info@foraskhadra.org" class="hero-btn hero-btn-ghost"><i class="bi bi-envelope"></i> info@foraskhadra.org</a>
+        </div>
+    </div>
+</section>

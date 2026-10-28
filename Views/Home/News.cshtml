@@ -2,91 +2,145 @@
 @using Foras_Khadra.Helpers
 @{
     var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-    var pageTitle = lang == "en" ? "Our Activities" : lang == "fr" ? "Nos activités" : "نشاطاتنا";
-    ViewData["Title"] = pageTitle;
-    ViewData["Description"] = lang == "en"
-        ? "Workshops, webinars and campaigns organized by Foras Khadra for Arab youth."
-        : lang == "fr" ? "Ateliers, webinaires et campagnes organisés par Foras Khadra pour la jeunesse arabe."
-        : "ورش العمل والندوات والحملات التي تنظمها فرص خضراء للشباب العربي.";
+    string L(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
 
-    string TitleOf(Activity a) => lang switch { "en" => a.TitleEn, "fr" => a.TitleFr, _ => a.TitleAr };
-    string Plain(string? html) => System.Text.RegularExpressions.Regex.Replace(
-        System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(html ?? "", "<.*?>", " ")), @"\s+", " ").Trim();
-    string Excerpt(Activity a)
+    var pageTitle = L("نشاطاتنا", "Our Activities", "Nos activités");
+    ViewData["Title"] = Model.SelectedProgram == null ? pageTitle : $"{pageTitle} · {L(Model.SelectedProgram.MenuTitleAr, Model.SelectedProgram.MenuTitleEn, Model.SelectedProgram.MenuTitleFr)}";
+    ViewData["Description"] = L(
+        "خلال عامين سجّلنا أكثر من 120 فعالية ومشاركة في 22 دولة عربية: مؤتمرات إقليمية، تدريبات ميدانية، حملات، وحضور في مفاوضات المناخ الدولية.",
+        "In two years we recorded more than 120 events and participations across 22 Arab countries: regional conferences, field trainings, campaigns and a presence in the international climate negotiations.",
+        "En deux ans, plus de 120 événements et participations dans 22 pays arabes : conférences régionales, formations de terrain, campagnes et présence dans les négociations climatiques internationales.");
+    ViewData["OgImage"] = "/images/programs/rcoy-mena-hero.jpg";
+
+    // أرقام الأثر من «ملف الشركاء والمستثمرين 2026» — حدّثها هنا عند صدور ملف جديد
+    var impact = new (string Value, string Label)[]
     {
-        var text = Plain(lang switch { "en" => a.DescriptionEn, "fr" => a.DescriptionFr, _ => a.DescriptionAr });
-        return text.Length > 140 ? text.Substring(0, 137) + "..." : text;
-    }
-    string DateOf(Activity a)
-    {
-        var start = a.StartDate.ToString("dd MMM yyyy");
-        return a.EndDate.HasValue && a.EndDate.Value.Date != a.StartDate.Date ? $"{start} – {a.EndDate.Value:dd MMM yyyy}" : start;
-    }
+        ("120+", L("فعالية ومشاركة خلال عامين", "events and participations in two years", "événements et participations en deux ans")),
+        ("22", L("دولة عربية نعمل فيها", "Arab countries served", "pays arabes couverts")),
+        ("36+", L("تدريبًا منفّذًا في المنطقة", "trainings delivered across the region", "formations dispensées dans la région")),
+        ("9,000+", L("مستفيد مباشر من التدريبات والفعاليات", "direct beneficiaries of trainings and events", "bénéficiaires directs des formations et événements")),
+        ("5", L("مؤتمرات أممية للمناخ حضرناها", "UN climate conferences attended", "conférences climatiques de l'ONU")),
+        ("60+", L("شريكًا محليًا وإقليميًا ودوليًا", "local, regional and international partners", "partenaires locaux, régionaux et internationaux"))
+    };
 }
 
 <link rel="stylesheet" asp-append-version="true" href="~/css/activities.css" />
+<link rel="stylesheet" asp-append-version="true" href="~/css/programs.css" />
 
-<div class="activities-page container">
-    <header class="activities-header">
-        <i class="bi bi-calendar-event"></i>
-        <div>
-            <h1>@pageTitle</h1>
+<!-- ===== البانر: من نحن ميدانيًا + أرقام الأثر ===== -->
+<section class="bleed activities-hero">
+    <div class="container">
+        <div class="activities-hero-text">
+            <span class="hero-kicker"><i class="bi bi-calendar-event"></i> @pageTitle</span>
+            <h1>@L("من المحيط إلى الخليج: حضور ميداني يصنع أثرًا", "From the Atlantic to the Gulf: field presence that makes an impact", "De l'Atlantique au Golfe : une présence de terrain qui fait la différence")</h1>
             <p>@ViewData["Description"]</p>
+            <div class="hero-actions">
+                <a href="#flagship" class="hero-btn hero-btn-primary">@L("مشاريعنا الرائدة", "Our flagship projects", "Nos projets phares")</a>
+                <a href="#activities" class="hero-btn hero-btn-ghost">@L("كل النشاطات", "All activities", "Toutes les activités")</a>
+            </div>
         </div>
-    </header>
+        <div class="impact-grid">
+            @foreach (var (value, label) in impact)
+            {
+                <div class="impact-tile">
+                    <span class="impact-value">@value</span>
+                    <span class="impact-label">@label</span>
+                </div>
+            }
+        </div>
+    </div>
+</section>
+
+<!-- ===== المشاريع الرائدة ===== -->
+@if (Model.Programs.Any())
+{
+    <section id="flagship" class="flagship-section">
+        <div class="section-head">
+            <h2>@L("مشاريعنا الرائدة", "Our flagship projects", "Nos projets phares")</h2>
+            <p>@L("ثلاثة مشاريع إقليمية كبرى تختصر طريقة عملنا: نجمع الشباب، نبني قدراتهم، ونوصل صوتهم إلى صنّاع القرار.", "Three major regional projects that sum up how we work: we bring young people together, build their capacity and carry their voice to decision-makers.", "Trois grands projets régionaux qui résument notre façon de travailler : rassembler les jeunes, renforcer leurs capacités et porter leur voix aux décideurs.")</p>
+        </div>
+        <div class="flagship-grid">
+            @foreach (var (p, i) in Model.Programs.Select((p, i) => (p, i)))
+            {
+                var url = Url.Action("Details", "Programs", new { slug = p.Slug });
+                <a href="@url" class="flagship-card">
+                    <div class="flagship-media">
+                        @if (!string.IsNullOrEmpty(p.HeroImagePath))
+                        {
+                            <img src="@p.HeroImagePath" alt="@L(p.TitleAr, p.TitleEn, p.TitleFr)" loading="@(i == 0 ? "eager" : "lazy")" decoding="async" />
+                        }
+                        <span class="flagship-badge">@L("مشروع رائد", "Flagship project", "Projet phare") @(i + 1)</span>
+                    </div>
+                    <div class="flagship-body">
+                        <h3>@L(p.TitleAr, p.TitleEn, p.TitleFr)</h3>
+                        @if (!string.IsNullOrWhiteSpace(p.SubtitleAr))
+                        {
+                            <p class="flagship-subtitle">@L(p.SubtitleAr, p.SubtitleEn ?? "", p.SubtitleFr ?? "")</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(p.HeadlineValue))
+                        {
+                            <div class="flagship-headline">
+                                <span class="flagship-value">@p.HeadlineValue</span>
+                                <span class="flagship-label">@L(p.HeadlineLabelAr ?? "", p.HeadlineLabelEn ?? "", p.HeadlineLabelFr ?? "")</span>
+                            </div>
+                        }
+                        <span class="flagship-more">@L("اكتشف المشروع", "Explore the project", "Découvrir le projet") <i class="bi @(lang == "ar" ? "bi-arrow-left" : "bi-arrow-right")"></i></span>
+                    </div>
+                </a>
+            }
+        </div>
+    </section>
+}
+
+<!-- ===== النشاطات ===== -->
+<section id="activities" class="activities-list-section">
+    <div class="section-head section-head-row">
+        <div>
+            <h2>@L("النشاطات والفعاليات", "Activities and events", "Activités et événements")</h2>
+            <p>@L("مؤتمرات، تدريبات، حملات، أجنحة تعريفية ومشاركات في المنطقة وخارجها.", "Conferences, trainings, campaigns, information booths and participations across the region and beyond.", "Conférences, formations, campagnes, stands et participations dans la région et au-delà.")</p>
+        </div>
+        @if (Model.Programs.Any())
+        {
+            <nav class="program-filter" aria-label="filter">
+                <a href="@Url.Action("News", "Home")" class="filter-chip @(Model.SelectedProgram == null ? "active" : "")">@L("الكل", "All", "Tout")</a>
+                @foreach (var p in Model.Programs)
+                {
+                    <a href="@Url.Action("News", "Home", new { program = p.Slug })" class="filter-chip @(Model.SelectedProgram?.Id == p.Id ? "active" : "")">@L(p.MenuTitleAr, p.MenuTitleEn, p.MenuTitleFr)</a>
+                }
+            </nav>
+        }
+    </div>
 
     @if (!Model.Upcoming.Any() && !Model.Past.Any())
     {
         <div class="activities-empty">
             <i class="bi bi-calendar-x"></i>
-            <p>@(lang == "en" ? "No activities have been published yet. Check back soon!" : lang == "fr" ? "Aucune activité n'a encore été publiée. Revenez bientôt !" : "لم تُنشر أي نشاطات بعد، تابعونا قريبًا!")</p>
+            <p>@(Model.SelectedProgram == null
+                ? L("لم تُنشر أي نشاطات بعد، تابعونا قريبًا!", "No activities have been published yet. Check back soon!", "Aucune activité n'a encore été publiée. Revenez bientôt !")
+                : L("لا توجد نشاطات منشورة لهذا المشروع بعد.", "No published activities for this project yet.", "Aucune activité publiée pour ce projet pour le moment."))</p>
         </div>
     }
 
-    @foreach (var (list, heading, isUpcoming) in new[]
+    @foreach (var (list, heading) in new[]
     {
-        (Model.Upcoming, lang == "en" ? "Upcoming" : lang == "fr" ? "À venir" : "النشاطات القادمة", true),
-        (Model.Past, lang == "en" ? "Past activities" : lang == "fr" ? "Activités passées" : "نشاطات سابقة", false)
+        (Model.Upcoming, L("النشاطات القادمة", "Upcoming", "À venir")),
+        (Model.Past, L("نشاطات سابقة", "Past activities", "Activités passées"))
     })
     {
         if (!list.Any()) { continue; }
-
-        <section class="activities-section">
-            <h2 class="activities-section-title">@heading <span class="count">(@list.Count)</span></h2>
+        <div class="activities-section">
+            <h3 class="activities-section-title">@heading <span class="count">(@list.Count)</span></h3>
             <div class="row g-4">
                 @foreach (var a in list)
                 {
-                    var title = TitleOf(a);
-                    var url = Url.Action("Details", "Activities", new { id = a.Id, slug = SlugHelper.Make(title) });
                     <div class="col-lg-4 col-md-6">
-                        <article class="activity-card @(isUpcoming ? "" : "is-past")">
-                            <a href="@url" class="activity-card-image">
-                                @if (!string.IsNullOrEmpty(a.ImagePath))
-                                {
-                                    <img src="@a.ImagePath" alt="@title" loading="lazy" decoding="async" />
-                                }
-                                else
-                                {
-                                    <span class="activity-card-placeholder"><i class="bi bi-calendar-event"></i></span>
-                                }
-                                <span class="activity-date-badge"><i class="bi bi-calendar3"></i> @DateOf(a)</span>
-                            </a>
-                            <div class="activity-card-body">
-                                <h3><a href="@url">@title</a></h3>
-                                @if (!string.IsNullOrWhiteSpace(a.Location))
-                                {
-                                    <p class="activity-location"><i class="bi bi-geo-alt"></i> @a.Location</p>
-                                }
-                                <p class="activity-excerpt">@Excerpt(a)</p>
-                                <a href="@url" class="activity-more">
-                                    @(lang == "en" ? "Read more" : lang == "fr" ? "En savoir plus" : "اقرأ المزيد")
-                                    <i class="bi @(lang == "ar" ? "bi-arrow-left" : "bi-arrow-right")"></i>
-                                </a>
-                            </div>
-                        </article>
+                        <partial name="_ActivityCard" model="a" />
                     </div>
                 }
             </div>
-        </section>
+        </div>
     }
-</div>
+</section>
+
+<!-- ===== دعوة للشراكة ===== -->
+<partial name="_PartnerCta" />

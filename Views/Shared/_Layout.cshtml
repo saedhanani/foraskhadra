@@ -85,6 +85,7 @@
 
 @using Microsoft.AspNetCore.Mvc.Localization
 @inject IViewLocalizer Localizer
+@inject Foras_Khadra.Services.IProgramMenu ProgramMenu
 
 @{
     var currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
@@ -118,6 +119,10 @@
     if (!hideNavAndFooter && isAdmin && currentController == "Team") hideNavAndFooter = true;
     // صفحات إدارة النشاطات بلا قائمة كالمقالات؛ صفحة التفاصيل عامة فتبقى القائمة
     if (!hideNavAndFooter && isAdmin && currentController == "Activities" && currentAction != "Details") hideNavAndFooter = true;
+    if (!hideNavAndFooter && isAdmin && currentController == "Programs" && currentAction != "Details") hideNavAndFooter = true;
+
+    // قائمة "نشاطاتنا" المنسدلة: كل النشاطات + المشاريع الرائدة المنشورة (مخزّنة مؤقتًا)
+    var programMenu = await ProgramMenu.GetAsync();
 
     if (currentController == "Home" && currentAction == "DetailsOrganization")
     {
@@ -209,6 +214,12 @@
 
     html[dir="rtl"] .dropdown-list { right: 0; left: auto; }
     html[dir="ltr"] .dropdown-list { left: 0; right: auto; }
+
+    /* قائمة "نشاطاتنا" تنفتح بمرور المؤشر على الشاشات الكبيرة (وبالنقر على الهاتف كبقية القوائم) */
+    @@media (min-width: 1401px) {
+        .hover-dropdown:hover > .dropdown-list { display: flex; }
+        .hover-dropdown > .dropdown-list { top: 100%; padding-top: 10px; background-clip: padding-box; }
+    }
 
     .menu-items > a {
         background: #25652C !important;
@@ -675,7 +686,19 @@ else
                 <div class="menu-items">
                     <a asp-controller="Home" asp-action="Index" data-close-menu>@Localizer["Home"]</a>
                     <a asp-controller="Home" asp-action="Articles" data-close-menu>@Localizer["Articles"]</a>
-                    <a asp-controller="Home" asp-action="News" data-close-menu>@Localizer["News"]</a>
+                    <div class="custom-dropdown hover-dropdown">
+                        <button class="nav-btn" style="background-color:#25652C;color:#fff" type="button"
+                                onclick="toggleDropdown('activitiesDropdown', event)">
+                            @Localizer["News"]
+                        </button>
+                        <div class="dropdown-list" id="activitiesDropdown">
+                            <a asp-controller="Home" asp-action="News" data-close-menu>@(culture == "en" ? "All our activities" : culture == "fr" ? "Toutes nos activités" : "جميع نشاطاتنا")</a>
+                            @foreach (var program in programMenu)
+                            {
+                                <a href="@Url.Action("Details", "Programs", new { slug = program.Slug })" data-close-menu>@program.Title(culture)</a>
+                            }
+                        </div>
+                    </div>
 
                     <div class="custom-dropdown">
                         <button class="nav-btn" style="background-color:#25652C;color:#fff" type="button"

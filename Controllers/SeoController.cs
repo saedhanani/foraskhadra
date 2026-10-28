@@ -81,6 +81,16 @@ namespace Foras_Khadra.Controllers
             foreach (var a in activities)
                 Add(Url.Action("Details", "Activities", new { id = a.Id, slug = SlugHelper.Make(a.TitleAr) })!, a.StartDate, "monthly", "0.6");
 
+            var programs = await _context.FlagshipPrograms
+                .AsNoTracking()
+                .Where(p => p.IsPublished)
+                .OrderBy(p => p.SortOrder)
+                .Select(p => p.Slug)
+                .ToListAsync();
+
+            foreach (var slug in programs)
+                Add($"/Programs/{slug}", null, "monthly", "0.8");
+
             var document = new XDocument(new XDeclaration("1.0", "utf-8", null), new XElement(ns + "urlset", urls));
             return Content(document.Declaration + document.ToString(), "application/xml", Encoding.UTF8);
         }
@@ -109,6 +119,9 @@ namespace Foras_Khadra.Controllers
                 "Disallow: /Activities/Index",
                 "Disallow: /Activities/Create",
                 "Disallow: /Activities/Edit",
+                "Disallow: /Programs/Index",
+                "Disallow: /Programs/Create",
+                "Disallow: /Programs/Edit",
                 "",
                 $"Sitemap: {BaseUrl}/sitemap.xml",
                 ""

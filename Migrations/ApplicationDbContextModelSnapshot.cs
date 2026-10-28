@@ -75,6 +75,9 @@ namespace Foras_Khadra.Migrations
                     b.Property<string>("Location")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int?>("ProgramId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
 
@@ -91,6 +94,8 @@ namespace Foras_Khadra.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProgramId");
 
                     b.ToTable("Activities");
                 });
@@ -447,6 +452,137 @@ namespace Foras_Khadra.Migrations
                             NameEn = "Comoros",
                             NameFr = "Comores"
                         });
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.FlagshipProgram", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExternalLink")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GalleryJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HeadlineLabelAr")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HeadlineLabelEn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HeadlineLabelFr")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HeadlineValue")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HeroImagePath")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IntroAr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IntroEn")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IntroFr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsPublished")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MenuTitleAr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MenuTitleEn")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MenuTitleFr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OutcomesAr")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OutcomesEn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OutcomesFr")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OutcomesHeadingAr")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OutcomesHeadingEn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OutcomesHeadingFr")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PartnersAr")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PartnersEn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PartnersFr")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StatsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubtitleAr")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubtitleEn")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubtitleFr")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TimelineJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TitleAr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TitleEn")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TitleFr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("FlagshipPrograms");
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.ManualOrganization", b =>
@@ -960,6 +1096,16 @@ namespace Foras_Khadra.Migrations
                         .HasForeignKey("OpportunitiesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.Activity", b =>
+                {
+                    b.HasOne("Foras_Khadra.Models.FlagshipProgram", "Program")
+                        .WithMany()
+                        .HasForeignKey("ProgramId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Program");
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.Opportunity", b =>

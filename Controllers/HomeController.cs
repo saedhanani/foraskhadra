@@ -75,17 +75,30 @@ namespace Foras_Khadra.Controllers
 
     return View(model);
 }
-        /// <summary>صفحة "نشاطاتنا": النشاطات المنشورة، القادمة ثم السابقة.</summary>
-        public async Task<IActionResult> News()
+        /// <summary>صفحة "نشاطاتنا": المشاريع الرائدة في المقدمة ثم النشاطات المنشورة (القادمة ثم السابقة)، مع فلتر بالمشروع.</summary>
+        public async Task<IActionResult> News(string? program = null)
         {
-            var today = DateTime.Today;
-            var activities = await _context.Activities
+            var programs = await _context.FlagshipPrograms
                 .AsNoTracking()
-                .Where(a => a.IsPublished)
+                .Where(p => p.IsPublished)
+                .OrderBy(p => p.SortOrder).ThenBy(p => p.Id)
                 .ToListAsync();
+
+            var query = _context.Activities
+                .AsNoTracking()
+                .Include(a => a.Program)
+                .Where(a => a.IsPublished);
+
+            var selected = string.IsNullOrWhiteSpace(program) ? null : programs.FirstOrDefault(p => p.Slug == program);
+            if (selected != null)
+                query = query.Where(a => a.ProgramId == selected.Id);
+
+            var activities = await query.ToListAsync();
 
             var model = new ActivitiesPageViewModel
             {
+                Programs = programs,
+                SelectedProgram = selected,
                 Upcoming = activities.Where(a => a.IsUpcoming).OrderBy(a => a.StartDate).ToList(),
                 Past = activities.Where(a => !a.IsUpcoming).OrderByDescending(a => a.StartDate).ToList()
             };

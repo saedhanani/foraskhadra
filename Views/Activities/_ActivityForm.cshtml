@@ -78,6 +78,13 @@
             <span asp-validation-for="ExternalLink" class="text-danger small"></span>
         </div>
 
+        <div class="col-12">
+            <label class="form-label">المشروع الرائد الذي يتبعه النشاط (اختياري)</label>
+            <select asp-for="ProgramId" asp-items="@(ViewBag.Programs as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)" class="custom-input">
+                <option value="">— نشاط مستقل —</option>
+            </select>
+        </div>
+
         <div class="col-12 mt-2">
             <label class="form-label d-flex align-items-center gap-2" style="cursor:pointer">
                 <input asp-for="IsPublished" type="checkbox" style="width:18px;height:18px;accent-color:#25652C" />

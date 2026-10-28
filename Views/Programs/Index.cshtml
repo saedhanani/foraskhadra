@@ -1,0 +1,100 @@
+@model IEnumerable<FlagshipProgram>
+@{
+    ViewData["Title"] = "المشاريع الرائدة";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link rel="stylesheet" asp-append-version="true" href="~/css/articles-index.css" />
+    <link rel="stylesheet" asp-append-version="true" href="~/css/activities.css" />
+}
+
+<div class="container py-5" dir="rtl">
+    <div class="row align-items-center mb-4 g-3">
+        <div class="col-md-5 text-center text-md-start">
+            <h2 class="main-title mb-0">المشاريع الرائدة</h2>
+            <p class="text-muted m-0 small">تظهر في قائمة "نشاطاتنا" وفي مقدمة صفحة النشاطات، ولكل منها صفحة خاصة.</p>
+        </div>
+        <div class="col-md-7 d-flex justify-content-md-end align-items-center gap-3 d-flex-mobile">
+            <a asp-action="Create" class="btn btn-add" style="background:#f99d27; color:#fff;"><i class="fa-solid fa-plus ms-1"></i> إضافة مشروع</a>
+            <a asp-controller="Activities" asp-action="Index" class="btn-back-dashboard"><i class="fa-solid fa-calendar-days"></i> النشاطات</a>
+            <a asp-controller="Admin" asp-action="Dashboard" class="btn-back-dashboard"><i class="fa-solid fa-gauge"></i> لوحة التحكم</a>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <div class="table-responsive" style="overflow-x: visible;">
+            <table class="table articles-table">
+                <thead>
+                    <tr class="text-muted">
+                        <th style="width:60px;">#</th>
+                        <th style="width:80px;"></th>
+                        <th>المشروع</th>
+                        <th>الرابط</th>
+                        <th>الرقم الأبرز</th>
+                        <th>الحالة</th>
+                        <th class="text-center">الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="7" class="text-center text-muted py-4">لا توجد مشاريع بعد.</td></tr>
+                    }
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td class="text-muted">@p.SortOrder</td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(p.HeroImagePath))
+                                {
+                                    <img src="@p.HeroImagePath" class="rounded" style="width:50px;height:50px;object-fit:cover;" alt="" />
+                                }
+                                else
+                                {
+                                    <span class="activity-thumb-placeholder"><i class="fa-solid fa-star"></i></span>
+                                }
+                            </td>
+                            <td class="fw-bold text-dark">@p.TitleAr<br /><small class="text-muted fw-normal">@p.MenuTitleAr</small></td>
+                            <td class="text-muted" dir="ltr">/Programs/@p.Slug</td>
+                            <td class="text-muted">@p.HeadlineValue</td>
+                            <td>
+                                @if (p.IsPublished)
+                                {
+                                    <span class="activity-badge badge-upcoming">منشور</span>
+                                }
+                                else
+                                {
+                                    <span class="activity-badge badge-draft">مسودة</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-center">
+                                    <a href="@Url.Action("Details", "Programs", new { slug = p.Slug })" class="action-icon icon-view" title="عرض"><i class="fa-solid fa-eye"></i></a>
+                                    <a asp-action="Edit" asp-route-id="@p.Id" class="action-icon icon-edit" title="تعديل"><i class="fa-solid fa-pen"></i></a>
+                                    <button type="button" class="action-icon icon-delete" onclick="confirmDelete(@p.Id, '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(p.TitleAr))')" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                                    <form id="deleteForm-@p.Id" asp-action="Delete" asp-route-id="@p.Id" method="post" class="d-none">@Html.AntiForgeryToken()</form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmDelete(id, title) {
+            Swal.fire({
+                html: `<div style="text-align:center;"><img src="/images/delete.svg" style="margin-bottom:14px;" />
+                       <h5 style="margin:0 0 10px 0;font-weight:700;color:#000;">هل أنت متأكد من حذف المشروع التالي؟ النشاطات التابعة له تبقى لكنها تصبح مستقلة.</h5></div>`,
+                input: 'text', inputValue: title, inputAttributes: { readonly: true },
+                showCancelButton: true, confirmButtonText: 'حذف', cancelButtonText: 'تراجع', reverseButtons: true, buttonsStyling: false,
+                customClass: { popup: 'swal-rtl-popup', input: 'swal-rtl-input', confirmButton: 'swal-btn swal-btn-danger', cancelButton: 'swal-btn swal-btn-cancel' }
+            }).then((result) => { if (result.isConfirmed) document.getElementById('deleteForm-' + id).submit(); });
+        }
+    </script>
+}

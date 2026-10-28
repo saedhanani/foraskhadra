@@ -1,0 +1,32 @@
+@model FlagshipProgram
+@{
+    ViewData["Title"] = "إضافة مشروع رائد";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link rel="stylesheet" asp-append-version="true" href="~/css/articles-create.css" />
+    <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet" />
+    <link rel="stylesheet" asp-append-version="true" href="~/css/program-form.css" />
+}
+
+<div class="main-container">
+    <div class="create-wrapper program-form-wrapper">
+        <div class="create-page-header header-inline">
+            <h1 class="page-title">إضافة مشروع رائد</h1>
+            <div class="header-actions">
+                <a asp-action="Index" class="btn-back-dashboard"><i class="fa-solid fa-star"></i> المشاريع الرائدة</a>
+                <a asp-controller="Admin" asp-action="Dashboard" class="btn-back-dashboard"><i class="fa-solid fa-gauge"></i> لوحة التحكم</a>
+            </div>
+        </div>
+        <div class="create-article-card">
+            <div class="form-section w-100">
+                <partial name="_ProgramForm" model="Model" />
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ProgramFormScripts" model="Model" />
+}

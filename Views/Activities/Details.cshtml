@@ -70,6 +70,15 @@
                 {
                     <li><i class="bi bi-geo-alt"></i> @Model.Location</li>
                 }
+                @if (Model.Program != null)
+                {
+                    <li>
+                        <i class="bi bi-stars"></i>
+                        <a href="@Url.Action("Details", "Programs", new { slug = Model.Program.Slug })" style="color:#25652C">
+                            @(lang switch { "en" => Model.Program.MenuTitleEn, "fr" => Model.Program.MenuTitleFr, _ => Model.Program.MenuTitleAr })
+                        </a>
+                    </li>
+                }
             </ul>
 
             <div class="activity-content">
