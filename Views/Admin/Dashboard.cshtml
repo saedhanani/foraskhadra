@@ -117,7 +117,15 @@
             top: 0;
             height: 100vh;
             z-index: 10;
+            /* القائمة أطول من الشاشة: تمرير داخل الشريط الجانبي بدل قصّ الروابط السفلية */
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: #c9d3c8 transparent;
         }
+
+        .sidebar::-webkit-scrollbar { width: 6px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #c9d3c8; border-radius: 6px; }
 
         .full-width {
             grid-column: 1 / -1;
@@ -499,6 +507,7 @@
             .sidebar {
                 width: 100%;
                 height: auto;
+                overflow-y: visible;
                 position: relative;
                 border-inline-end: none;
                 border-bottom: 1px solid var(--sidebar-border);
