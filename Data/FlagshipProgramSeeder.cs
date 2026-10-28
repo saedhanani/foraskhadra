@@ -11,11 +11,30 @@ namespace Foras_Khadra.Data
     {
         public static async Task<int> SeedAsync(ApplicationDbContext db)
         {
-            if (await db.FlagshipPrograms.AnyAsync()) return 0;
-
-            db.FlagshipPrograms.AddRange(Rcoy(), ClimateVoices(), CapacityBuilding());
-            return await db.SaveChangesAsync();
+            var added = 0;
+            if (!await db.FlagshipPrograms.AnyAsync())
+            {
+                db.FlagshipPrograms.AddRange(Rcoy(), ClimateVoices(), CapacityBuilding());
+                added += await db.SaveChangesAsync();
+            }
+            if (!await db.ImpactStats.AnyAsync())
+            {
+                db.ImpactStats.AddRange(ImpactStats());
+                added += await db.SaveChangesAsync();
+            }
+            return added;
         }
+
+        /// <summary>أرقام الأثر في بانر صفحة "نشاطاتنا" (ملف الشركاء 2026) — تُحرَّر لاحقًا من لوحة التحكم.</summary>
+        private static IEnumerable<ImpactStat> ImpactStats() => new[]
+        {
+            new ImpactStat { SortOrder = 1, Value = "120+", LabelAr = "فعالية ومشاركة خلال عامين", LabelEn = "events and participations in two years", LabelFr = "événements et participations en deux ans" },
+            new ImpactStat { SortOrder = 2, Value = "22", LabelAr = "دولة عربية نعمل فيها", LabelEn = "Arab countries served", LabelFr = "pays arabes couverts" },
+            new ImpactStat { SortOrder = 3, Value = "36+", LabelAr = "تدريبًا منفّذًا في المنطقة", LabelEn = "trainings delivered across the region", LabelFr = "formations dispensées dans la région" },
+            new ImpactStat { SortOrder = 4, Value = "9,000+", LabelAr = "مستفيد مباشر من التدريبات والفعاليات", LabelEn = "direct beneficiaries of trainings and events", LabelFr = "bénéficiaires directs des formations et événements" },
+            new ImpactStat { SortOrder = 5, Value = "5", LabelAr = "مؤتمرات أممية للمناخ حضرناها", LabelEn = "UN climate conferences attended", LabelFr = "conférences climatiques de l'ONU" },
+            new ImpactStat { SortOrder = 6, Value = "60+", LabelAr = "شريكًا محليًا وإقليميًا ودوليًا", LabelEn = "local, regional and international partners", LabelFr = "partenaires locaux, régionaux et internationaux" }
+        };
 
         private static ProgramStat Stat(string value, string ar, string en, string fr) => new() { Value = value, Ar = ar, En = en, Fr = fr };
         private static ProgramMilestone Step(string year, string ar, string en, string fr) => new() { Year = year, Ar = ar, En = en, Fr = fr };

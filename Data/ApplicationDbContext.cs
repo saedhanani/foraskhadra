@@ -23,6 +23,7 @@ namespace Foras_Khadra.Data
         public DbSet<SavedOpportunity> SavedOpportunities { get; set; }
         public DbSet<Activity> Activities { get; set; }
         public DbSet<FlagshipProgram> FlagshipPrograms { get; set; }
+        public DbSet<ImpactStat> ImpactStats { get; set; }
 
         // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
         public override int SaveChanges(bool acceptAllChangesOnSuccess)

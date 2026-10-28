@@ -95,9 +95,16 @@ namespace Foras_Khadra.Controllers
 
             var activities = await query.ToListAsync();
 
+            var impactStats = await _context.ImpactStats
+                .AsNoTracking()
+                .Where(s => s.IsVisible)
+                .OrderBy(s => s.SortOrder).ThenBy(s => s.Id)
+                .ToListAsync();
+
             var model = new ActivitiesPageViewModel
             {
                 Programs = programs,
+                ImpactStats = impactStats,
                 SelectedProgram = selected,
                 Upcoming = activities.Where(a => a.IsUpcoming).OrderBy(a => a.StartDate).ToList(),
                 Past = activities.Where(a => !a.IsUpcoming).OrderByDescending(a => a.StartDate).ToList()

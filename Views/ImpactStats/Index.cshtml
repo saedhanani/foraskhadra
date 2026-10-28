@@ -1,0 +1,109 @@
+@model List<ImpactStat>
+@{
+    ViewData["Title"] = "أرقام الأثر";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link rel="stylesheet" asp-append-version="true" href="~/css/articles-create.css" />
+    <link rel="stylesheet" asp-append-version="true" href="~/css/program-form.css" />
+    <style>
+        .impact-row { grid-template-columns: 40px 110px 1fr 1fr 1fr 40px; }
+        .impact-row .vis { display: flex; justify-content: center; }
+        .impact-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: #25652C; }
+        .saved-note { background: #edf7ee; color: #2e7d32; border-radius: 12px; padding: 10px 16px; font-weight: 700; margin-bottom: 16px; }
+        .impact-hint { color: #64748b; font-size: 0.9rem; margin-bottom: 14px; }
+        @@media (max-width: 768px) { .impact-row { grid-template-columns: 1fr 1fr; } }
+    </style>
+}
+
+<div class="main-container">
+    <div class="create-wrapper program-form-wrapper">
+        <div class="create-page-header header-inline">
+            <h1 class="page-title">أرقام الأثر في صفحة نشاطاتنا</h1>
+            <div class="header-actions">
+                <a asp-controller="Home" asp-action="News" class="btn-back-dashboard" target="_blank"><i class="fa-solid fa-eye"></i> الصفحة العامة</a>
+                <a asp-controller="Admin" asp-action="Dashboard" class="btn-back-dashboard"><i class="fa-solid fa-gauge"></i> لوحة التحكم</a>
+            </div>
+        </div>
+
+        <div class="create-article-card">
+            <div class="form-section w-100">
+                @if (TempData["Saved"] != null)
+                {
+                    <div class="saved-note"><i class="fa-solid fa-circle-check"></i> تم الحفظ، والأرقام ظاهرة الآن في الصفحة العامة.</div>
+                }
+                <p class="impact-hint">تظهر هذه الأرقام في بانر صفحة "نشاطاتنا" بالترتيب نفسه. المربّع الأول يحدد إن كان الرقم ظاهرًا. الصف الفارغ يُهمل، وحذف الصف يحذف الرقم عند الحفظ.</p>
+
+                <form id="impactForm" asp-action="Save" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="dynamic-row impact-row" style="font-weight:700;color:#475569;font-size:.85rem;">
+                        <span class="text-center">ظاهر</span><span>الرقم</span><span>التسمية (عربي)</span><span>English</span><span>Français</span><span></span>
+                    </div>
+                    <div id="impactRows" class="dynamic-rows">
+                        @for (int i = 0; i < Model.Count; i++)
+                        {
+                            <div class="dynamic-row impact-row">
+                                <span class="vis"><input type="hidden" name="stats[@i].Id" value="@Model[i].Id" /><input type="checkbox" name="stats[@i].IsVisible" value="true" @(Model[i].IsVisible ? "checked" : "") /><input type="hidden" name="stats[@i].IsVisible" value="false" /></span>
+                                <input name="stats[@i].Value" value="@Model[i].Value" class="custom-input" placeholder="120+" />
+                                <input name="stats[@i].LabelAr" value="@Model[i].LabelAr" class="custom-input" placeholder="عربي" />
+                                <input name="stats[@i].LabelEn" value="@Model[i].LabelEn" class="custom-input" placeholder="English" />
+                                <input name="stats[@i].LabelFr" value="@Model[i].LabelFr" class="custom-input" placeholder="Français" />
+                                <button type="button" class="row-remove" title="حذف"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        }
+                    </div>
+                    <button type="button" class="row-add" id="addRow"><i class="fa-solid fa-plus"></i> إضافة رقم</button>
+
+                    <div class="actions-group mt-4">
+                        <button type="submit" class="btn-publish">حفظ الأرقام</button>
+                        <a asp-controller="Admin" asp-action="Dashboard" class="btn-cancel">إلغاء</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<template id="impactTemplate">
+    <div class="dynamic-row impact-row">
+        <span class="vis"><input type="hidden" data-f="Id" value="0" /><input type="checkbox" data-f="IsVisible" value="true" checked /><input type="hidden" data-f="IsVisible" value="false" /></span>
+        <input data-f="Value" class="custom-input" placeholder="120+" />
+        <input data-f="LabelAr" class="custom-input" placeholder="عربي" />
+        <input data-f="LabelEn" class="custom-input" placeholder="English" />
+        <input data-f="LabelFr" class="custom-input" placeholder="Français" />
+        <button type="button" class="row-remove" title="حذف"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+</template>
+
+@section Scripts {
+    <script>
+        const rows = document.getElementById('impactRows');
+
+        // الأسماء stats[i].X تُعاد ترقيمها بعد كل إضافة أو حذف وقبل الإرسال
+        function reindex() {
+            rows.querySelectorAll('.dynamic-row').forEach((row, i) => {
+                row.querySelectorAll('input').forEach(input => {
+                    const field = input.dataset.f || input.name.replace(/^stats\[\d+\]\./, '');
+                    input.dataset.f = field;
+                    input.name = `stats[${i}].${field}`;
+                });
+            });
+        }
+
+        document.getElementById('addRow').addEventListener('click', () => {
+            rows.appendChild(document.getElementById('impactTemplate').content.firstElementChild.cloneNode(true));
+            reindex();
+            rows.lastElementChild.querySelector('[data-f="Value"]').focus();
+        });
+
+        rows.addEventListener('click', e => {
+            const remove = e.target.closest('.row-remove');
+            if (!remove) return;
+            remove.closest('.dynamic-row').remove();
+            reindex();
+        });
+
+        document.getElementById('impactForm').addEventListener('submit', reindex);
+    </script>
+}

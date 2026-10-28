@@ -225,7 +225,7 @@ using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var seeded = await FlagshipProgramSeeder.SeedAsync(db);
-        if (seeded > 0) app.Logger.LogInformation("Seeded {Count} flagship programs", seeded);
+        if (seeded > 0) app.Logger.LogInformation("Seeded {Count} rows of flagship programs / impact stats", seeded);
     }
     catch (Exception ex)
     {

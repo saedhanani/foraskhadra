@@ -122,6 +122,7 @@ namespace Foras_Khadra.Controllers
                 "Disallow: /Programs/Index",
                 "Disallow: /Programs/Create",
                 "Disallow: /Programs/Edit",
+                "Disallow: /ImpactStats/",
                 "",
                 $"Sitemap: {BaseUrl}/sitemap.xml",
                 ""

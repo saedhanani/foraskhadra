@@ -120,6 +120,7 @@
     // صفحات إدارة النشاطات بلا قائمة كالمقالات؛ صفحة التفاصيل عامة فتبقى القائمة
     if (!hideNavAndFooter && isAdmin && currentController == "Activities" && currentAction != "Details") hideNavAndFooter = true;
     if (!hideNavAndFooter && isAdmin && currentController == "Programs" && currentAction != "Details") hideNavAndFooter = true;
+    if (!hideNavAndFooter && isAdmin && currentController == "ImpactStats") hideNavAndFooter = true;
 
     // قائمة "نشاطاتنا" المنسدلة: كل النشاطات + المشاريع الرائدة المنشورة (مخزّنة مؤقتًا)
     var programMenu = await ProgramMenu.GetAsync();

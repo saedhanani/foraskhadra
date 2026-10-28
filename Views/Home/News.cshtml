@@ -12,16 +12,8 @@
         "En deux ans, plus de 120 événements et participations dans 22 pays arabes : conférences régionales, formations de terrain, campagnes et présence dans les négociations climatiques internationales.");
     ViewData["OgImage"] = "/images/programs/rcoy-mena-hero.jpg";
 
-    // أرقام الأثر من «ملف الشركاء والمستثمرين 2026» — حدّثها هنا عند صدور ملف جديد
-    var impact = new (string Value, string Label)[]
-    {
-        ("120+", L("فعالية ومشاركة خلال عامين", "events and participations in two years", "événements et participations en deux ans")),
-        ("22", L("دولة عربية نعمل فيها", "Arab countries served", "pays arabes couverts")),
-        ("36+", L("تدريبًا منفّذًا في المنطقة", "trainings delivered across the region", "formations dispensées dans la région")),
-        ("9,000+", L("مستفيد مباشر من التدريبات والفعاليات", "direct beneficiaries of trainings and events", "bénéficiaires directs des formations et événements")),
-        ("5", L("مؤتمرات أممية للمناخ حضرناها", "UN climate conferences attended", "conférences climatiques de l'ONU")),
-        ("60+", L("شريكًا محليًا وإقليميًا ودوليًا", "local, regional and international partners", "partenaires locaux, régionaux et internationaux"))
-    };
+    // أرقام الأثر تُحرَّر من لوحة التحكم (ImpactStats)
+    var impact = Model.ImpactStats.Select(s => (Value: s.Value, Label: L(s.LabelAr, s.LabelEn, s.LabelFr))).ToList();
 }
 
 <link rel="stylesheet" asp-append-version="true" href="~/css/activities.css" />
@@ -39,15 +31,18 @@
                 <a href="#activities" class="hero-btn hero-btn-ghost">@L("كل النشاطات", "All activities", "Toutes les activités")</a>
             </div>
         </div>
-        <div class="impact-grid">
-            @foreach (var (value, label) in impact)
-            {
-                <div class="impact-tile">
-                    <span class="impact-value">@value</span>
-                    <span class="impact-label">@label</span>
-                </div>
-            }
-        </div>
+        @if (impact.Any())
+        {
+            <div class="impact-grid">
+                @foreach (var (value, label) in impact)
+                {
+                    <div class="impact-tile">
+                        <span class="impact-value">@value</span>
+                        <span class="impact-label">@label</span>
+                    </div>
+                }
+            </div>
+        }
     </div>
 </section>
 
