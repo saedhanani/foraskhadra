@@ -20,10 +20,32 @@ namespace Foras_Khadra.Data
         public DbSet<Opportunity> Opportunities { get; set; }
         public DbSet<Organization> Organizations { get; set; }
         public DbSet<ReelsRequest> ReelsRequests { get; set; }
+        public DbSet<SavedOpportunity> SavedOpportunities { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // فهارس مسار منصة الفريق (أُنشئت في هجرة TeamPipeline اليدوية؛ تُعلن هنا حتى لا تحذفها الهجرات التالية)
+            modelBuilder.Entity<Opportunity>().HasIndex(o => o.PipeId);
+            modelBuilder.Entity<Opportunity>().HasIndex(o => o.Status);
+
+            // الفرص المحفوظة: لا تكرار لنفس الفرصة عند نفس المستخدم، وتُحذف مع حذف الفرصة.
+            // جهة المستخدم بلا cascade في القاعدة (SQL Server يرفض مسارين: المستخدم → المحفوظات والمستخدم → فرصه → المحفوظات)؛
+            // لا يوجد حذف مستخدمين في الموقع حاليًا؛ إن أُضيف، احذف SavedOpportunities الخاصة به أولًا (ClientCascade يفعلها فقط للصفوف المحمّلة).
+            modelBuilder.Entity<SavedOpportunity>()
+                .HasIndex(s => new { s.UserId, s.OpportunityId })
+                .IsUnique();
+            modelBuilder.Entity<SavedOpportunity>()
+                .HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.ClientCascade);
+            modelBuilder.Entity<SavedOpportunity>()
+                .HasOne(s => s.Opportunity)
+                .WithMany()
+                .HasForeignKey(s => s.OpportunityId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Country>().HasData(
 

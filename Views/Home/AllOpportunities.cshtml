@@ -21,6 +21,8 @@
         return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(Context.Request.Path.Value ?? "/", kept);
     }
 
+    var savedIds = ViewBag.SavedIds as HashSet<int> ?? new HashSet<int>();
+
     var pageNumbers = Enumerable.Range(1, Model.TotalPages)
         .Where(i => i == 1 || i == Model.TotalPages || Math.Abs(i - Model.Page) <= 2)
         .ToList();
@@ -334,6 +336,13 @@
 
     .opp-info-row {
         padding: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .opp-info-row .btn-details {
+        flex: 1;
     }
 
     .pagination-container {
@@ -622,6 +631,7 @@
 
                         <div class="opp-info-row">
                             <a href="@Url.Action("Details", "Opportunity", new { id = opp.Id, slug = SlugHelper.Make(title1) })" class="btn-details">@Localizer["view_details"]</a>
+                            @await Html.PartialAsync("_SaveButton", (opp.Id, savedIds.Contains(opp.Id)))
                         </div>
                     </div>
                 </div>

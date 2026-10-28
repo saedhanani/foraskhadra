@@ -120,25 +120,32 @@
             </div>
         </div>
 
-        @if (User.IsInRole("Admin") || User.IsInRole("User") || User.IsInRole("Organization"))
-        {
-            <a id="applyBtn"
-               href="@(isExpired ? "javascript:void(0);" : Model.ApplyLink)"
-               target="@(isExpired ? "_self" : "_blank")"
-               class="@applyButtonClass"
-               @(isExpired ? "title='الفرصة منتهية'" : "")>
-                @Localizer["ApplyNow"]
-            </a>
-        }
-        else if (!User.Identity.IsAuthenticated)
-        {
-            <a id="applyBtn"
-               href="javascript:void(0);"
-               class="@applyButtonClass"
-               data-guest="1">
-                @Localizer["ApplyNow"]
-            </a>
-        }
+        <div class="opp-actions">
+            @if (User.IsInRole("Admin") || User.IsInRole("User") || User.IsInRole("Organization"))
+            {
+                <a id="applyBtn"
+                   href="@(isExpired ? "javascript:void(0);" : Model.ApplyLink)"
+                   target="@(isExpired ? "_self" : "_blank")"
+                   class="@applyButtonClass"
+                   @(isExpired ? "title='الفرصة منتهية'" : "")>
+                    @Localizer["ApplyNow"]
+                </a>
+                @await Html.PartialAsync("_SaveButton", (Model.Id, (ViewBag.IsSaved as bool?) == true))
+            }
+            else if (!User.Identity.IsAuthenticated)
+            {
+                <a id="applyBtn"
+                   href="javascript:void(0);"
+                   class="@applyButtonClass"
+                   data-guest="1">
+                    @Localizer["ApplyNow"]
+                </a>
+                @* للزائر: نفس نافذة "تسجيل الدخول مطلوب" الخاصة بزر التقديم *@
+                <button type="button" class="save-btn" id="saveGuestBtn" title="@(lang == "en" ? "Save" : lang == "fr" ? "Enregistrer" : "حفظ الفرصة")">
+                    <i class="bi bi-bookmark"></i>
+                </button>
+            }
+        </div>
     </div>
 
     <!-- ===== Main Card (Image + Info side by side on desktop) ===== -->
@@ -321,6 +328,10 @@
             swalTexts.loginButton = 'Se connecter';
             swalTexts.dir = 'ltr';
         }
+
+        document.getElementById('saveGuestBtn')?.addEventListener("click", function () {
+            document.querySelector('#applyBtn[data-guest="1"]')?.click();
+        });
 
         document.querySelector('#applyBtn[data-guest="1"]')?.addEventListener("click", function () {
             Swal.fire({

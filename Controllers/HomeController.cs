@@ -5,6 +5,8 @@ using Foras_Khadra.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
+using System.Security.Claims;
+using Foras_Khadra.Services;
 
 
 namespace Foras_Khadra.Controllers
@@ -13,11 +15,22 @@ namespace Foras_Khadra.Controllers
     {
         private readonly ILogger<HomeController> _logger;
         private readonly ApplicationDbContext _context; // إضافة DbContext
+        private readonly ISavedOpportunityService _saved;
 
-        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
+        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, ISavedOpportunityService saved)
         {
             _logger = logger;
             _context = context;
+            _saved = saved;
+        }
+
+        /// <summary>معرّفات الفرص المحفوظة من بين المعروضة، لتلوين زر الحفظ على البطاقات (فارغة للزائر).</summary>
+        private async Task<HashSet<int>> SavedIdsFor(IEnumerable<Opportunity> opportunities)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return userId == null
+                ? new HashSet<int>()
+                : await _saved.SavedIdsAsync(userId, opportunities.Select(o => o.Id));
         }
 
   public IActionResult Index(bool filterByAvailable = false)
@@ -146,7 +159,7 @@ namespace Foras_Khadra.Controllers
             return items;
         }
 
-        private IActionResult GetOpportunitiesByType(OpportunityType type, string country, string typeName, int page)
+        private async Task<IActionResult> GetOpportunitiesByType(OpportunityType type, string country, string typeName, int page)
         {
             var query = _context.Opportunities
                                 .Include(o => o.AvailableCountries)
@@ -176,46 +189,47 @@ namespace Foras_Khadra.Controllers
             };
 
             ViewBag.TypeName = typeName;
+            ViewBag.SavedIds = await SavedIdsFor(opportunities);
             return View("AllOpportunities", model);
         }
         // مثال لكل نوع:
-        public IActionResult Trainings(string country = null, int page = 1)
+        public Task<IActionResult> Trainings(string country = null, int page = 1)
         {
             return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Internships, country, "فرص التدريب", page);
         }
 
-        public IActionResult Jobs(string country = null, int page = 1)
+        public Task<IActionResult> Jobs(string country = null, int page = 1)
         {
             return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Jobs, country, "الوظائف", page);
         }
 
-        public IActionResult Competitions(string country = null, int page = 1)
+        public Task<IActionResult> Competitions(string country = null, int page = 1)
         {
             return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Competitions, country, "المسابقات", page);
         }
 
-        public IActionResult Conferences(string country = null, int page = 1)
+        public Task<IActionResult> Conferences(string country = null, int page = 1)
         {
             return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Conferences, country, "المؤتمرات", page);
         }
 
-        public IActionResult Volunteering(string country = null, int page = 1)
+        public Task<IActionResult> Volunteering(string country = null, int page = 1)
         {
             return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Volunteering, country, "فرص التطوع", page);
         }
 
-        public IActionResult Fellowships(string country = null, int page = 1)
+        public Task<IActionResult> Fellowships(string country = null, int page = 1)
         {
             return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Fellowships, country, "الزمالات", page);
         }
 
-        public IActionResult Scholarships(string country = null, int page = 1)
+        public Task<IActionResult> Scholarships(string country = null, int page = 1)
         {
             return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Scholarships, country, "المنح الدراسية", page);
         }
 
         // ================= صفحة كل الفرص العامة =================
-        public IActionResult AllOpportunities(string country, string[] type, string search, int page = 1)
+        public async Task<IActionResult> AllOpportunities(string country, string[] type, string search, int page = 1)
         {
             var query = _context.Opportunities
                                 .Include(o => o.AvailableCountries)
@@ -272,6 +286,7 @@ namespace Foras_Khadra.Controllers
                 TotalCount = totalCount
             };
 
+            ViewBag.SavedIds = await SavedIdsFor(allOpportunities);
             return View(model);
         }
 

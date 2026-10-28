@@ -612,6 +612,7 @@
                                 }
                                 else
                                 {
+                                    <a asp-controller="Opportunity" asp-action="Saved" data-close-menu>@(culture == "en" ? "Saved opportunities" : culture == "fr" ? "Opportunités enregistrées" : "الفرص المحفوظة")</a>
                                     <a asp-controller="Account" asp-action="ProfileSettings" data-close-menu>@Localizer["AccountSettings"]</a>
                                     <form asp-controller="Account" asp-action="Logout" method="post">
                                         @Html.AntiForgeryToken()
@@ -782,6 +783,12 @@ else
             <p>@Localizer["All rights reserved © 2026"]</p>
         </div>
     </footer>
+}
+
+@if (userIsAuthenticated)
+{
+    @* رمز CSRF لطلبات fetch من site.js (زر حفظ الفرصة) *@
+    <div hidden>@Html.AntiForgeryToken()</div>
 }
 
 <!-- Scripts -->

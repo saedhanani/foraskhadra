@@ -24,13 +24,15 @@ namespace Foras_Khadra.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IImageUploadService _images;
+        private readonly ISavedOpportunityService _saved;
 
-        public OpportunityController(ApplicationDbContext context, IWebHostEnvironment env, UserManager<ApplicationUser> userManager, IImageUploadService images)
+        public OpportunityController(ApplicationDbContext context, IWebHostEnvironment env, UserManager<ApplicationUser> userManager, IImageUploadService images, ISavedOpportunityService saved)
         {
             _context = context;
             _env = env;
             _userManager = userManager;
             _images = images;
+            _saved = saved;
         }
 
         // ================= INDEX =================
@@ -396,7 +398,36 @@ public async Task<IActionResult> Create()
             var creator = await _userManager.FindByIdAsync(opp.CreatedByUserId);
             opp.IsPublishedByAdmin = creator != null && await _userManager.IsInRoleAsync(creator, "Admin");
 
+            var userId = _userManager.GetUserId(User);
+            ViewBag.IsSaved = userId != null && await _saved.IsSavedAsync(userId, opp.Id);
+
             return View(opp);
+        }
+
+        // ================= SAVED OPPORTUNITIES =================
+        /// <summary>يحفظ الفرصة أو يلغي حفظها (زر الإشارة المرجعية). JSON: { saved: true/false }.</summary>
+        [HttpPost]
+        public async Task<IActionResult> ToggleSave(int id)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Unauthorized();
+
+            var saved = await _saved.ToggleAsync(userId, id);
+            return Json(new { saved });
+        }
+
+        /// <summary>قائمة الفرص التي حفظها المستخدم.</summary>
+        [HttpGet]
+        public async Task<IActionResult> Saved()
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Challenge();
+
+            var opportunities = await _saved.ListAsync(userId);
+            foreach (var opp in opportunities)
+                opp.IsExpired = opp.EndDate.HasValue && opp.EndDate.Value < DateTime.Now;
+
+            return View(opportunities);
         }
 
         // ================= FILTER BY TYPE =================

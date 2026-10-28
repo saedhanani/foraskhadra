@@ -1115,3 +1115,26 @@ html[dir="ltr"] .back-arrow{ transform: rotate(180deg); }
 
 /* الموعد النهائي خلال 7 أيام */
 .deadline-soon { background-color: #f99d27; }
+
+/* زر التقديم + زر الحفظ جنبًا إلى جنب */
+.opp-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.opp-actions .save-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid #dbe4ee;
+  background: #fff;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.opp-actions .save-btn:hover { border-color: #9ccca4; color: #2e7d32; background: #f1f8f2; }
+.opp-actions .save-btn.is-saved { border-color: #2e7d32; color: #fff; background: #2e7d32; }

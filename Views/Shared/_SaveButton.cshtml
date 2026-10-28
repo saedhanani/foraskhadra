@@ -1,0 +1,26 @@
+@* زر حفظ الفرصة (إشارة مرجعية). Model: (Id, Saved). الزائر يُحوَّل إلى الدخول؛ المسجَّل يبدّل الحالة عبر site.js *@
+@model (int Id, bool Saved)
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var saveLabel = lang == "en" ? "Save" : lang == "fr" ? "Enregistrer" : "حفظ الفرصة";
+    var savedLabel = lang == "en" ? "Saved" : lang == "fr" ? "Enregistrée" : "محفوظة";
+}
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <button type="button"
+            class="save-btn @(Model.Saved ? "is-saved" : "")"
+            data-save-opportunity="@Model.Id"
+            data-label-save="@saveLabel"
+            data-label-saved="@savedLabel"
+            aria-pressed="@(Model.Saved ? "true" : "false")"
+            title="@(Model.Saved ? savedLabel : saveLabel)"
+            aria-label="@(Model.Saved ? savedLabel : saveLabel)">
+        <i class="bi @(Model.Saved ? "bi-bookmark-fill" : "bi-bookmark")"></i>
+    </button>
+}
+else
+{
+    <a class="save-btn" href="@Url.Action("Login", "Account")" title="@saveLabel" aria-label="@saveLabel">
+        <i class="bi bi-bookmark"></i>
+    </a>
+}

@@ -67,6 +67,7 @@ builder.Services.AddTransient<IEmailSender, EmailSender>();
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
+builder.Services.AddScoped<ISavedOpportunityService, SavedOpportunityService>();
 
 // ===== Session & Cache =====
 builder.Services.AddDistributedMemoryCache();

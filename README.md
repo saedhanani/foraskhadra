@@ -31,7 +31,13 @@
 dotnet test
 ```
 
-مشروع `Foras_Khadra.Tests` (xUnit) يغطي تعقيم HTML، التحقق من الصور المرفوعة، تطبيع الروابط في واجهة المنصة، توليد الـ slug، وحالة طلبات الريلز.
+مشروع `Foras_Khadra.Tests` (xUnit) يغطي تعقيم HTML، التحقق من الصور المرفوعة، تطبيع الروابط في واجهة المنصة، توليد الـ slug، حالة طلبات الريلز، وخدمة الفرص المحفوظة (SQLite في الذاكرة بالمخطط الحقيقي).
+
+## الفرص المحفوظة
+
+- المستخدم المسجّل يحفظ أي فرصة منشورة بزر الإشارة المرجعية (بطاقات "كل الفرص" وصفحة التفاصيل) ويراها في `/Opportunity/Saved` من قائمة الحساب.
+- الجدول `SavedOpportunities` (هجرة `20261028174553_SavedOpportunities`)؛ للإنتاج شغّل `Migrations/Sql/2026-10-saved-opportunities.sql` قبل نشر الكود.
+- الزر يرسل `POST /Opportunity/ToggleSave/{id}` مع رمز CSRF في الترويسة `RequestVerificationToken` (`wwwroot/js/site.js`).
 
 ## البنية
 
