@@ -13,143 +13,150 @@
 <link asp-append-version="true" rel="stylesheet" href="~/css/all-opportunities.css" />
 
 <style>
-    /* ===== بطاقات الفرص (نفس مظهر صفحة المحفوظات) ===== */
-    .opp-card {
+    /* ====== صفحتي — بتصميم الهوية البصرية (brand.css) ====== */
+    body { background: var(--fk-bg); }
+
+    .fk-dash {
+        font-family: var(--fk-font-body);
+        color: var(--fk-ink);
+    }
+
+    /* ورقتا الشعار — زخرفة SVG مضمّنة */
+    .fk-leaves { flex: none; }
+
+    /* فاصل قاعدة الحاسوب من الشعار: شريط ونقاط */
+    .fk-divider {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin: 14px 0 0;
+    }
+
+    .fk-divider .bar {
+        height: 7px;
+        border-radius: 999px;
+        background: var(--fk-orange);
+        width: 90px;
+    }
+
+    .fk-divider .bar:first-child { width: 150px; }
+    .fk-divider .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--fk-orange);
+    }
+
+    /* ===== الترويسة ===== */
+    .fk-hero {
         background: #fff;
-        border-radius: 22px;
+        border: 1px solid #e6efe6;
+        border-radius: 24px;
+        padding: 34px 32px 30px;
+        margin: 26px 0 26px;
+        position: relative;
         overflow: hidden;
-        border: 1px solid #eef2f7;
-        transition: all 0.25s ease;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
     }
 
-    .opp-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+    /* حلقات العلامة باهتة في زاوية الترويسة */
+    .fk-hero::after {
+        content: "";
+        position: absolute;
+        inset-inline-end: -70px;
+        top: -70px;
+        width: 230px;
+        height: 230px;
+        border: 26px solid var(--fk-leaf);
+        border-radius: 50%;
+        opacity: 0.22;
+        pointer-events: none;
     }
 
-    .opp-image {
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-    }
-
-    .opp-category-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 16px 18px 0;
-    }
-
-    .type-tag,
-    .category-tag {
-        display: inline-flex;
-        align-items: center;
-        padding: 7px 12px;
-        border-radius: 999px;
-        font-size: 0.8rem;
+    .fk-hero h1 {
+        font-family: var(--fk-font-head);
+        color: var(--fk-green);
+        font-size: 2rem;
         font-weight: 700;
+        margin: 0 0 8px;
+        position: relative;
     }
 
-    .type-tag { background: #edf7ee; color: #2e7d32; }
-    .category-tag { background: #f1f5f9; color: #475569; }
+    /* تمييز الاسم بخط ورقي تحته كما في منشورات الهوية */
+    .fk-hero h1 .hl {
+        background: linear-gradient(to top, color-mix(in srgb, var(--fk-leaf) 55%, transparent) 32%, transparent 32%);
+        padding: 0 4px;
+        border-radius: 4px;
+    }
 
-    .opp-title {
-        padding: 14px 18px 0;
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: #1e293b;
-        line-height: 1.6;
+    .fk-hero .sub {
         margin: 0;
-        flex: 1;
+        color: #4a5f4c;
+        font-weight: 400;
+        font-size: 1.02rem;
     }
 
-    .opp-status {
-        display: inline-flex;
-        margin: 16px 18px 0;
-        padding: 8px 14px;
-        border-radius: 999px;
-        font-size: 0.82rem;
-        font-weight: 800;
-        align-self: flex-start;
-    }
-
-    .status-available { background: #edf7ee; color: #2e7d32; }
-    .status-expired { background: #fff1f2; color: #dc2626; }
-    .status-soon { background: #fff3e0; color: #c2410c; }
-
-    .opp-info-row {
-        padding: 18px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .opp-info-row .btn-details { flex: 1; }
-
-    /* ===== ترحيب أعلى الصفحة ===== */
-    .dash-hero {
-        background: linear-gradient(135deg, #1b5e20, #2e7d32 55%, #43a047);
-        border-radius: 26px;
-        color: #fff;
-        padding: 36px 30px;
-        margin: 24px 0 30px;
-    }
-
-    .dash-hero h1 {
-        margin: 0 0 6px;
-        font-size: 1.9rem;
-        font-weight: 800;
-    }
-
-    .dash-hero p {
-        margin: 0;
-        color: rgba(255, 255, 255, 0.85);
+    .fk-hero .tag {
+        display: inline-block;
+        margin-top: 14px;
+        color: var(--fk-green);
         font-weight: 600;
+        font-size: 0.9rem;
+        letter-spacing: 0.2px;
     }
 
-    .dash-stats {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-top: 20px;
+    /* ===== بطاقات الأرقام ===== */
+    .fk-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 14px;
+        margin-bottom: 30px;
     }
 
-    .dash-stat {
-        background: rgba(255, 255, 255, 0.14);
-        border: 1px solid rgba(255, 255, 255, 0.22);
-        border-radius: 16px;
-        padding: 10px 18px;
+    .fk-stat {
+        border-radius: 18px;
+        padding: 18px 20px;
         display: flex;
         align-items: center;
-        gap: 10px;
-        font-weight: 700;
-        font-size: 0.95rem;
+        gap: 14px;
+        border: 1px solid transparent;
     }
 
-    .dash-stat strong { font-size: 1.25rem; }
+    .fk-stat i { font-size: 1.5rem; }
 
-    /* ===== شريط "تنتهي قريبًا" ===== */
-    .dash-expiring {
-        background: #fff7ed;
-        border: 1px solid #fed7aa;
-        border-radius: 18px;
+    .fk-stat strong {
+        font-family: var(--fk-font-head);
+        font-size: 1.7rem;
+        line-height: 1;
+        display: block;
+    }
+
+    .fk-stat span { font-weight: 600; font-size: 0.92rem; }
+
+    .fk-stat.saved { background: var(--fk-leaf-soft); border-color: #d9eec4; color: var(--fk-green); }
+    .fk-stat.expiring { background: var(--fk-orange-soft); border-color: #fbe0b8; color: #b06410; }
+    .fk-stat.picked { background: var(--fk-sky-soft); border-color: #c8ebf4; color: #1a7f9c; }
+
+    /* ===== شريط المواعيد القريبة ===== */
+    .fk-expiring {
+        background: #fff;
+        border: 1px solid #fbe0b8;
+        border-inline-start: 5px solid var(--fk-orange);
+        border-radius: 16px;
         padding: 16px 20px;
         margin-bottom: 30px;
     }
 
-    .dash-expiring-title {
+    .fk-expiring-title {
         display: flex;
         align-items: center;
         gap: 10px;
-        font-weight: 800;
-        color: #c2410c;
+        font-family: var(--fk-font-head);
+        font-weight: 700;
+        color: #b06410;
         margin-bottom: 10px;
     }
 
-    .dash-expiring ul {
+    .fk-expiring ul {
         margin: 0;
         padding: 0;
         list-style: none;
@@ -158,133 +165,236 @@
         gap: 8px;
     }
 
-    .dash-expiring li a {
-        color: #7c2d12;
-        font-weight: 700;
+    .fk-expiring li a {
+        color: var(--fk-ink);
+        font-weight: 600;
         text-decoration: none;
     }
 
-    .dash-expiring li a:hover { text-decoration: underline; }
+    .fk-expiring li a:hover { color: var(--fk-green); }
 
-    .dash-expiring .days-left {
-        color: #c2410c;
+    .fk-expiring .days-left {
+        color: var(--fk-orange);
         font-size: 0.85rem;
-        font-weight: 800;
-    }
-
-    /* ===== عناوين الأقسام ===== */
-    .dash-section { margin-bottom: 44px; }
-
-    .dash-section-head {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 18px;
-        flex-wrap: wrap;
-    }
-
-    .dash-section-head i {
-        font-size: 1.5rem;
-        color: #2e7d32;
-    }
-
-    .dash-section-head h2 {
-        margin: 0;
-        font-size: 1.45rem;
-        font-weight: 800;
-        color: #1e293b;
-    }
-
-    .dash-section-head .view-all {
-        margin-inline-start: auto;
-        color: #2e7d32;
         font-weight: 700;
-        text-decoration: none;
         white-space: nowrap;
     }
 
-    .dash-section-head .view-all:hover { text-decoration: underline; }
+    /* ===== الأقسام ===== */
+    .fk-section { margin-bottom: 46px; }
 
-    .interest-chips {
+    .fk-section-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 6px;
+        flex-wrap: wrap;
+    }
+
+    .fk-section-head h2 {
+        font-family: var(--fk-font-head);
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--fk-green);
+    }
+
+    .fk-section-head .view-all {
+        margin-inline-start: auto;
+        color: var(--fk-orange);
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+        font-size: 0.95rem;
+    }
+
+    .fk-section-head .view-all:hover { text-decoration: underline; }
+
+    .fk-section-sub {
+        color: #5c715e;
+        font-size: 0.93rem;
+        margin: 0 0 16px;
+    }
+
+    .fk-section .row { margin-top: 2px; }
+
+    /* رقائق الاهتمامات */
+    .fk-chips {
         display: flex;
         flex-wrap: wrap;
+        align-items: center;
         gap: 8px;
-        margin-bottom: 18px;
+        margin: 10px 0 18px;
     }
 
-    .interest-chip {
-        background: #edf7ee;
-        color: #2e7d32;
+    .fk-chip {
+        background: #fff;
+        border: 1.5px solid var(--fk-leaf);
+        color: var(--fk-green);
         border-radius: 999px;
-        padding: 6px 14px;
+        padding: 5px 14px;
         font-size: 0.85rem;
-        font-weight: 700;
+        font-weight: 600;
     }
 
-    .interest-chips .edit-interests {
-        color: #64748b;
+    .fk-chips .edit {
+        color: #7a8c7c;
         font-size: 0.85rem;
-        font-weight: 700;
-        align-self: center;
+        font-weight: 600;
         text-decoration: none;
     }
 
-    .interest-chips .edit-interests:hover { color: #2e7d32; }
+    .fk-chips .edit:hover { color: var(--fk-green); }
 
-    /* ===== صناديق فارغة ===== */
-    .dash-empty {
-        background: #f8fafc;
-        border: 1px dashed #cbd5e1;
+    /* ===== الصناديق الفارغة ===== */
+    .fk-empty {
+        background: #fff;
+        border: 1.5px dashed var(--fk-leaf);
         border-radius: 18px;
         text-align: center;
-        padding: 36px 16px;
-        color: #64748b;
+        padding: 38px 16px;
+        color: #5c715e;
     }
 
-    .dash-empty i {
-        font-size: 2.4rem;
-        color: #cbd5e1;
-        display: block;
-        margin-bottom: 10px;
-    }
+    .fk-empty .fk-leaves { margin-bottom: 10px; }
 
-    .dash-empty a {
-        color: #2e7d32;
+    .fk-empty a {
+        color: var(--fk-green);
         font-weight: 700;
     }
 
+    /* ===== ضبط بطاقات الفرص على الهوية داخل الصفحة ===== */
+    .fk-dash .opp-card {
+        background: #fff;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid #e6efe6;
+        transition: all 0.25s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        font-family: var(--fk-font-body);
+    }
+
+    .fk-dash .opp-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 30px rgba(27, 107, 35, 0.1);
+        border-color: var(--fk-leaf);
+    }
+
+    .fk-dash .opp-image { width: 100%; height: 200px; object-fit: cover; }
+
+    .fk-dash .opp-category-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 16px 18px 0;
+    }
+
+    .fk-dash .type-tag,
+    .fk-dash .category-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .fk-dash .type-tag { background: var(--fk-green-soft); color: var(--fk-green); }
+    .fk-dash .category-tag { background: var(--fk-sky-soft); color: #1a7f9c; }
+
+    .fk-dash .opp-title {
+        padding: 14px 18px 0;
+        font-size: 1.08rem;
+        font-weight: 700;
+        color: var(--fk-ink);
+        line-height: 1.65;
+        margin: 0;
+        flex: 1;
+    }
+
+    .fk-dash .opp-status {
+        display: inline-flex;
+        margin: 14px 18px 0;
+        padding: 7px 14px;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        align-self: flex-start;
+    }
+
+    .fk-dash .status-available { background: var(--fk-leaf-soft); color: var(--fk-green); }
+    .fk-dash .status-expired { background: #fff1f2; color: #dc2626; }
+    .fk-dash .status-soon { background: var(--fk-orange-soft); color: #b06410; }
+
+    .fk-dash .opp-info-row {
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .fk-dash .opp-info-row .btn-details { flex: 1; }
+
     @@media (max-width: 576px) {
-        .dash-hero { padding: 26px 20px; }
-        .dash-hero h1 { font-size: 1.5rem; }
+        .fk-hero { padding: 26px 20px; }
+        .fk-hero h1 { font-size: 1.55rem; }
+        .fk-divider .bar:first-child { width: 90px; }
     }
 </style>
 
-<div class="page-wrapper container">
+@{
+    // ورقتا الشعار (SVG مضمّن بألوان الهوية) — تُستخدم بجانب العناوين
+    Func<int, Microsoft.AspNetCore.Html.HtmlString> Leaves = size => new Microsoft.AspNetCore.Html.HtmlString(
+        $"<svg class=\"fk-leaves\" width=\"{size}\" height=\"{(int)(size * 0.72)}\" viewBox=\"0 0 50 36\" fill=\"none\" aria-hidden=\"true\">" +
+        "<path d=\"M24 34C23 21 14 11 3 10c1 13 10 23 21 24Z\" fill=\"#ABE188\"/>" +
+        "<path d=\"M26 34C27 18 37 5 48 3c-1 16-11 29-22 31Z\" fill=\"#1B6B23\"/></svg>");
+}
 
-    @* ===== الترحيب ===== *@
-    <section class="dash-hero">
-        <h1>@T($"مرحبًا، {Model.FirstName} 👋", $"Welcome, {Model.FirstName} 👋", $"Bienvenue, {Model.FirstName} 👋")</h1>
-        <p>@T("هنا تجد فرصك المحفوظة وما يناسب اهتماماتك وأحدث ما نُشر.", "Here are your saved opportunities, picks matching your interests, and the latest posts.", "Retrouvez ici vos opportunités enregistrées, des suggestions selon vos intérêts et les dernières publications.")</p>
-        <div class="dash-stats">
-            <span class="dash-stat"><i class="bi bi-bookmark-fill"></i> <strong>@Model.SavedCount</strong> @T("فرصة محفوظة", "saved", "enregistrées")</span>
-            @if (Model.ExpiringSaved.Any())
-            {
-                <span class="dash-stat"><i class="bi bi-alarm"></i> <strong>@Model.ExpiringSaved.Count</strong> @T("تنتهي قريبًا", "closing soon", "bientôt clôturées")</span>
-            }
-            @if (Model.Recommended.Any())
-            {
-                <span class="dash-stat"><i class="bi bi-stars"></i> <strong>@Model.Recommended.Count</strong> @T("مقترحة لك", "picked for you", "suggérées")</span>
-            }
+<div class="page-wrapper container fk-dash">
+
+    @* ===== الترويسة ===== *@
+    <section class="fk-hero">
+        <h1>@T("أهلًا بعودتك، ", "Welcome back, ", "Bon retour, ")<span class="hl">@Model.FirstName</span></h1>
+        <p class="sub">@T("فرصك المحفوظة، واقتراحات على ذوقك، وكل جديد — في مكان واحد.",
+                         "Your saved opportunities, picks to your taste, and everything new — in one place.",
+                         "Vos opportunités enregistrées, des suggestions à votre goût et toutes les nouveautés — au même endroit.")</p>
+        <div class="fk-divider" aria-hidden="true">
+            <span class="bar"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="bar"></span>
         </div>
+        <span class="tag">#@T("من_وإلى_الشباب_العربي", "from_and_to_Arabian_youth", "de_et_pour_la_jeunesse_arabe")</span>
     </section>
+
+    @* ===== الأرقام ===== *@
+    <div class="fk-stats">
+        <div class="fk-stat saved">
+            <i class="bi bi-bookmark-fill"></i>
+            <div><strong>@Model.SavedCount</strong><span>@T("فرصة محفوظة", "saved opportunities", "opportunités enregistrées")</span></div>
+        </div>
+        @if (Model.ExpiringSaved.Any())
+        {
+            <div class="fk-stat expiring">
+                <i class="bi bi-alarm"></i>
+                <div><strong>@Model.ExpiringSaved.Count</strong><span>@T("تنتهي قريبًا", "closing soon", "bientôt clôturées")</span></div>
+            </div>
+        }
+        @if (Model.Recommended.Any())
+        {
+            <div class="fk-stat picked">
+                <i class="bi bi-stars"></i>
+                <div><strong>@Model.Recommended.Count</strong><span>@T("مقترحة لك", "picked for you", "suggérées pour vous")</span></div>
+            </div>
+        }
+    </div>
 
     @* ===== محفوظات تنتهي قريبًا ===== *@
     @if (Model.ExpiringSaved.Any())
     {
-        <div class="dash-expiring">
-            <div class="dash-expiring-title">
+        <div class="fk-expiring">
+            <div class="fk-expiring-title">
                 <i class="bi bi-alarm"></i>
-                @T("من محفوظاتك: مواعيد تقترب!", "From your saved list: deadlines approaching!", "Dans vos enregistrements : échéances proches !")
+                @T("من محفوظاتك: مواعيد تقترب", "From your saved list: deadlines approaching", "Dans vos enregistrements : échéances proches")
             </div>
             <ul>
                 @foreach (var opp in Model.ExpiringSaved)
@@ -306,20 +416,21 @@
     }
 
     @* ===== مقترحة لك ===== *@
-    <section class="dash-section">
-        <div class="dash-section-head">
-            <i class="bi bi-stars"></i>
+    <section class="fk-section">
+        <div class="fk-section-head">
+            @Leaves(34)
             <h2>@T("مقترحة لك", "Picked for you", "Suggérées pour vous")</h2>
         </div>
 
         @if (Model.InterestNames.Any())
         {
-            <div class="interest-chips">
+            <p class="fk-section-sub">@T("بحسب الاهتمامات التي اخترتها:", "Based on the interests you chose:", "Selon les intérêts que vous avez choisis :")</p>
+            <div class="fk-chips">
                 @foreach (var name in Model.InterestNames)
                 {
-                    <span class="interest-chip">@name</span>
+                    <span class="fk-chip">@name</span>
                 }
-                <a class="edit-interests" href="@Url.Action("ProfileSettings", "Account")">
+                <a class="edit" href="@Url.Action("ProfileSettings", "Account")">
                     <i class="bi bi-pencil"></i> @T("تعديل اهتماماتي", "Edit my interests", "Modifier mes intérêts")
                 </a>
             </div>
@@ -327,8 +438,8 @@
 
         @if (!Model.InterestNames.Any())
         {
-            <div class="dash-empty">
-                <i class="bi bi-stars"></i>
+            <div class="fk-empty">
+                @Leaves(44)
                 <p>
                     @T("أخبرنا باهتماماتك لنقترح لك فرصًا تناسبك.", "Tell us your interests and we'll suggest opportunities for you.", "Indiquez vos intérêts et nous vous suggérerons des opportunités.")
                 </p>
@@ -337,8 +448,8 @@
         }
         else if (!Model.Recommended.Any())
         {
-            <div class="dash-empty">
-                <i class="bi bi-hourglass-split"></i>
+            <div class="fk-empty">
+                @Leaves(44)
                 <p>
                     @T("لا فرص مفتوحة تطابق اهتماماتك الآن — نضيف فرصًا جديدة باستمرار.", "No open opportunities match your interests right now — we add new ones all the time.", "Aucune opportunité ouverte ne correspond à vos intérêts pour le moment — nous en ajoutons régulièrement.")
                 </p>
@@ -359,9 +470,9 @@
     </section>
 
     @* ===== محفوظاتك ===== *@
-    <section class="dash-section">
-        <div class="dash-section-head">
-            <i class="bi bi-bookmark-fill"></i>
+    <section class="fk-section">
+        <div class="fk-section-head">
+            @Leaves(34)
             <h2>@T("محفوظاتك", "Your saved opportunities", "Vos opportunités enregistrées")</h2>
             @if (Model.SavedCount > 0)
             {
@@ -373,8 +484,8 @@
 
         @if (!Model.Saved.Any())
         {
-            <div class="dash-empty">
-                <i class="bi bi-bookmark"></i>
+            <div class="fk-empty">
+                @Leaves(44)
                 <p>
                     @T("لم تحفظ أي فرصة بعد — اضغط رمز الحفظ على أي بطاقة لتعود إليها هنا.", "You haven't saved any opportunity yet — tap the bookmark icon on any card to find it here.", "Vous n'avez encore rien enregistré — touchez l'icône signet d'une carte pour la retrouver ici.")
                 </p>
@@ -396,9 +507,9 @@
     @* ===== أحدث الفرص ===== *@
     @if (Model.Latest.Any())
     {
-        <section class="dash-section">
-            <div class="dash-section-head">
-                <i class="bi bi-lightning-charge"></i>
+        <section class="fk-section">
+            <div class="fk-section-head">
+                @Leaves(34)
                 <h2>@T("أحدث الفرص", "Latest opportunities", "Dernières opportunités")</h2>
                 <a class="view-all" href="@Url.Action("AllOpportunities", "Home")">
                     @T("عرض الكل", "View all", "Tout voir")

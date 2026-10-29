@@ -62,3 +62,6 @@ packages/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Brand source assets (1.7 GB, local only — web copies live in wwwroot/fonts/brand + wwwroot/images/brand)
+Foras Khadraa brand-*/

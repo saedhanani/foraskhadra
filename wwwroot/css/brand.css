@@ -1,0 +1,57 @@
+/* ============================================================
+   الهوية البصرية لفرص خضراء — من brand file.pdf (مجلد الهوية)
+   الألوان الأساسية:   #1B6B23 أخضر · #FA9C28 برتقالي · #000000
+   الألوان الثانوية:   #ABE188 ورقي فاتح · #42BFDD سماوي · #F8FBFF خلفية
+   الخطوط: Juman للعناوين العربية · Expo Arabic للنصوص
+   ============================================================ */
+
+@font-face {
+    font-family: 'Juman';
+    src: url('../fonts/brand/juman-arabic-normal.woff2') format('woff2');
+    font-weight: 400 700;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Expo Arabic';
+    src: url('../fonts/brand/ExpoArabic-Book.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Expo Arabic';
+    src: url('../fonts/brand/ExpoArabic-SemiBold.woff2') format('woff2');
+    font-weight: 600;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Expo Arabic';
+    src: url('../fonts/brand/ExpoArabic-Bold.woff2') format('woff2');
+    font-weight: 700 800;
+    font-display: swap;
+}
+
+:root {
+    /* الأساسية */
+    --fk-green: #1B6B23;
+    --fk-green-dark: #14521b;
+    --fk-orange: #FA9C28;
+    --fk-ink: #0d2910;
+
+    /* الثانوية */
+    --fk-leaf: #ABE188;
+    --fk-sky: #42BFDD;
+    --fk-bg: #F8FBFF;
+
+    /* درجات مشتقة للخلفيات الخفيفة */
+    --fk-green-soft: #e9f4e6;
+    --fk-leaf-soft: #f0f9e8;
+    --fk-orange-soft: #fef3e2;
+    --fk-sky-soft: #e8f7fb;
+
+    /* الخطوط */
+    --fk-font-head: 'Juman', 'Expo Arabic', 'Cairo', sans-serif;
+    --fk-font-body: 'Expo Arabic', 'Cairo', sans-serif;
+}
