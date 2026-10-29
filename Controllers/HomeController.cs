@@ -2,6 +2,7 @@ using System.Globalization;
 using Foras_Khadra.Data;
 using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
@@ -17,11 +18,28 @@ namespace Foras_Khadra.Controllers
         private readonly ApplicationDbContext _context; // إضافة DbContext
         private readonly ISavedOpportunityService _saved;
 
-        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, ISavedOpportunityService saved)
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IMatchService _match;
+
+        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, ISavedOpportunityService saved,
+            UserManager<ApplicationUser> userManager, IMatchService match)
         {
             _logger = logger;
             _context = context;
             _saved = saved;
+            _userManager = userManager;
+            _match = match;
+        }
+
+        /// <summary>نسب التطابق (المرحلة 3) للفرد المسجّل فقط؛ فارغة للزائر والمنظمات والإدارة.</summary>
+        private async Task<Dictionary<int, int>> MatchScoresFor(IEnumerable<Opportunity> opportunities)
+        {
+            if (User.Identity?.IsAuthenticated != true || User.IsInRole("Organization") || User.IsInRole("Admin"))
+                return new Dictionary<int, int>();
+
+            var user = await _userManager.GetUserAsync(User);
+            var profile = await _match.ProfileAsync(user, isIndividual: true);
+            return profile == null ? new Dictionary<int, int>() : _match.Scores(profile, opportunities);
         }
 
         /// <summary>معرّفات الفرص المحفوظة من بين المعروضة، لتلوين زر الحفظ على البطاقات (فارغة للزائر).</summary>
@@ -318,6 +336,7 @@ namespace Foras_Khadra.Controllers
             };
 
             ViewBag.SavedIds = await SavedIdsFor(allOpportunities);
+            ViewBag.MatchScores = await MatchScoresFor(allOpportunities);
             return View(model);
         }
 

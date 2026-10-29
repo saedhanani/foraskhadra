@@ -170,6 +170,57 @@ namespace Foras_Khadra.Tests
             Assert.Equal(1, await _sweeper.SweepAsync());
         }
 
+        // ===== مراقبة الدورة القادمة (3-3) =====
+
+        [Fact]
+        public async Task CycleWatch_NotifiesWhenSameOpportunityReopens_Once()
+        {
+            var old = AddOpportunity(1, "منحة DAAD للماجستير", OpportunityType.Scholarships,
+                endDate: DateTime.Now.Date.AddDays(-30), deadlineType: DeadlineType.SpecificDate);
+            _db.CycleWatches.Add(new CycleWatch { UserId = "u1", OpportunityId = 1 });
+            _db.SaveChanges();
+
+            Assert.Equal(0, await _sweeper.SweepAsync()); // ما زالت منتهية
+
+            old.EndDate = DateTime.Now.Date.AddDays(60); // الإدارة مدّدت الموعد = دورة جديدة
+            _db.SaveChanges();
+
+            Assert.Equal(1, await _sweeper.SweepAsync());
+            var n = Assert.Single(_db.Notifications.Where(x => x.Kind == NotificationKind.CycleReopened));
+            Assert.Equal(1, n.OpportunityId);
+            Assert.NotNull(_db.CycleWatches.Single().NotifiedAt);
+
+            Assert.Equal(0, await _sweeper.SweepAsync()); // لا تكرار
+        }
+
+        [Fact]
+        public async Task CycleWatch_NotifiesWhenSimilarTitlePublishedAfterWatch()
+        {
+            AddOpportunity(1, "منحة DAAD للماجستير في ألمانيا", OpportunityType.Scholarships,
+                endDate: DateTime.Now.Date.AddDays(-30), deadlineType: DeadlineType.SpecificDate);
+            _db.CycleWatches.Add(new CycleWatch { UserId = "u1", OpportunityId = 1, CreatedAt = DateTime.Now.AddMinutes(-5) });
+            _db.SaveChanges();
+
+            AddOpportunity(2, "وظيفة محاسب", OpportunityType.Jobs); // لا تشبه
+            Assert.Equal(0, await _sweeper.SweepAsync());
+
+            AddOpportunity(3, "منحة DAAD للماجستير في ألمانيا 2027", OpportunityType.Scholarships);
+            Assert.Equal(1, await _sweeper.SweepAsync());
+
+            var n = Assert.Single(_db.Notifications.Where(x => x.Kind == NotificationKind.CycleReopened));
+            Assert.Equal(3, n.OpportunityId);
+            Assert.Equal("منحة DAAD للماجستير في ألمانيا", n.Label);
+        }
+
+        [Fact]
+        public void TitleTerms_KeepsLongestMeaningfulWords()
+        {
+            var terms = NotificationSweeper.TitleTerms("منحة DAAD للماجستير في ألمانيا 2027");
+            Assert.True(terms.Count <= 4);
+            Assert.DoesNotContain("في", terms);
+            Assert.Contains("للماجستير", terms);
+        }
+
         // ===== الدوال المساعدة =====
 
         [Fact]

@@ -31,6 +31,7 @@ namespace Foras_Khadra.Services
             created += await SweepSavedDeadlinesAsync(ct);
             created += await SweepInterestsAsync(ct);
             created += await SweepSavedSearchesAsync(ct);
+            created += await SweepCycleWatchesAsync(ct);
             if (created > 0 || _db.ChangeTracker.HasChanges())
                 await _db.SaveChangesAsync(ct);
             return created;
@@ -158,6 +159,76 @@ namespace Foras_Khadra.Services
 
             return created;
         }
+
+        /// <summary>مراقبة الدورة القادمة (3-3): تنبيه واحد إذا أُعيد فتح الفرصة نفسها، أو نُشرت بعد المراقبة فرصة جديدة بعنوان مطابق.</summary>
+        private async Task<int> SweepCycleWatchesAsync(CancellationToken ct)
+        {
+            var today = DateTime.Now.Date;
+            var created = 0;
+
+            var watches = await _db.CycleWatches
+                .Where(w => w.NotifiedAt == null)
+                .Include(w => w.Opportunity)
+                .ToListAsync(ct);
+
+            foreach (var watch in watches)
+            {
+                var old = watch.Opportunity;
+                if (old == null) continue;
+
+                int? reopenedId = null;
+
+                // (أ) الفرصة نفسها عادت مفتوحة: موعدها صار في المستقبل، أو أُزيل الموعد المحدد
+                // (المراقبة لا تُنشأ إلا على فرصة منتهية الموعد، فأي من الحالتين يعني إعادة فتح)
+                var reopenedItself = old.Status == OpportunityStatus.Published
+                    && (old.DeadlineType != DeadlineType.SpecificDate
+                        || (old.EndDate.HasValue && old.EndDate.Value.Date >= today));
+                if (reopenedItself)
+                    reopenedId = old.Id;
+
+                // (ب) فرصة جديدة بعنوان مطابق نُشرت بعد بدء المراقبة
+                if (reopenedId == null)
+                {
+                    var terms = TitleTerms(old.TitleAr);
+                    if (terms.Count > 0)
+                    {
+                        var q = _db.Opportunities
+                            .Where(o => o.Id != old.Id
+                                        && o.Status == OpportunityStatus.Published
+                                        && o.PublishDate > watch.CreatedAt
+                                        && (o.EndDate == null || o.EndDate >= today));
+                        foreach (var term in terms)
+                        {
+                            var pattern = $"%{term}%";
+                            q = q.Where(o => EF.Functions.Like(o.SearchText, pattern));
+                        }
+                        reopenedId = await q.OrderByDescending(o => o.PublishDate).Select(o => (int?)o.Id).FirstOrDefaultAsync(ct);
+                    }
+                }
+
+                if (reopenedId == null) continue;
+
+                _db.Notifications.Add(new Notification
+                {
+                    UserId = watch.UserId,
+                    Kind = NotificationKind.CycleReopened,
+                    OpportunityId = reopenedId,
+                    Label = old.TitleAr
+                });
+                watch.NotifiedAt = DateTime.Now;
+                created++;
+            }
+
+            return created;
+        }
+
+        /// <summary>أطول 4 كلمات ذات معنى من العنوان (3 أحرف فأكثر) — بصمة لمطابقة الدورة الجديدة.</summary>
+        public static List<string> TitleTerms(string? title) =>
+            SearchIndexer.Terms(title)
+                .Where(t => t.Length >= 3)
+                .OrderByDescending(t => t.Length)
+                .Take(4)
+                .ToList();
 
         public static List<OpportunityType> ParseTypes(string? typesCsv) =>
             (typesCsv ?? string.Empty)

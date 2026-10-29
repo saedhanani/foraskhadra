@@ -37,5 +37,11 @@ namespace Foras_Khadra.Models
 
         /// <summary>آخر فرص فتحها المستخدم ("تابعت مؤخرًا").</summary>
         public List<Opportunity> Recent { get; set; } = new();
+
+        // ===== المرحلة 3: ذكاء الترشيح =====
+        /// <summary>نسبة التطابق لكل فرصة معروضة (المفتاح OpportunityId) — تقرؤها بطاقة _OpportunityCard عبر ViewData.</summary>
+        public Dictionary<int, int> MatchScores { get; set; } = new();
+        /// <summary>هل عرفنا جنسية/بلد المستخدم فرشّحنا على أساسها؟</summary>
+        public bool MatchesNationality { get; set; }
     }
 }

@@ -16,17 +16,20 @@ namespace Foras_Khadra.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISavedOpportunityService _savedService;
         private readonly IApplicationTracker _tracker;
+        private readonly IMatchService _match;
 
         public UserController(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
             ISavedOpportunityService savedService,
-            IApplicationTracker tracker)
+            IApplicationTracker tracker,
+            IMatchService match)
         {
             _context = context;
             _userManager = userManager;
             _savedService = savedService;
             _tracker = tracker;
+            _match = match;
         }
 
         // GET: User/Dashboard — صفحة "صفحتي": مقترحة حسب الاهتمامات + المحفوظة مع حالة الموعد + أحدث الفرص
@@ -45,6 +48,8 @@ namespace Foras_Khadra.Controllers
             var savedIds = saved.Select(o => o.Id).ToHashSet();
 
             var interestTypes = InterestMap.TypesFor(user.Interests);
+            var profile = await _match.ProfileAsync(user, isIndividual: true)
+                          ?? new MatchProfile(interestTypes, null, null);
 
             var recommended = new List<Opportunity>();
             if (interestTypes.Count > 0)
@@ -55,14 +60,15 @@ namespace Foras_Khadra.Controllers
                                 && o.Type != null && interestTypes.Contains(o.Type.Value)
                                 && (o.EndDate == null || o.EndDate >= today))
                     .OrderByDescending(o => o.PublishDate)
-                    .Take(18)
+                    .Take(40)
                     .AsNoTracking()
                     .ToListAsync();
 
-                // المحفوظة لها قسمها؛ وما ينتهي قريبًا يتقدّم على الأحدث
+                // المحفوظة لها قسمها؛ ما لا يقبل جنسية المستخدم يُستبعد (3-1)؛ الأعلى تطابقًا ثم الأحدث
                 recommended = candidates
                     .Where(o => !savedIds.Contains(o.Id))
-                    .OrderByDescending(o => o.IsDeadlineSoon)
+                    .Where(o => MatchScorer.Eligible(profile, o) != false)
+                    .OrderByDescending(o => MatchScorer.Score(profile, o))
                     .ThenByDescending(o => o.PublishDate)
                     .Take(6)
                     .ToList();
@@ -93,6 +99,8 @@ namespace Foras_Khadra.Controllers
 
             var vm = new UserDashboardViewModel
             {
+                MatchScores = _match.Scores(profile, recommended.Concat(savedShown).Concat(latest)),
+                MatchesNationality = profile.HasLocation,
                 SavedSearches = savedSearches,
                 Tracker = await _tracker.CardsAsync(user.Id, savedShown.Select(o => o.Id)),
                 AppliedCount = stats.Applied,

@@ -76,6 +76,17 @@ namespace Foras_Khadra.Controllers
             return RedirectToAction(nameof(Prepare), new { id });
         }
 
+        // POST: /Tracker/ToggleCycleWatch/5 — "أعلمني حين تفتح الدورة القادمة" على فرصة منتهية
+        [HttpPost]
+        public async Task<IActionResult> ToggleCycleWatch(int id, string? returnUrl)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Unauthorized();
+
+            await _tracker.ToggleCycleWatchAsync(userId, id);
+            return Back(returnUrl);
+        }
+
         private IActionResult Back(string? returnUrl) =>
             !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)
                 ? LocalRedirect(returnUrl)

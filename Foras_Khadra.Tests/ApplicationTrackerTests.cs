@@ -184,6 +184,21 @@ namespace Foras_Khadra.Tests
             Assert.Equal(ApplicationTracker.MaxRecentViews, _db.RecentViews.Count(r => r.UserId == "u1"));
         }
 
+        // ===== 3-3 مراقبة الدورة القادمة =====
+
+        [Fact]
+        public async Task CycleWatch_ToggleOnOff_AndOnlyPublished()
+        {
+            Assert.True(await _tracker.ToggleCycleWatchAsync("u1", 3));
+            Assert.True(await _tracker.IsWatchingAsync("u1", 3));
+            Assert.False(await _tracker.IsWatchingAsync("u2", 3));
+
+            Assert.False(await _tracker.ToggleCycleWatchAsync("u1", 3)); // إلغاء
+            Assert.False(await _tracker.IsWatchingAsync("u1", 3));
+
+            Assert.False(await _tracker.ToggleCycleWatchAsync("u1", 999)); // غير موجودة
+        }
+
         // ===== 2-4 ملف التقويم =====
 
         [Fact]

@@ -10,7 +10,9 @@ namespace Foras_Khadra.Models
         /// <summary>فرص جديدة تطابق اهتمامات المستخدم.</summary>
         InterestMatches = 2,
         /// <summary>فرص جديدة تطابق بحثًا محفوظًا.</summary>
-        SavedSearchMatches = 3
+        SavedSearchMatches = 3,
+        /// <summary>فُتحت دورة جديدة من فرصة كان المستخدم يراقبها (OpportunityId = الفرصة المفتوحة، Label = عنوان القديمة).</summary>
+        CycleReopened = 4
     }
 
     /// <summary>إشعار داخل الموقع — يولّده NotificationSweeper ويظهر في جرس الهيدر.</summary>

@@ -489,6 +489,37 @@ namespace Foras_Khadra.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Foras_Khadra.Models.CycleWatch", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("NotifiedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("OpportunityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OpportunityId");
+
+                    b.HasIndex("UserId", "OpportunityId")
+                        .IsUnique();
+
+                    b.ToTable("CycleWatches");
+                });
+
             modelBuilder.Entity("Foras_Khadra.Models.FlagshipProgram", b =>
                 {
                     b.Property<int>("Id")
@@ -1303,6 +1334,25 @@ namespace Foras_Khadra.Migrations
                         .IsRequired();
 
                     b.Navigation("SavedOpportunity");
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.CycleWatch", b =>
+                {
+                    b.HasOne("Foras_Khadra.Models.Opportunity", "Opportunity")
+                        .WithMany()
+                        .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Foras_Khadra.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .IsRequired();
+
+                    b.Navigation("Opportunity");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.Notification", b =>

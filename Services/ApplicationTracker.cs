@@ -32,6 +32,11 @@ namespace Foras_Khadra.Services
         // ===== 2-3 تابعت مؤخرًا =====
         Task RecordViewAsync(string userId, int opportunityId);
         Task<List<Opportunity>> RecentAsync(string userId, int take);
+
+        // ===== 3-3 مراقبة الدورة القادمة =====
+        /// <summary>يفعّل المراقبة أو يلغيها. يعيد الحالة الجديدة (true = يراقب).</summary>
+        Task<bool> ToggleCycleWatchAsync(string userId, int opportunityId);
+        Task<bool> IsWatchingAsync(string userId, int opportunityId);
     }
 
     public class ApplicationTracker : IApplicationTracker
@@ -182,6 +187,35 @@ namespace Foras_Khadra.Services
             if (stale.Count > 0)
                 await _db.RecentViews.Where(r => stale.Contains(r.Id)).ExecuteDeleteAsync();
         }
+
+        public async Task<bool> ToggleCycleWatchAsync(string userId, int opportunityId)
+        {
+            var existing = await _db.CycleWatches
+                .FirstOrDefaultAsync(w => w.UserId == userId && w.OpportunityId == opportunityId);
+            if (existing != null)
+            {
+                _db.CycleWatches.Remove(existing);
+                await _db.SaveChangesAsync();
+                return false;
+            }
+
+            var exists = await _db.Opportunities.AnyAsync(o => o.Id == opportunityId && o.Status == OpportunityStatus.Published);
+            if (!exists) return false;
+
+            _db.CycleWatches.Add(new CycleWatch { UserId = userId, OpportunityId = opportunityId });
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                _db.ChangeTracker.Clear(); // نقرتان متزامنتان — النتيجة واحدة
+            }
+            return true;
+        }
+
+        public Task<bool> IsWatchingAsync(string userId, int opportunityId) =>
+            _db.CycleWatches.AnyAsync(w => w.UserId == userId && w.OpportunityId == opportunityId);
 
         public async Task<List<Opportunity>> RecentAsync(string userId, int take)
         {

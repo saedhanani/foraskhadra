@@ -426,3 +426,24 @@ a:hover {
   opacity: 0.6;
   cursor: wait;
 }
+
+/* ===== شارة "تطابق N%" (المرحلة 3، Views/Shared/_OpportunityCard + AllOpportunities) ===== */
+.opp-card { position: relative; }
+.match-badge {
+    position: absolute;
+    top: 12px;
+    inset-inline-start: 12px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+}
+.match-badge.match-high { color: #1B6B23; border: 1.5px solid #ABE188; }
+.match-badge.match-mid { color: #b06410; border: 1.5px solid #fbe0b8; }
+.match-badge.match-low { color: #64748b; border: 1.5px solid #e2e8f0; }

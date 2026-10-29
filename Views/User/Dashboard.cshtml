@@ -8,6 +8,7 @@
     ViewData["Description"] = pageTitle;
 
     string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    ViewData["MatchScores"] = Model.MatchScores; // شارة "تطابق N%" على بطاقات _OpportunityCard
 }
 
 <link asp-append-version="true" rel="stylesheet" href="~/css/all-opportunities.css" />
@@ -480,7 +481,17 @@
 
         @if (Model.InterestNames.Any())
         {
-            <p class="fk-section-sub">@T("بحسب الاهتمامات التي اخترتها:", "Based on the interests you chose:", "Selon les intérêts que vous avez choisis :")</p>
+            <p class="fk-section-sub">
+                @if (Model.MatchesNationality)
+                {
+                    @T("بحسب اهتماماتك، ومن الفرص التي تقبل جنسيتك أو بلدك:", "Based on your interests, among opportunities open to your nationality or country:", "Selon vos intérêts, parmi les opportunités ouvertes à votre nationalité ou pays :")
+                }
+                else
+                {
+                    @T("بحسب الاهتمامات التي اخترتها:", "Based on the interests you chose:", "Selon les intérêts que vous avez choisis :")
+                    <a href="@Url.Action("ProfileSettings", "Account")" style="color:var(--fk-orange); font-weight:700; text-decoration:none;">@T("أضف جنسيتك لنرشّح فرصًا تقبلها", "Add your nationality to get eligible picks", "Ajoutez votre nationalité pour des suggestions éligibles")</a>
+                }
+            </p>
             <div class="fk-chips">
                 @foreach (var name in Model.InterestNames)
                 {

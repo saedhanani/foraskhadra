@@ -26,6 +26,7 @@ namespace Foras_Khadra.Data
         public DbSet<SavedSearch> SavedSearches { get; set; }
         public DbSet<ChecklistItem> ChecklistItems { get; set; }
         public DbSet<RecentView> RecentViews { get; set; }
+        public DbSet<CycleWatch> CycleWatches { get; set; }
         public DbSet<FlagshipProgram> FlagshipPrograms { get; set; }
         public DbSet<ImpactStat> ImpactStats { get; set; }
 
@@ -120,6 +121,21 @@ namespace Foras_Khadra.Data
                 .HasOne(r => r.Opportunity)
                 .WithMany()
                 .HasForeignKey(r => r.OpportunityId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // مراقبة الدورة القادمة: صف واحد لكل (مستخدم، فرصة)؛ جهة المستخدم بلا cascade كالمعتاد
+            modelBuilder.Entity<CycleWatch>()
+                .HasIndex(w => new { w.UserId, w.OpportunityId })
+                .IsUnique();
+            modelBuilder.Entity<CycleWatch>()
+                .HasOne(w => w.User)
+                .WithMany()
+                .HasForeignKey(w => w.UserId)
+                .OnDelete(DeleteBehavior.ClientCascade);
+            modelBuilder.Entity<CycleWatch>()
+                .HasOne(w => w.Opportunity)
+                .WithMany()
+                .HasForeignKey(w => w.OpportunityId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<SavedSearch>()

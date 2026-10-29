@@ -664,6 +664,14 @@
 
                             <div class="status-wrapper">
                                 <span class="opp-status @statusClass">@statusText</span>
+                                @if (ViewBag.MatchScores is Dictionary<int, int> matchScores && matchScores.TryGetValue(opp.Id, out var matchScore))
+                                {
+                                    var matchClass = matchScore >= 80 ? "match-high" : matchScore >= 50 ? "match-mid" : "match-low";
+                                    <span class="match-badge @matchClass" style="position:static; margin-inline-start:8px;"
+                                          title="@(lang == "en" ? "How well this matches your interests, nationality and timing" : lang == "fr" ? "Correspondance avec vos intérêts, nationalité et délais" : "مدى مطابقة الفرصة لاهتماماتك وجنسيتك وتوقيتها")">
+                                        <i class="bi bi-bullseye"></i> @(lang == "en" ? $"{matchScore}% match" : lang == "fr" ? $"{matchScore} % compatible" : $"تطابق {matchScore}%")
+                                    </span>
+                                }
                             </div>
                         </div>
 

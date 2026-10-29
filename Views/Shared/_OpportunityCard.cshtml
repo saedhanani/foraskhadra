@@ -13,8 +13,18 @@
             ? (lang == "en" ? "Closing soon" : lang == "fr" ? "Bientôt clôturé" : "ينتهي قريبًا")
             : (lang == "en" ? "Available" : lang == "fr" ? "Disponible" : "متاح التقديم");
     string statusClass = isExpired ? "status-expired" : opp.IsDeadlineSoon ? "status-soon" : "status-available";
+
+    // شارة "تطابق N%" (المرحلة 3) — تُحسب في المتحكم وتُمرَّر عبر ViewData["MatchScores"]
+    int? matchScore = ViewData["MatchScores"] is Dictionary<int, int> scores && scores.TryGetValue(opp.Id, out var sc) ? sc : null;
+    string matchClass = matchScore >= 80 ? "match-high" : matchScore >= 50 ? "match-mid" : "match-low";
 }
 <div class="opp-card shadow-sm">
+    @if (matchScore.HasValue)
+    {
+        <span class="match-badge @matchClass" title="@(lang == "en" ? "How well this matches your interests, nationality and timing" : lang == "fr" ? "Correspondance avec vos intérêts, nationalité et délais" : "مدى مطابقة الفرصة لاهتماماتك وجنسيتك وتوقيتها")">
+            <i class="bi bi-bullseye"></i> @(lang == "en" ? $"{matchScore}% match" : lang == "fr" ? $"{matchScore} % compatible" : $"تطابق {matchScore}%")
+        </span>
+    }
     @if (!string.IsNullOrEmpty(opp.ImagePath))
     {
         <img src="@opp.ImagePath" class="opp-image" alt="@title" loading="lazy" decoding="async">

@@ -131,6 +131,20 @@
                     @Localizer["ApplyNow"]
                 </a>
                 @await Html.PartialAsync("_SaveButton", (Model.Id, (ViewBag.IsSaved as bool?) == true))
+                @if (isExpired && !User.IsInRole("Organization"))
+                {
+                    var watching = (ViewBag.IsWatching as bool?) == true;
+                    <form method="post" asp-controller="Tracker" asp-action="ToggleCycleWatch" asp-route-id="@Model.Id" style="display:inline;">
+                        <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
+                        <button type="submit" class="save-btn @(watching ? "is-saved" : "")"
+                                title="@(watching
+                                    ? (lang == "en" ? "You'll be notified when the next cycle opens — click to cancel" : lang == "fr" ? "Vous serez averti à la prochaine session — cliquer pour annuler" : "ستُعلَم عند فتح الدورة القادمة — اضغط للإلغاء")
+                                    : (lang == "en" ? "Notify me when the next cycle opens" : lang == "fr" ? "M'avertir à l'ouverture de la prochaine session" : "أعلمني حين تفتح الدورة القادمة"))"
+                                aria-pressed="@(watching ? "true" : "false")">
+                            <i class="bi @(watching ? "bi-bell-fill" : "bi-bell")"></i>
+                        </button>
+                    </form>
+                }
                 @if (!isExpired && Model.DeadlineType == DeadlineType.SpecificDate && Model.EndDate.HasValue)
                 {
                     <a class="save-btn" href="@Url.Action("Calendar", "Opportunity", new { id = Model.Id })"

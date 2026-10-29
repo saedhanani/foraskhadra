@@ -51,6 +51,14 @@ else
                         $"{n.Count} nouvelles opportunités correspondent à vos intérêts")</span>
             </a>
         }
+        else if (n.Kind == NotificationKind.CycleReopened && n.Opportunity != null)
+        {
+            var title = lang switch { "en" => n.Opportunity.TitleEn, "fr" => n.Opportunity.TitleFr, _ => n.Opportunity.TitleAr };
+            <a class="notif-item @unread" href="@Url.Action("Details", "Opportunity", new { id = n.OpportunityId, slug = SlugHelper.Make(title) })">
+                <i class="bi bi-arrow-repeat notif-ico green"></i>
+                <span>@T("فُتحت دورة جديدة من الفرصة التي تراقبها: ", "A new cycle opened for the opportunity you're watching: ", "Une nouvelle session s'est ouverte pour l'opportunité suivie : ")<b>@title</b></span>
+            </a>
+        }
         else if (n.Kind == NotificationKind.SavedSearchMatches)
         {
             var url = Url.Action("AllOpportunities", "Home") + (string.IsNullOrEmpty(n.LinkParams) ? "" : "?" + n.LinkParams);
