@@ -1,0 +1,42 @@
+@* بطاقة فرصة موحّدة (تنسيقات .opp-card كما في صفحتي المحفوظات وصفحتي). Model: (الفرصة، هل هي محفوظة؟) *@
+@using Foras_Khadra.Helpers
+@using Foras_Khadra.Models
+@model (Foras_Khadra.Models.Opportunity Opp, bool Saved)
+@{
+    var opp = Model.Opp;
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var title = lang switch { "en" => opp.TitleEn, "fr" => opp.TitleFr, _ => opp.TitleAr };
+    bool isExpired = opp.DeadlineType == DeadlineType.SpecificDate && opp.EndDate.HasValue && opp.EndDate.Value.Date < DateTime.Now.Date;
+    string statusText = isExpired
+        ? (lang == "en" ? "Application Closed" : lang == "fr" ? "Candidature Terminée" : "انتهت فترة التقديم")
+        : opp.IsDeadlineSoon
+            ? (lang == "en" ? "Closing soon" : lang == "fr" ? "Bientôt clôturé" : "ينتهي قريبًا")
+            : (lang == "en" ? "Available" : lang == "fr" ? "Disponible" : "متاح التقديم");
+    string statusClass = isExpired ? "status-expired" : opp.IsDeadlineSoon ? "status-soon" : "status-available";
+}
+<div class="opp-card shadow-sm">
+    @if (!string.IsNullOrEmpty(opp.ImagePath))
+    {
+        <img src="@opp.ImagePath" class="opp-image" alt="@title" loading="lazy" decoding="async">
+    }
+
+    <div class="opp-category-row">
+        <span class="type-tag">@opp.Type.GetDisplayName(lang)</span>
+        @if (!string.IsNullOrWhiteSpace(opp.AvailableCountriesNames))
+        {
+            var countries = opp.AvailableCountriesNames.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(c => c.Trim()).ToList();
+            <span class="category-tag">@(string.Join(", ", countries.Take(2)) + (countries.Count > 2 ? "..." : ""))</span>
+        }
+    </div>
+
+    <h3 class="opp-title">@title</h3>
+
+    <span class="opp-status @statusClass">@statusText</span>
+
+    <div class="opp-info-row">
+        <a href="@Url.Action("Details", "Opportunity", new { id = opp.Id, slug = SlugHelper.Make(title) })" class="btn-details">
+            @(lang == "en" ? "View details" : lang == "fr" ? "Voir les détails" : "عرض التفاصيل")
+        </a>
+        @await Html.PartialAsync("_SaveButton", (opp.Id, Model.Saved))
+    </div>
+</div>

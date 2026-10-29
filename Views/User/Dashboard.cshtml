@@ -1,6 +1,417 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
+﻿@model Foras_Khadra.Models.UserDashboardViewModel
+@using Foras_Khadra.Helpers
+@using Foras_Khadra.Models
 @{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var pageTitle = lang == "en" ? "My page" : lang == "fr" ? "Ma page" : "صفحتي";
+    ViewData["Title"] = pageTitle;
+    ViewData["Description"] = pageTitle;
+
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
 }
-<h1>Hi User</h1>
+
+<link asp-append-version="true" rel="stylesheet" href="~/css/all-opportunities.css" />
+
+<style>
+    /* ===== بطاقات الفرص (نفس مظهر صفحة المحفوظات) ===== */
+    .opp-card {
+        background: #fff;
+        border-radius: 22px;
+        overflow: hidden;
+        border: 1px solid #eef2f7;
+        transition: all 0.25s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .opp-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
+    }
+
+    .opp-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+
+    .opp-category-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 16px 18px 0;
+    }
+
+    .type-tag,
+    .category-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    .type-tag { background: #edf7ee; color: #2e7d32; }
+    .category-tag { background: #f1f5f9; color: #475569; }
+
+    .opp-title {
+        padding: 14px 18px 0;
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #1e293b;
+        line-height: 1.6;
+        margin: 0;
+        flex: 1;
+    }
+
+    .opp-status {
+        display: inline-flex;
+        margin: 16px 18px 0;
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 0.82rem;
+        font-weight: 800;
+        align-self: flex-start;
+    }
+
+    .status-available { background: #edf7ee; color: #2e7d32; }
+    .status-expired { background: #fff1f2; color: #dc2626; }
+    .status-soon { background: #fff3e0; color: #c2410c; }
+
+    .opp-info-row {
+        padding: 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .opp-info-row .btn-details { flex: 1; }
+
+    /* ===== ترحيب أعلى الصفحة ===== */
+    .dash-hero {
+        background: linear-gradient(135deg, #1b5e20, #2e7d32 55%, #43a047);
+        border-radius: 26px;
+        color: #fff;
+        padding: 36px 30px;
+        margin: 24px 0 30px;
+    }
+
+    .dash-hero h1 {
+        margin: 0 0 6px;
+        font-size: 1.9rem;
+        font-weight: 800;
+    }
+
+    .dash-hero p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.85);
+        font-weight: 600;
+    }
+
+    .dash-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    .dash-stat {
+        background: rgba(255, 255, 255, 0.14);
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        border-radius: 16px;
+        padding: 10px 18px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    .dash-stat strong { font-size: 1.25rem; }
+
+    /* ===== شريط "تنتهي قريبًا" ===== */
+    .dash-expiring {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        border-radius: 18px;
+        padding: 16px 20px;
+        margin-bottom: 30px;
+    }
+
+    .dash-expiring-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        color: #c2410c;
+        margin-bottom: 10px;
+    }
+
+    .dash-expiring ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .dash-expiring li a {
+        color: #7c2d12;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .dash-expiring li a:hover { text-decoration: underline; }
+
+    .dash-expiring .days-left {
+        color: #c2410c;
+        font-size: 0.85rem;
+        font-weight: 800;
+    }
+
+    /* ===== عناوين الأقسام ===== */
+    .dash-section { margin-bottom: 44px; }
+
+    .dash-section-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+
+    .dash-section-head i {
+        font-size: 1.5rem;
+        color: #2e7d32;
+    }
+
+    .dash-section-head h2 {
+        margin: 0;
+        font-size: 1.45rem;
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .dash-section-head .view-all {
+        margin-inline-start: auto;
+        color: #2e7d32;
+        font-weight: 700;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .dash-section-head .view-all:hover { text-decoration: underline; }
+
+    .interest-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 18px;
+    }
+
+    .interest-chip {
+        background: #edf7ee;
+        color: #2e7d32;
+        border-radius: 999px;
+        padding: 6px 14px;
+        font-size: 0.85rem;
+        font-weight: 700;
+    }
+
+    .interest-chips .edit-interests {
+        color: #64748b;
+        font-size: 0.85rem;
+        font-weight: 700;
+        align-self: center;
+        text-decoration: none;
+    }
+
+    .interest-chips .edit-interests:hover { color: #2e7d32; }
+
+    /* ===== صناديق فارغة ===== */
+    .dash-empty {
+        background: #f8fafc;
+        border: 1px dashed #cbd5e1;
+        border-radius: 18px;
+        text-align: center;
+        padding: 36px 16px;
+        color: #64748b;
+    }
+
+    .dash-empty i {
+        font-size: 2.4rem;
+        color: #cbd5e1;
+        display: block;
+        margin-bottom: 10px;
+    }
+
+    .dash-empty a {
+        color: #2e7d32;
+        font-weight: 700;
+    }
+
+    @@media (max-width: 576px) {
+        .dash-hero { padding: 26px 20px; }
+        .dash-hero h1 { font-size: 1.5rem; }
+    }
+</style>
+
+<div class="page-wrapper container">
+
+    @* ===== الترحيب ===== *@
+    <section class="dash-hero">
+        <h1>@T($"مرحبًا، {Model.FirstName} 👋", $"Welcome, {Model.FirstName} 👋", $"Bienvenue, {Model.FirstName} 👋")</h1>
+        <p>@T("هنا تجد فرصك المحفوظة وما يناسب اهتماماتك وأحدث ما نُشر.", "Here are your saved opportunities, picks matching your interests, and the latest posts.", "Retrouvez ici vos opportunités enregistrées, des suggestions selon vos intérêts et les dernières publications.")</p>
+        <div class="dash-stats">
+            <span class="dash-stat"><i class="bi bi-bookmark-fill"></i> <strong>@Model.SavedCount</strong> @T("فرصة محفوظة", "saved", "enregistrées")</span>
+            @if (Model.ExpiringSaved.Any())
+            {
+                <span class="dash-stat"><i class="bi bi-alarm"></i> <strong>@Model.ExpiringSaved.Count</strong> @T("تنتهي قريبًا", "closing soon", "bientôt clôturées")</span>
+            }
+            @if (Model.Recommended.Any())
+            {
+                <span class="dash-stat"><i class="bi bi-stars"></i> <strong>@Model.Recommended.Count</strong> @T("مقترحة لك", "picked for you", "suggérées")</span>
+            }
+        </div>
+    </section>
+
+    @* ===== محفوظات تنتهي قريبًا ===== *@
+    @if (Model.ExpiringSaved.Any())
+    {
+        <div class="dash-expiring">
+            <div class="dash-expiring-title">
+                <i class="bi bi-alarm"></i>
+                @T("من محفوظاتك: مواعيد تقترب!", "From your saved list: deadlines approaching!", "Dans vos enregistrements : échéances proches !")
+            </div>
+            <ul>
+                @foreach (var opp in Model.ExpiringSaved)
+                {
+                    var title = lang switch { "en" => opp.TitleEn, "fr" => opp.TitleFr, _ => opp.TitleAr };
+                    var daysLeft = (opp.EndDate!.Value.Date - DateTime.Now.Date).Days;
+                    var daysText = daysLeft == 0
+                        ? T("ينتهي اليوم", "ends today", "se termine aujourd'hui")
+                        : daysLeft == 1
+                            ? T("يبقى يوم واحد", "1 day left", "1 jour restant")
+                            : T($"تبقى {daysLeft} أيام", $"{daysLeft} days left", $"{daysLeft} jours restants");
+                    <li>
+                        <a href="@Url.Action("Details", "Opportunity", new { id = opp.Id, slug = SlugHelper.Make(title) })">@title</a>
+                        <span class="days-left">— @daysText</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+
+    @* ===== مقترحة لك ===== *@
+    <section class="dash-section">
+        <div class="dash-section-head">
+            <i class="bi bi-stars"></i>
+            <h2>@T("مقترحة لك", "Picked for you", "Suggérées pour vous")</h2>
+        </div>
+
+        @if (Model.InterestNames.Any())
+        {
+            <div class="interest-chips">
+                @foreach (var name in Model.InterestNames)
+                {
+                    <span class="interest-chip">@name</span>
+                }
+                <a class="edit-interests" href="@Url.Action("ProfileSettings", "Account")">
+                    <i class="bi bi-pencil"></i> @T("تعديل اهتماماتي", "Edit my interests", "Modifier mes intérêts")
+                </a>
+            </div>
+        }
+
+        @if (!Model.InterestNames.Any())
+        {
+            <div class="dash-empty">
+                <i class="bi bi-stars"></i>
+                <p>
+                    @T("أخبرنا باهتماماتك لنقترح لك فرصًا تناسبك.", "Tell us your interests and we'll suggest opportunities for you.", "Indiquez vos intérêts et nous vous suggérerons des opportunités.")
+                </p>
+                <a href="@Url.Action("ProfileSettings", "Account")">@T("اختر اهتماماتك", "Choose your interests", "Choisir vos intérêts")</a>
+            </div>
+        }
+        else if (!Model.Recommended.Any())
+        {
+            <div class="dash-empty">
+                <i class="bi bi-hourglass-split"></i>
+                <p>
+                    @T("لا فرص مفتوحة تطابق اهتماماتك الآن — نضيف فرصًا جديدة باستمرار.", "No open opportunities match your interests right now — we add new ones all the time.", "Aucune opportunité ouverte ne correspond à vos intérêts pour le moment — nous en ajoutons régulièrement.")
+                </p>
+                <a href="@Url.Action("AllOpportunities", "Home")">@T("تصفّح كل الفرص", "Browse all opportunities", "Parcourir toutes les opportunités")</a>
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var opp in Model.Recommended)
+                {
+                    <div class="col-lg-4 col-md-6">
+                        @await Html.PartialAsync("_OpportunityCard", (opp, Model.SavedIds.Contains(opp.Id)))
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    @* ===== محفوظاتك ===== *@
+    <section class="dash-section">
+        <div class="dash-section-head">
+            <i class="bi bi-bookmark-fill"></i>
+            <h2>@T("محفوظاتك", "Your saved opportunities", "Vos opportunités enregistrées")</h2>
+            @if (Model.SavedCount > 0)
+            {
+                <a class="view-all" href="@Url.Action("Saved", "Opportunity")">
+                    @T($"عرض الكل ({Model.SavedCount})", $"View all ({Model.SavedCount})", $"Tout voir ({Model.SavedCount})")
+                </a>
+            }
+        </div>
+
+        @if (!Model.Saved.Any())
+        {
+            <div class="dash-empty">
+                <i class="bi bi-bookmark"></i>
+                <p>
+                    @T("لم تحفظ أي فرصة بعد — اضغط رمز الحفظ على أي بطاقة لتعود إليها هنا.", "You haven't saved any opportunity yet — tap the bookmark icon on any card to find it here.", "Vous n'avez encore rien enregistré — touchez l'icône signet d'une carte pour la retrouver ici.")
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var opp in Model.Saved)
+                {
+                    <div class="col-lg-4 col-md-6">
+                        @await Html.PartialAsync("_OpportunityCard", (opp, true))
+                    </div>
+                }
+            </div>
+        }
+    </section>
+
+    @* ===== أحدث الفرص ===== *@
+    @if (Model.Latest.Any())
+    {
+        <section class="dash-section">
+            <div class="dash-section-head">
+                <i class="bi bi-lightning-charge"></i>
+                <h2>@T("أحدث الفرص", "Latest opportunities", "Dernières opportunités")</h2>
+                <a class="view-all" href="@Url.Action("AllOpportunities", "Home")">
+                    @T("عرض الكل", "View all", "Tout voir")
+                </a>
+            </div>
+            <div class="row g-4">
+                @foreach (var opp in Model.Latest)
+                {
+                    <div class="col-lg-4 col-md-6">
+                        @await Html.PartialAsync("_OpportunityCard", (opp, Model.SavedIds.Contains(opp.Id)))
+                    </div>
+                }
+            </div>
+        </section>
+    }
+</div>

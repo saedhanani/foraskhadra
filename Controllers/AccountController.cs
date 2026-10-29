@@ -153,7 +153,8 @@ namespace Foras_Khadra.Controllers
             }
             else
             {
-                return RedirectToAction("Index", "Home");
+                // بعد الدخول يرى المستخدم "صفحتي": المقترحة حسب اهتماماته ومحفوظاته
+                return RedirectToAction("Dashboard", "User");
             }
         }
 
