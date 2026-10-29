@@ -638,7 +638,7 @@
             <div class="auth-section d-flex gap-2 align-items-center">
                     @if (!userIsAuthenticated)
                     {
-                        <div class="custom-dropdown">
+                        <div class="custom-dropdown auth-guest">
                             <button class="nav-btn" type="button" onclick="toggleDropdown('loginMenu', event)">
                                 @Localizer["Login"]
                             </button>
@@ -648,7 +648,7 @@
                             </div>
                         </div>
 
-                        <div class="custom-dropdown">
+                        <div class="custom-dropdown auth-guest">
                             <button class="nav-btn nav-btn--yellow" type="button" onclick="toggleDropdown('registerMenu', event)">
                                 @Localizer["Register"]
                             </button>
@@ -721,7 +721,7 @@
                         </div>
                     }
 
-                    <div class="custom-dropdown" style="background:none;">
+                    <div class="custom-dropdown lang-switch" style="background:none;">
                         <button class="nav-btn nav-btn--icon" type="button"
                                 onclick="toggleDropdown('langMenu', event)"
                                 aria-label="@Localizer["Languages"]">
@@ -800,6 +800,22 @@ else
 
                     <a asp-controller="Home" asp-action="AboutUs" data-close-menu>@Localizer["AboutUs"]</a>
                     <a asp-controller="Contact" asp-action="Index" data-close-menu>@Localizer["ContactUs"]</a>
+
+                    @* على الهاتف (≤768px) تختفي أزرار الدخول ومبدّل اللغة من الشريط العلوي وتظهر هنا داخل القائمة (brand.css) *@
+                    <div class="menu-mobile-extra">
+                        @if (!userIsAuthenticated)
+                        {
+                            <a asp-controller="Account" asp-action="Login" data-close-menu>@Localizer["Login"] · @Localizer["Individual"]</a>
+                            <a asp-controller="Organization" asp-action="Login" data-close-menu>@Localizer["Login"] · @Localizer["Organization"]</a>
+                            <a asp-controller="Account" asp-action="RegisterUser" class="menu-mobile-cta" data-close-menu>@Localizer["Register"] · @Localizer["Individual"]</a>
+                            <a asp-controller="Organization" asp-action="Register" data-close-menu>@Localizer["Register"] · @Localizer["Organization"]</a>
+                        }
+                        <div class="menu-mobile-langs" aria-label="@Localizer["Languages"]">
+                            <a asp-controller="Language" asp-action="Change" asp-route-culture="ar" asp-route-returnUrl="@Context.Request.Path" class="@(culture == "ar" ? "is-current" : "")">العربية</a>
+                            <a asp-controller="Language" asp-action="Change" asp-route-culture="en" asp-route-returnUrl="@Context.Request.Path" class="@(culture == "en" ? "is-current" : "")">English</a>
+                            <a asp-controller="Language" asp-action="Change" asp-route-culture="fr" asp-route-returnUrl="@Context.Request.Path" class="@(culture == "fr" ? "is-current" : "")">Français</a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
