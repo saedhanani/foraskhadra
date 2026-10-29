@@ -25,6 +25,8 @@ namespace Foras_Khadra.Services
         // ===== 2-2 رفيق التقديم =====
         /// <summary>الفرصة المحفوظة مع بنودها؛ تُنشأ البنود الافتراضية عند أول فتح. null إن لم تكن محفوظة.</summary>
         Task<SavedOpportunity?> GetWithChecklistAsync(string userId, int opportunityId);
+        /// <summary>قراءة فقط (بلا توليد بنود): الفرصة المحفوظة مع فرصتها، أو null.</summary>
+        Task<SavedOpportunity?> GetSavedAsync(string userId, int opportunityId);
         Task<bool> ToggleItemAsync(string userId, int itemId);
         Task<bool> AddItemAsync(string userId, int opportunityId, string text);
         Task<bool> RemoveItemAsync(string userId, int itemId);
@@ -122,6 +124,12 @@ namespace Foras_Khadra.Services
             return saved;
         }
 
+        public Task<SavedOpportunity?> GetSavedAsync(string userId, int opportunityId) =>
+            _db.SavedOpportunities
+                .AsNoTracking()
+                .Include(s => s.Opportunity)
+                .FirstOrDefaultAsync(s => s.UserId == userId && s.OpportunityId == opportunityId);
+
         public async Task<bool> ToggleItemAsync(string userId, int itemId)
         {
             var item = await _db.ChecklistItems
@@ -204,8 +212,13 @@ namespace Foras_Khadra.Services
                 return false;
             }
 
-            var exists = await _db.Opportunities.AnyAsync(o => o.Id == opportunityId && o.Status == OpportunityStatus.Published);
-            if (!exists) return false;
+            // المراقبة لفرصة منتهية الموعد فقط؛ وإلا اعتبرها الماسح "مفتوحة من جديد" فورًا
+            var today = DateTime.Now.Date;
+            var expired = await _db.Opportunities.AnyAsync(o => o.Id == opportunityId
+                && o.Status == OpportunityStatus.Published
+                && o.DeadlineType == DeadlineType.SpecificDate
+                && o.EndDate != null && o.EndDate < today);
+            if (!expired) return false;
 
             _db.CycleWatches.Add(new CycleWatch { UserId = userId, OpportunityId = opportunityId });
             try

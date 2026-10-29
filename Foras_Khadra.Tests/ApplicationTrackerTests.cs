@@ -187,8 +187,16 @@ namespace Foras_Khadra.Tests
         // ===== 3-3 مراقبة الدورة القادمة =====
 
         [Fact]
-        public async Task CycleWatch_ToggleOnOff_AndOnlyPublished()
+        public async Task CycleWatch_ToggleOnOff_AndOnlyExpired()
         {
+            // فرصة مفتوحة: لا مراقبة (وإلا اعتبرها الماسح "فُتحت من جديد" فورًا)
+            Assert.False(await _tracker.ToggleCycleWatchAsync("u1", 3));
+
+            var opp = _db.Opportunities.Single(o => o.Id == 3);
+            opp.DeadlineType = DeadlineType.SpecificDate;
+            opp.EndDate = DateTime.Now.Date.AddDays(-10);
+            _db.SaveChanges();
+
             Assert.True(await _tracker.ToggleCycleWatchAsync("u1", 3));
             Assert.True(await _tracker.IsWatchingAsync("u1", 3));
             Assert.False(await _tracker.IsWatchingAsync("u2", 3));

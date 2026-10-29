@@ -8,7 +8,7 @@ namespace Foras_Khadra.Controllers
 {
     /// <summary>
     /// خزانة الأعضاء (البند 5-4): الإدارة (قائمة/إضافة/تعديل/حذف) للأدمن، وصفحة Vault للمسجّلين.
-    /// المورد إمّا ملف PDF يُرفع إلى /uploads/resources أو رابط خارجي.
+    /// المورد إمّا ملف PDF يُحفظ في App_Data/resources (خارج wwwroot فلا يُقدَّم إلا عبر Download للمسجّلين) أو رابط خارجي.
     /// </summary>
     [Authorize]
     public class ResourcesController : Controller
@@ -34,6 +34,23 @@ namespace Foras_Khadra.Controllers
                 .OrderBy(r => r.Category).ThenBy(r => r.SortOrder).ThenByDescending(r => r.CreatedAt)
                 .ToListAsync();
             return View(items);
+        }
+
+        // GET: /Resources/Download/5 — يقدّم ملف المورد للمسجّلين فقط (الملفات خارج wwwroot)
+        [HttpGet]
+        public async Task<IActionResult> Download(int id)
+        {
+            var resource = await _context.Resources.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+            if (resource == null || string.IsNullOrEmpty(resource.FilePath)) return NotFound();
+            if (!resource.IsPublished && !User.IsInRole("Admin")) return NotFound();
+
+            var full = FullPath(resource.FilePath);
+            if (full == null || !System.IO.File.Exists(full)) return NotFound();
+
+            var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            var title = lang switch { "en" => resource.TitleEn, "fr" => resource.TitleFr, _ => resource.TitleAr };
+            var downloadName = Helpers.SlugHelper.Make(title) is { Length: > 0 } slug ? slug + ".pdf" : "foras-khadra-resource.pdf";
+            return PhysicalFile(full, "application/pdf", downloadName, enableRangeProcessing: true);
         }
 
         // ================= INDEX (admin) =================
@@ -162,21 +179,28 @@ namespace Foras_Khadra.Controllers
             return null;
         }
 
-        private async Task<string> SavePdfAsync(IFormFile file)
+        private string ResourcesFolder => Path.Combine(_env.ContentRootPath, "App_Data", "resources");
+
+        /// <summary>FilePath يخزّن اسم الملف فقط (GUID.pdf)؛ أي قيمة أخرى تُرفض حتى لا يُقرأ ملف خارج المجلد.</summary>
+        private string? FullPath(string? storedName)
         {
-            var folder = Path.Combine(_env.WebRootPath, "uploads", "resources");
-            Directory.CreateDirectory(folder);
-            var name = Guid.NewGuid().ToString("N") + ".pdf";
-            await using var fs = new FileStream(Path.Combine(folder, name), FileMode.CreateNew);
-            await file.CopyToAsync(fs);
-            return "/uploads/resources/" + name;
+            if (string.IsNullOrEmpty(storedName) || storedName != Path.GetFileName(storedName) || !storedName.EndsWith(".pdf")) return null;
+            return Path.Combine(ResourcesFolder, storedName);
         }
 
-        private void DeleteFile(string? webPath)
+        private async Task<string> SavePdfAsync(IFormFile file)
         {
-            if (string.IsNullOrEmpty(webPath) || !webPath.StartsWith("/uploads/resources/")) return;
-            var full = Path.Combine(_env.WebRootPath, webPath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-            if (System.IO.File.Exists(full)) System.IO.File.Delete(full);
+            Directory.CreateDirectory(ResourcesFolder);
+            var name = Guid.NewGuid().ToString("N") + ".pdf";
+            await using var fs = new FileStream(Path.Combine(ResourcesFolder, name), FileMode.CreateNew);
+            await file.CopyToAsync(fs);
+            return name;
+        }
+
+        private void DeleteFile(string? storedName)
+        {
+            var full = FullPath(storedName);
+            if (full != null && System.IO.File.Exists(full)) System.IO.File.Delete(full);
         }
     }
 }

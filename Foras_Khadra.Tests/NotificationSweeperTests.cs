@@ -73,6 +73,19 @@ namespace Foras_Khadra.Tests
         }
 
         [Fact]
+        public async Task SavedDeadlineSoon_SkipsOpportunitiesAlreadyAppliedTo()
+        {
+            AddOpportunity(1, "منحة", OpportunityType.Scholarships,
+                endDate: DateTime.Now.Date.AddDays(3), deadlineType: DeadlineType.SpecificDate);
+            _db.SavedOpportunities.Add(new SavedOpportunity { UserId = "u1", OpportunityId = 1, Status = ApplicationStatus.Accepted });
+            _db.SaveChanges();
+
+            await _sweeper.SweepAsync();
+            Assert.Empty(_db.Notifications.Where(x => x.Kind == NotificationKind.SavedDeadlineSoon));
+            Assert.Empty(_db.Notifications.Where(x => x.Kind == NotificationKind.WeeklySummary)); // لا مواعيد تستحق الملخص
+        }
+
+        [Fact]
         public async Task SavedDeadlineSoon_IgnoresFarAndPastDeadlines()
         {
             AddOpportunity(1, "بعيدة", OpportunityType.Jobs,

@@ -50,7 +50,7 @@
             {
                 var title = lang switch { "en" => r.TitleEn, "fr" => r.TitleFr, _ => r.TitleAr };
                 var desc = lang switch { "en" => r.DescriptionEn, "fr" => r.DescriptionFr, _ => r.DescriptionAr };
-                var href = r.FilePath ?? r.ExternalUrl ?? "#";
+                var href = r.FilePath != null ? Url.Action("Download", "Resources", new { id = r.Id }) : (r.ExternalUrl ?? "#");
                 <a class="vault-item" href="@href" target="_blank" rel="noopener">
                     <span class="ico"><i class="bi @(r.FilePath != null ? "bi-file-earmark-pdf" : "bi-link-45deg")"></i></span>
                     <span class="txt"><b>@title</b>@if (!string.IsNullOrWhiteSpace(desc)) { <small>@desc</small> }</span>

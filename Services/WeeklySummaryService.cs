@@ -73,7 +73,7 @@ namespace Foras_Khadra.Services
             var windowEnd = today.AddDays(Days);
             var dueSaved = await _db.SavedOpportunities
                 .AsNoTracking()
-                .Where(x => x.UserId == user.Id
+                .Where(x => x.UserId == user.Id && x.Status == ApplicationStatus.NotApplied
                             && x.Opportunity!.Status == OpportunityStatus.Published
                             && x.Opportunity.DeadlineType == DeadlineType.SpecificDate
                             && x.Opportunity.EndDate >= today && x.Opportunity.EndDate <= windowEnd)

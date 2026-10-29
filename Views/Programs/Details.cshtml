@@ -92,8 +92,12 @@
                         <button type="submit" class="hero-btn @(interested ? "hero-btn-primary" : "hero-btn-outline") w-100">
                             <i class="bi @(interested ? "bi-bell-fill" : "bi-bell")"></i>
                             @(interested
-                                ? L("مسجّل — سنعلمك فور فتح التقديم (اضغط للإلغاء)", "Registered — we'll alert you when applications open (click to cancel)", "Inscrit — nous vous alerterons à l'ouverture (cliquer pour annuler)")
-                                : L("سجّل اهتمامك — سنعلمك فور فتح التقديم", "Register your interest — we'll alert you when applications open", "Je suis intéressé — alertez-moi à l'ouverture"))
+                                ? (Model.ApplicationsOpen
+                                    ? L("مسجّل — سنعلمك بالدورة القادمة أيضًا (اضغط للإلغاء)", "Registered — we'll alert you for the next cycle too (click to cancel)", "Inscrit — nous vous alerterons aussi à la prochaine session (cliquer pour annuler)")
+                                    : L("مسجّل — سنعلمك فور فتح التقديم (اضغط للإلغاء)", "Registered — we'll alert you when applications open (click to cancel)", "Inscrit — nous vous alerterons à l'ouverture (cliquer pour annuler)"))
+                                : (Model.ApplicationsOpen
+                                    ? L("سجّل اهتمامك — سنعلمك بالدورة القادمة", "Register your interest — we'll alert you for the next cycle", "Je suis intéressé — alertez-moi pour la prochaine session")
+                                    : L("سجّل اهتمامك — سنعلمك فور فتح التقديم", "Register your interest — we'll alert you when applications open", "Je suis intéressé — alertez-moi à l'ouverture")))
                         </button>
                     </form>
                 }

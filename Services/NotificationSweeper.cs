@@ -45,8 +45,10 @@ namespace Foras_Khadra.Services
             var today = DateTime.Now.Date;
             var windowEnd = today.AddDays(DeadlineWindowDays);
 
+            // من قدّم فعلًا لا يحتاج تذكيرًا بالموعد
             var due = await _db.SavedOpportunities
-                .Where(s => s.Opportunity!.Status == OpportunityStatus.Published
+                .Where(s => s.Status == ApplicationStatus.NotApplied
+                            && s.Opportunity!.Status == OpportunityStatus.Published
                             && s.Opportunity.DeadlineType == DeadlineType.SpecificDate
                             && s.Opportunity.EndDate != null
                             && s.Opportunity.EndDate >= today
@@ -274,7 +276,8 @@ namespace Foras_Khadra.Services
                     && (o.EndDate == null || o.EndDate >= today), ct);
 
                 var deadlines = await _db.SavedOpportunities.CountAsync(s =>
-                    s.UserId == user.Id && s.Opportunity!.Status == OpportunityStatus.Published
+                    s.UserId == user.Id && s.Status == ApplicationStatus.NotApplied
+                    && s.Opportunity!.Status == OpportunityStatus.Published
                     && s.Opportunity.DeadlineType == DeadlineType.SpecificDate
                     && s.Opportunity.EndDate >= today && s.Opportunity.EndDate <= today.AddDays(WeeklySummaryService.Days), ct);
 

@@ -35,11 +35,13 @@ namespace Foras_Khadra.Helpers
 
             var list = countries.Where(c => c.Id != AllWorldId && c.Id != ArabWorldId).ToList();
 
-            // تطابق تام أولًا، ثم احتواء ("المملكة العربية السعودية" تحوي "السعودية")
+            // تطابق تام أولًا، ثم احتواء ككلمة كاملة ("المملكة العربية السعودية" تحوي كلمة "السعودية")؛
+            // الاحتواء الحرفي خطر: "romania" تحوي "oman"
+            var padded = " " + n + " ";
             foreach (var c in list)
                 if (Names(c).Any(cn => cn == n)) return c;
             foreach (var c in list)
-                if (Names(c).Any(cn => cn.Length >= 3 && n.Contains(cn))) return c;
+                if (Names(c).Any(cn => cn.Length >= 3 && padded.Contains(" " + cn + " "))) return c;
 
             foreach (var (fragment, id) in Aliases)
                 if (n.Contains(fragment))

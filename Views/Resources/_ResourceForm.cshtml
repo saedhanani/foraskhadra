@@ -17,7 +17,7 @@
         <label class="form-label">الملف الحالي</label>
         <div class="current-file-card">
             <div class="file-middle">
-                <div class="file-name"><a href="@Model.FilePath" target="_blank"><i class="fa-solid fa-file-pdf"></i> @System.IO.Path.GetFileName(Model.FilePath)</a></div>
+                <div class="file-name"><a asp-action="Download" asp-route-id="@Model.Id" target="_blank"><i class="fa-solid fa-file-pdf"></i> @Model.FilePath</a></div>
                 <div class="file-status"><span class="file-size">PDF</span><span class="file-check"><i class="fa-solid fa-circle-check"></i></span></div>
             </div>
         </div>

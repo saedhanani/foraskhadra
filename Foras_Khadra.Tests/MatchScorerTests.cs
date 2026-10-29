@@ -53,6 +53,7 @@ namespace Foras_Khadra.Tests
         [InlineData("")]
         [InlineData("Germany")]
         [InlineData("ألمانيا")]
+        [InlineData("Romania")]   // تحوي "oman" حرفيًا — لا يجوز أن تُحسب عُمان
         public void ResolveCountry_UnknownOrNonArab_ReturnsNull(string? name)
         {
             Assert.Null(MatchScorer.ResolveCountry(name, Countries));

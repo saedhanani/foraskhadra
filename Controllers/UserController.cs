@@ -47,8 +47,7 @@ namespace Foras_Khadra.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login", "Account");
 
-            var profile = await _match.ProfileAsync(user, isIndividual: true)
-                          ?? new MatchProfile(InterestMap.TypesFor(user.Interests), null, null);
+            var profile = (await _match.ProfileAsync(user, isIndividual: true))!;
             var summary = await _weekly.BuildAsync(user, profile);
 
             ViewData["MatchScores"] = _match.Scores(profile, summary.NewMatching.Concat(summary.DeadlinesSoon));
@@ -87,8 +86,11 @@ namespace Foras_Khadra.Controllers
             var savedIds = saved.Select(o => o.Id).ToHashSet();
 
             var interestTypes = InterestMap.TypesFor(user.Interests);
-            var profile = await _match.ProfileAsync(user, isIndividual: true)
-                          ?? new MatchProfile(interestTypes, null, null);
+            var profile = (await _match.ProfileAsync(user, isIndividual: true))!;
+
+            // حالة التقديم لكل المحفوظات: من قدّم لا يُذكَّر بالموعد في شريط "تقترب"
+            var cards = await _tracker.CardsAsync(user.Id, savedIds);
+            bool NotApplied(Opportunity o) => !(cards.TryGetValue(o.Id, out var c) && c.Status.HasApplied());
 
             var recommended = new List<Opportunity>();
             if (interestTypes.Count > 0)
@@ -162,13 +164,13 @@ namespace Foras_Khadra.Controllers
                 MatchScores = _match.Scores(profile, shownAll),
                 MatchesNationality = profile.HasLocation,
                 SavedSearches = savedSearches,
-                Tracker = await _tracker.CardsAsync(user.Id, savedShown.Select(o => o.Id)),
+                Tracker = cards,
                 AppliedCount = stats.Applied,
                 AcceptedCount = stats.Accepted,
                 Recent = (await _tracker.RecentAsync(user.Id, 5)).Where(o => !savedIds.Contains(o.Id)).ToList(),
                 FirstName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
                 InterestNames = interestTypes.Select(t => t.GetDisplayName(culture)).ToList(),
-                ExpiringSaved = saved.Where(o => o.IsDeadlineSoon).OrderBy(o => o.EndDate).ToList(),
+                ExpiringSaved = saved.Where(o => o.IsDeadlineSoon && NotApplied(o)).OrderBy(o => o.EndDate).ToList(),
                 Recommended = recommended,
                 Saved = savedShown,
                 SavedCount = saved.Count,

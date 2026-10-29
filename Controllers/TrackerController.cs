@@ -105,8 +105,8 @@ namespace Foras_Khadra.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return Unauthorized();
 
-            var saved = await _tracker.GetWithChecklistAsync(user.Id, id);
-            if (saved == null || saved.Status != ApplicationStatus.Accepted)
+            var saved = await _tracker.GetSavedAsync(user.Id, id);
+            if (saved?.Opportunity == null || saved.Status != ApplicationStatus.Accepted)
                 return RedirectToAction("Dashboard", "User");
 
             ViewBag.FirstName = string.IsNullOrWhiteSpace(user.FirstName) ? user.FullName : user.FirstName;
