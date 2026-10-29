@@ -1,0 +1,58 @@
+@* شريط التبويبات السفلي على الهاتف (≤768px): يعطي الموقع المثبَّت كتطبيق تنقّلًا كالتطبيقات.
+   التبويبات تختلف بحسب الزائر: ضيف / مستخدم / منظمة. التنسيق في wwwroot/css/brand.css *@
+@{
+    var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => culture == "en" ? en : culture == "fr" ? fr : ar;
+
+    var ctrl = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+    bool Is(string c, string a) =>
+        string.Equals(ctrl, c, StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(action, a, StringComparison.OrdinalIgnoreCase);
+
+    var isAuth = User.Identity?.IsAuthenticated == true;
+    var isOrg = isAuth && User.IsInRole("Organization");
+}
+<nav class="fk-tabbar" aria-label="@T("التنقل", "Navigation", "Navigation")">
+    <a asp-controller="Home" asp-action="Index" class="fk-tab @(Is("Home", "Index") ? "is-active" : "")">
+        <i class="bi bi-house-door fk-tab__ic" aria-hidden="true"></i><i class="bi bi-house-door-fill fk-tab__ic--on" aria-hidden="true"></i>
+        <span>@T("الرئيسية", "Home", "Accueil")</span>
+    </a>
+    <a asp-controller="Home" asp-action="AllOpportunities" class="fk-tab @(Is("Home", "AllOpportunities") || Is("Opportunity", "Details") ? "is-active" : "")">
+        <i class="bi bi-compass fk-tab__ic" aria-hidden="true"></i><i class="bi bi-compass-fill fk-tab__ic--on" aria-hidden="true"></i>
+        <span>@T("الفرص", "Opportunities", "Opportunités")</span>
+    </a>
+    @if (isOrg)
+    {
+        <a asp-controller="Opportunity" asp-action="OrgOpportunities" class="fk-tab @(Is("Opportunity", "OrgOpportunities") ? "is-active" : "")">
+            <i class="bi bi-briefcase fk-tab__ic" aria-hidden="true"></i><i class="bi bi-briefcase-fill fk-tab__ic--on" aria-hidden="true"></i>
+            <span>@T("فرصي", "My posts", "Mes offres")</span>
+        </a>
+        <a asp-controller="Organization" asp-action="ProfileSetting" class="fk-tab @(Is("Organization", "ProfileSetting") ? "is-active" : "")">
+            <i class="bi bi-building fk-tab__ic" aria-hidden="true"></i><i class="bi bi-building-fill fk-tab__ic--on" aria-hidden="true"></i>
+            <span>@T("حسابي", "Account", "Compte")</span>
+        </a>
+    }
+    else if (isAuth)
+    {
+        <a asp-controller="Opportunity" asp-action="Saved" class="fk-tab @(Is("Opportunity", "Saved") ? "is-active" : "")">
+            <i class="bi bi-bookmark fk-tab__ic" aria-hidden="true"></i><i class="bi bi-bookmark-fill fk-tab__ic--on" aria-hidden="true"></i>
+            <span>@T("المحفوظة", "Saved", "Enregistrées")</span>
+        </a>
+        <a asp-controller="User" asp-action="Dashboard" class="fk-tab @(Is("User", "Dashboard") ? "is-active" : "")">
+            <i class="bi bi-person fk-tab__ic" aria-hidden="true"></i><i class="bi bi-person-fill fk-tab__ic--on" aria-hidden="true"></i>
+            <span>@T("صفحتي", "My page", "Ma page")</span>
+        </a>
+    }
+    else
+    {
+        <a asp-controller="Home" asp-action="Articles" class="fk-tab @(Is("Home", "Articles") || string.Equals(ctrl, "Articles", StringComparison.OrdinalIgnoreCase) ? "is-active" : "")">
+            <i class="bi bi-journal-text fk-tab__ic" aria-hidden="true"></i><i class="bi bi-journal-bookmark-fill fk-tab__ic--on" aria-hidden="true"></i>
+            <span>@T("المقالات", "Articles", "Articles")</span>
+        </a>
+        <a asp-controller="Account" asp-action="Login" class="fk-tab @(string.Equals(ctrl, "Account", StringComparison.OrdinalIgnoreCase) ? "is-active" : "")">
+            <i class="bi bi-person-circle fk-tab__ic" aria-hidden="true"></i><i class="bi bi-person-circle fk-tab__ic--on" aria-hidden="true"></i>
+            <span>@T("دخول", "Sign in", "Connexion")</span>
+        </a>
+    }
+</nav>

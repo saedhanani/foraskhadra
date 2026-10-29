@@ -350,7 +350,7 @@ html[dir="ltr"] #heroBg1 {
 
 </style>
 <!-- Main Container - RTL للعربي (نص يمين، صور يسار) | LTR للإنجليزي والفرنسي (نص يسار، صور يمين) -->
-<div class="container-fluid py-5 home-hero-bg hero-section hero-@dir" dir="@dir" style="position:relative;margin:7% 0;">
+<div class="container-fluid py-5 home-hero-bg hero-section hero-@dir" dir="@dir">
 
     <!-- Floating Circles -->
     <div class="floating-shapes" id="floatingShapes"></div>
@@ -362,9 +362,9 @@ html[dir="ltr"] #heroBg1 {
             <h2 class=" mb-3 main-header">
                 @Localizer["Title"]
             </h2>
-            <h4 class="mb-4" style="color:var(--textColor); font-size:25px;            word-spacing: 2px;">
+            <h4 class="mb-4 hero-subtitle" style="color:var(--textColor);">
  @Localizer["SubTitle"]   </h4>
-            <p class="mb-4 responsive-text" style="font-size:30px;font-weight:350;  ">
+            <p class="mb-4 responsive-text hero-desc">
                 @Localizer["Description"]
                
             </p>

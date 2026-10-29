@@ -559,3 +559,76 @@ html[dir="ltr"] .teams-section .footer-leaf {
   font-weight: 700;
   margin-inline-start: 6px;
 }
+
+/* ===== الهيرو: الأحجام كانت inline في Index.cshtml ونُقلت هنا لتصغيرها على الهاتف ===== */
+.home-hero-bg {
+  position: relative;
+  margin: 7% 0;
+}
+.hero-subtitle {
+  font-size: 25px;
+  word-spacing: 2px;
+}
+.hero-desc {
+  font-size: 30px;
+  font-weight: 350;
+}
+
+/* ===== الهاتف: هيرو مختصر، عناوين الأقسام أصغر ===== */
+@media (max-width: 768px) {
+  .home-hero-bg {
+    margin: 0;
+    padding-top: 1.5rem !important;
+    padding-bottom: 1rem !important;
+  }
+  .main-header {
+    font-size: 2rem;
+    text-shadow: none;
+    line-height: 1.3;
+  }
+  .hero-subtitle {
+    font-size: 1.1rem;
+    margin-bottom: .75rem !important;
+  }
+  .hero-desc {
+    font-size: 1.05rem;
+    font-weight: 400;
+    line-height: 1.8;
+    width: 100%;
+    color: #3f4f41;
+  }
+  /* كولاج الصور مصمم لعرض سطح المكتب؛ على الهاتف تبقى صورة واحدة فقط */
+  .hero-images-col > div:first-child,
+  .hero-images-col .outer-border.w-100 {
+    display: none !important;
+  }
+  .hero-images-col > div:last-child {
+    width: 100% !important;
+  }
+  #heroBg3 {
+    width: 100% !important;
+    height: 200px !important;
+    border-width: 0;
+    box-sizing: border-box;
+    background-position: center !important;
+    background-size: cover;
+  }
+  .floating-shapes {
+    display: none;
+  }
+
+  .section-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+  .section-title {
+    font-size: 1.4rem;
+  }
+  .view-all-btn {
+    font-size: .85rem;
+    white-space: nowrap;
+  }
+  .articles-section-header {
+    gap: 8px;
+  }
+}

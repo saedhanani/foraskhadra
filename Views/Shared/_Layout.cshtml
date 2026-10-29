@@ -48,7 +48,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>@fullTitle</title>
     <meta name="description" content="@metaDescription" />
     <link rel="canonical" href="@canonicalUrl" />
@@ -870,6 +870,8 @@ else
                         <li><a href="~/Home/Articles">@Localizer["Articles"]</a></li>
                         <li><a href="~/Home/AboutUs">@Localizer["AboutUs"]</a></li>
                         <li><a href="~/contact/Index">@Localizer["ContactUs"]</a></li>
+                        @* يظهر فقط حين يمكن تثبيت الموقع كتطبيق (انظر _InstallPrompt) *@
+                        <li data-install-trigger hidden><a href="#" data-install-action><i class="bi bi-download" aria-hidden="true"></i> @(culture == "en" ? "Install the app" : culture == "fr" ? "Installer l'application" : "ثبّت التطبيق")</a></li>
                     </ul>
                 </div>
 
@@ -899,6 +901,12 @@ else
 {
     @* رمز CSRF لطلبات fetch من site.js (زر حفظ الفرصة) *@
     <div hidden>@Html.AntiForgeryToken()</div>
+}
+
+@if (!hideNavAndFooter)
+{
+    <partial name="_InstallPrompt" />
+    <partial name="_MobileTabBar" />
 }
 
 <!-- Scripts -->

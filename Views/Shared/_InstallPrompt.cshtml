@@ -1,0 +1,26 @@
+@* شريط "ثبّت التطبيق": يظهر فقط حين يسمح المتصفح بالتثبيت (Chrome/Edge على الهاتف والحاسوب)،
+   أو على iPhone/iPad مع شرح خطوات "إضافة إلى الشاشة الرئيسية". المنطق في wwwroot/js/site.js *@
+@{
+    var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => culture == "en" ? en : culture == "fr" ? fr : ar;
+}
+<div class="fk-install" id="installBanner" role="dialog" aria-labelledby="installBannerTitle" hidden>
+    <img class="fk-install__icon" src="/images/icon-192.png" alt="" width="52" height="52" />
+    <div class="fk-install__body">
+        <strong id="installBannerTitle">@T("ثبّت فرص خضراء على جهازك", "Install Foras Khadra", "Installer Foras Khadra")</strong>
+        <p class="fk-install__text" data-install-mode="prompt">
+            @T("افتحه كتطبيق من شاشتك الرئيسية أو سطح المكتب، بدون متجر تطبيقات.",
+               "Open it like an app from your home screen or desktop, no app store needed.",
+               "Ouvrez-le comme une application depuis votre écran d'accueil ou votre bureau, sans store.")
+        </p>
+        <p class="fk-install__text" data-install-mode="ios">
+            @T("اضغط زر المشاركة", "Tap the Share button", "Touchez le bouton Partager")
+            <i class="bi bi-box-arrow-up" aria-hidden="true"></i>
+            @T("ثم «إضافة إلى الشاشة الرئيسية».", "then “Add to Home Screen”.", "puis « Sur l'écran d'accueil ».")
+        </p>
+    </div>
+    <div class="fk-install__actions">
+        <button type="button" class="fk-install__btn" data-install-action data-install-mode="prompt">@T("تثبيت", "Install", "Installer")</button>
+        <button type="button" class="fk-install__close" data-install-dismiss aria-label="@T("إغلاق", "Close", "Fermer")">&times;</button>
+    </div>
+</div>
