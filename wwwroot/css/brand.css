@@ -101,8 +101,67 @@
     cursor: pointer;
 }
 /* نص الشريط وزره بحسب الحالة: prompt (Chrome/Edge) أو ios (Safari) */
-.fk-install[data-mode="ios"] [data-install-mode="prompt"],
-.fk-install[data-mode="prompt"] [data-install-mode="ios"] { display: none; }
+.fk-install [data-install-mode] { display: none; }
+.fk-install[data-mode="prompt"] [data-install-mode~="prompt"],
+.fk-install[data-mode="ios"] [data-install-mode~="ios"],
+.fk-install[data-mode="ios-other"] [data-install-mode~="ios-other"],
+.fk-install[data-mode="inapp"] [data-install-mode~="inapp"] { display: revert; }
+a.fk-install__btn { text-decoration: none; }
+
+/* داخل التطبيق المثبّت لا حاجة لروابط "حمّل التطبيق" (site.js يضيف fk-standalone) */
+.fk-standalone .fk-hide-standalone { display: none !important; }
+
+/* ===== بطاقة "فعّل التنبيهات" (Views/Shared/_PushCard.cshtml، site.js) ===== */
+.fk-push {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--fk-green-soft);
+    border: 1px solid #d6ead8;
+    border-radius: 16px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+}
+.fk-push[hidden] { display: none; }
+.fk-push[data-state="on"] { background: #fff; }
+.fk-push__icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: var(--fk-green);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+.fk-push[data-state="denied"] .fk-push__icon { background: #94a3b8; }
+.fk-push__body { flex: 1; min-width: 0; }
+.fk-push__body strong { display: block; color: var(--fk-green); font-size: .95rem; }
+.fk-push__body p { margin: 2px 0 0; font-size: .8rem; line-height: 1.6; color: #4b5563; }
+.fk-push__actions { flex-shrink: 0; display: flex; align-items: center; }
+.fk-push__btn {
+    background: var(--fk-green);
+    color: #fff;
+    border: 0;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-weight: 700;
+    font-size: .9rem;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+}
+.fk-push__btn:hover { background: var(--fk-green-dark); color: #fff; }
+.fk-push__btn:disabled { opacity: .6; }
+.fk-push__link { background: none; border: 0; color: #6b7280; font-weight: 600; font-size: .85rem; text-decoration: underline; cursor: pointer; }
+.fk-push [data-when] { display: none; }
+.fk-push[data-state="off"] [data-when~="off"],
+.fk-push[data-state="on"] [data-when~="on"],
+.fk-push[data-state="denied"] [data-when~="denied"],
+.fk-push[data-state="ios-install"] [data-when~="ios-install"],
+.fk-push[data-state="error"] [data-when~="error"] { display: revert; }
 
 /* ===== أساسيات الهاتف ===== */
 html {

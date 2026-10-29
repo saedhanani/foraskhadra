@@ -78,6 +78,11 @@ builder.Services.AddScoped<IApplicationTracker, ApplicationTracker>();
 builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<IReferralService, ReferralService>();
 builder.Services.AddScoped<IWeeklySummaryService, WeeklySummaryService>();
+// إشعارات الدفع (Web Push): مفاتيح VAPID في App_Data/push-vapid.json، والإرسال من NotificationSweepHostedService
+builder.Services.AddSingleton<IVapidKeyStore, VapidKeyStore>();
+builder.Services.AddHttpClient(WebPushSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(15));
+builder.Services.AddScoped<IWebPushSender, WebPushSender>();
+builder.Services.AddScoped<IPushDispatcher, PushDispatcher>();
 builder.Services.AddHostedService<NotificationSweepHostedService>();
 
 // الواجهة العامة للقراءة (api/v1) تُستدعى من مواقع أخرى بالمتصفح: GET فقط من أي أصل

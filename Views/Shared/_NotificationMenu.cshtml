@@ -21,7 +21,7 @@ else
     foreach (var n in Model)
     {
         var unread = n.ReadAt == null ? "unread" : "";
-        if (n.Kind == NotificationKind.SavedDeadlineSoon && n.Opportunity != null)
+        if ((n.Kind == NotificationKind.SavedDeadlineSoon || n.Kind == NotificationKind.SavedDeadlineLastDay) && n.Opportunity != null)
         {
             var title = lang switch { "en" => n.Opportunity.TitleEn, "fr" => n.Opportunity.TitleFr, _ => n.Opportunity.TitleAr };
             var days = n.Opportunity.EndDate.HasValue ? (n.Opportunity.EndDate.Value.Date - DateTime.Now.Date).Days : 0;

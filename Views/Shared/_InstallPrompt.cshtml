@@ -1,5 +1,5 @@
-@* شريط "ثبّت التطبيق": يظهر فقط حين يسمح المتصفح بالتثبيت (Chrome/Edge على الهاتف والحاسوب)،
-   أو على iPhone/iPad مع شرح خطوات "إضافة إلى الشاشة الرئيسية". المنطق في wwwroot/js/site.js *@
+@* شريط "ثبّت التطبيق". الوضع يحدّده site.js: prompt (زر تثبيت حقيقي في Chrome/Edge) / ios (Safari على iPhone)
+   / ios-other (متصفح آخر على iPhone: افتح في Safari) / inapp (متصفح داخل إنستغرام/فيسبوك...). الشرح الكامل في /app (Views/Home/App.cshtml) *@
 @{
     var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     string T(string ar, string en, string fr) => culture == "en" ? en : culture == "fr" ? fr : ar;
@@ -9,18 +9,29 @@
     <div class="fk-install__body">
         <strong id="installBannerTitle">@T("ثبّت فرص خضراء على جهازك", "Install Foras Khadra", "Installer Foras Khadra")</strong>
         <p class="fk-install__text" data-install-mode="prompt">
-            @T("افتحه كتطبيق من شاشتك الرئيسية أو سطح المكتب، بدون متجر تطبيقات.",
-               "Open it like an app from your home screen or desktop, no app store needed.",
-               "Ouvrez-le comme une application depuis votre écran d'accueil ou votre bureau, sans store.")
+            @T("افتحه كتطبيق من شاشتك الرئيسية، مع تنبيهات قبل انتهاء مواعيد فرصك.",
+               "Open it like an app from your home screen, with reminders before your deadlines.",
+               "Ouvrez-le comme une application, avec des rappels avant vos échéances.")
         </p>
         <p class="fk-install__text" data-install-mode="ios">
-            @T("اضغط زر المشاركة", "Tap the Share button", "Touchez le bouton Partager")
+            @T("في Safari: اضغط زر المشاركة", "In Safari: tap Share", "Dans Safari : touchez Partager")
             <i class="bi bi-box-arrow-up" aria-hidden="true"></i>
             @T("ثم «إضافة إلى الشاشة الرئيسية».", "then “Add to Home Screen”.", "puis « Sur l'écran d'accueil ».")
+        </p>
+        <p class="fk-install__text" data-install-mode="ios-other">
+            @T("على iPhone يُثبَّت التطبيق من Safari: افتح الموقع في Safari أولًا.",
+               "On iPhone the app installs from Safari: open this site in Safari first.",
+               "Sur iPhone, l'installation se fait depuis Safari : ouvrez le site dans Safari.")
+        </p>
+        <p class="fk-install__text" data-install-mode="inapp">
+            @T("لتثبيت التطبيق افتح الموقع في متصفح هاتفك (Safari أو Chrome).",
+               "To install the app, open this site in your phone's browser (Safari or Chrome).",
+               "Pour installer l'application, ouvrez le site dans le navigateur (Safari ou Chrome).")
         </p>
     </div>
     <div class="fk-install__actions">
         <button type="button" class="fk-install__btn" data-install-action data-install-mode="prompt">@T("تثبيت", "Install", "Installer")</button>
+        <a class="fk-install__btn" href="/app" data-install-mode="ios ios-other inapp">@T("الطريقة", "How", "Comment")</a>
         <button type="button" class="fk-install__close" data-install-dismiss aria-label="@T("إغلاق", "Close", "Fermer")">&times;</button>
     </div>
 </div>

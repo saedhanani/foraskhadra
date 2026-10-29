@@ -443,7 +443,7 @@ public async Task<IActionResult> Create()
             return Json(new { saved });
         }
 
-        /// <summary>قائمة الفرص التي حفظها المستخدم.</summary>
+        /// <summary>"فرصي": المحفوظات مقسّمة (عاجل / قيد التحضير / قدّمت / النتائج / انتهت) مع العدّ التنازلي — الشاشة الأساسية في تطبيق الهاتف.</summary>
         [HttpGet]
         public async Task<IActionResult> Saved()
         {
@@ -451,11 +451,9 @@ public async Task<IActionResult> Create()
             if (userId == null) return Challenge();
 
             var opportunities = await _saved.ListAsync(userId);
-            foreach (var opp in opportunities)
-                opp.IsExpired = opp.EndDate.HasValue && opp.EndDate.Value < DateTime.Now;
-
-            ViewBag.TrackerCards = await _tracker.CardsAsync(userId, opportunities.Select(o => o.Id));
-            return View(opportunities);
+            var cards = await _tracker.CardsAsync(userId, opportunities.Select(o => o.Id));
+            var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            return View(MyOpportunitiesViewModel.Build(opportunities, cards, lang));
         }
 
         // ================= FILTER BY TYPE =================

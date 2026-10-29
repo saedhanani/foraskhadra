@@ -21,6 +21,6 @@
   "shortcuts": [
     { "name": "كل الفرص", "url": "/Home/AllOpportunities", "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }] },
     { "name": "صفحتي", "url": "/User/Dashboard", "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }] },
-    { "name": "الفرص المحفوظة", "url": "/Opportunity/Saved", "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }] }
+    { "name": "فرصي", "url": "/Opportunity/Saved", "icons": [{ "src": "/images/icon-192.png", "sizes": "192x192" }] }
   ]
 }

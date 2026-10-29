@@ -12,6 +12,7 @@
 
 <!-- External styles and icon library -->
 <link asp-append-version="true" href="/css/Home.css" rel="stylesheet" />
+<link asp-append-version="true" href="~/css/my-opps.css" rel="stylesheet" />
 <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
@@ -349,8 +350,13 @@ html[dir="ltr"] #heroBg1 {
 }
 
 </style>
+@if (Model.My != null)
+{
+    <partial name="_MyStrip" model="Model.My" />
+}
+
 <!-- Main Container - RTL للعربي (نص يمين، صور يسار) | LTR للإنجليزي والفرنسي (نص يسار، صور يمين) -->
-<div class="container-fluid py-5 home-hero-bg hero-section hero-@dir" dir="@dir">
+<div class="container-fluid py-5 home-hero-bg hero-section hero-@dir @(Model.My != null ? "home-hero--member" : "")" dir="@dir">
 
     <!-- Floating Circles -->
     <div class="floating-shapes" id="floatingShapes"></div>

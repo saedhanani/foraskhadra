@@ -1,0 +1,286 @@
+/* ===== "فرصي": صفحة /Opportunity/Saved وشريط "فرصي" أعلى الرئيسية
+   (Views/Opportunity/Saved.cshtml، Views/Shared/_MyOpportunityRow.cshtml، Views/Shared/_MyStrip.cshtml) ===== */
+
+.my-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px 40px;
+}
+
+.my-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.my-head h1 {
+    margin: 0;
+    font-size: 1.7rem;
+    font-weight: 800;
+    color: var(--fk-green);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.my-head__browse {
+    font-weight: 700;
+    font-size: .9rem;
+    color: var(--fk-green);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+/* أرقام سريعة */
+.my-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.my-stat {
+    background: #fff;
+    border: 1px solid #e8efe9;
+    border-radius: 14px;
+    padding: 12px 8px;
+    text-align: center;
+}
+
+.my-stat b {
+    display: block;
+    font-size: 1.4rem;
+    line-height: 1.2;
+    color: var(--fk-green);
+}
+
+.my-stat span {
+    font-size: .78rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+/* المجموعات */
+.my-group {
+    margin-top: 22px;
+}
+
+.my-group__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #334155;
+    list-style: none;
+}
+
+.my-group__title::-webkit-details-marker { display: none; }
+
+.my-group__title .count {
+    background: #eef2f7;
+    color: #475569;
+    border-radius: 999px;
+    padding: 1px 9px;
+    font-size: .75rem;
+}
+
+.my-group--urgent .my-group__title { color: #c2410c; }
+.my-group--urgent .my-group__title .count { background: #fff3e0; color: #c2410c; }
+
+details.my-group > summary { cursor: pointer; }
+details.my-group > summary::after {
+    content: "\F282"; /* bi-chevron-down */
+    font-family: "bootstrap-icons";
+    margin-inline-start: auto;
+    font-size: .85rem;
+    transition: transform .2s;
+}
+details.my-group[open] > summary::after { transform: rotate(180deg); }
+
+.my-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* صف فرصة */
+.my-row {
+    background: #fff;
+    border: 1px solid #e8efe9;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.my-row__main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.my-row__main:hover .my-row__title { color: var(--fk-green); }
+
+.my-row__thumb {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--fk-green-soft);
+    color: var(--fk-green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.my-row__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.my-row__text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.my-row__type {
+    font-size: .72rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.my-row__title {
+    font-size: .95rem;
+    font-weight: 700;
+    line-height: 1.5;
+    color: #1e293b;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.my-row .app-tracker {
+    font-family: inherit;
+    padding: 8px 12px 10px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.my-row--expired .my-row__main { opacity: .65; }
+
+/* العدّاد التنازلي (Helpers/DeadlineInfo) */
+.dl-pill {
+    flex-shrink: 0;
+    font-size: .74rem;
+    font-weight: 800;
+    padding: 5px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.dl-today { background: #fee2e2; color: #b91c1c; }
+.dl-soon { background: #fff3e0; color: #c2410c; }
+.dl-ok { background: var(--fk-green-soft); color: var(--fk-green); }
+.dl-open { background: #f1f5f9; color: #475569; }
+.dl-expired { background: #f1f5f9; color: #94a3b8; }
+
+/* لا محفوظات بعد */
+.my-empty {
+    text-align: center;
+    background: #fff;
+    border: 1px dashed #cfe3d2;
+    border-radius: 18px;
+    padding: 28px 18px;
+    color: #475569;
+}
+
+.my-empty > i {
+    display: block;
+    font-size: 2.4rem;
+    color: var(--fk-green);
+    margin-bottom: 8px;
+}
+
+.my-empty p { margin: 0 0 14px; line-height: 1.8; }
+
+.my-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--fk-green);
+    color: #fff;
+    border-radius: 12px;
+    padding: 10px 20px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.my-btn:hover { background: var(--fk-green-dark); color: #fff; }
+
+/* ===== شريط "فرصي" أعلى الرئيسية (للأعضاء) ===== */
+.my-strip {
+    max-width: 1312px;
+    margin: 20px auto 0;
+    padding: 0 16px;
+}
+
+.my-strip__card {
+    background: #fff;
+    border: 1px solid #e8efe9;
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 6px 20px rgba(13, 41, 16, .05);
+}
+
+.my-strip__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.my-strip__head h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: var(--fk-green);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.my-strip__all {
+    font-size: .9rem;
+    font-weight: 700;
+    color: var(--fk-green);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.my-strip .my-list { gap: 0; }
+.my-strip .my-row { border: 0; border-radius: 0; border-bottom: 1px solid #f1f5f9; }
+.my-strip .my-row:last-child { border-bottom: 0; }
+.my-strip .my-row__main { padding: 10px 2px; }
+.my-strip .my-row__thumb { width: 44px; height: 44px; font-size: 1.2rem; }
+.my-strip .my-empty { border: 0; padding: 10px 6px 4px; }
+.my-strip .fk-push { margin-top: 12px; }
+
+@media (max-width: 768px) {
+    .my-page { padding-top: 16px; }
+    .my-head h1 { font-size: 1.45rem; }
+    .my-strip { margin-top: 14px; }
+    /* الأعضاء على الهاتف: فرصي أولًا، والتعريف بالمنصة لا يلزم من يعرفها */
+    .home-hero--member { display: none; }
+}

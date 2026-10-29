@@ -1,196 +1,72 @@
-@model List<Foras_Khadra.Models.Opportunity>
-@using Foras_Khadra.Helpers
+@model Foras_Khadra.Models.MyOpportunitiesViewModel
+@using Foras_Khadra.Models
 @{
     var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-    var pageTitle = lang == "en" ? "Saved opportunities" : lang == "fr" ? "Opportunités enregistrées" : "الفرص المحفوظة";
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var pageTitle = T("فرصي", "My opportunities", "Mes opportunités");
     ViewData["Title"] = pageTitle;
     ViewData["Description"] = pageTitle;
+
+    // مجموعة من صفوف _MyOpportunityRow بعنوان وعدد
+    async Task Group(string css, string icon, string title, List<MyOpportunityItem> items, bool collapsed = false)
+    {
+        if (!items.Any()) return;
+        if (collapsed)
+        {
+            <details class="my-group @css">
+                <summary class="my-group__title"><i class="bi @icon"></i> @title <span class="count">@items.Count</span></summary>
+                <div class="my-list">
+                    @foreach (var item in items) { await Html.RenderPartialAsync("_MyOpportunityRow", item); }
+                </div>
+            </details>
+        }
+        else
+        {
+            <section class="my-group @css">
+                <h2 class="my-group__title"><i class="bi @icon"></i> @title <span class="count">@items.Count</span></h2>
+                <div class="my-list">
+                    @foreach (var item in items) { await Html.RenderPartialAsync("_MyOpportunityRow", item); }
+                </div>
+            </section>
+        }
+    }
 }
 
-<link asp-append-version="true" rel="stylesheet" href="~/css/all-opportunities.css" />
 <link asp-append-version="true" rel="stylesheet" href="~/css/tracker.css" />
+<link asp-append-version="true" rel="stylesheet" href="~/css/my-opps.css" />
 
-<style>
-    .saved-header {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        margin: 24px 0 32px;
-    }
-
-    .saved-header h1 {
-        margin: 0;
-        font-size: 2rem;
-        font-weight: 800;
-        color: #1e293b;
-    }
-
-    .saved-count {
-        color: #64748b;
-        font-weight: 700;
-    }
-
-    .opp-card {
-        background: #fff;
-        border-radius: 22px;
-        overflow: hidden;
-        border: 1px solid #eef2f7;
-        transition: all 0.25s ease;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .opp-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
-    }
-
-    .opp-image {
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-    }
-
-    .opp-category-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        padding: 16px 18px 0;
-    }
-
-    .type-tag,
-    .category-tag {
-        display: inline-flex;
-        align-items: center;
-        padding: 7px 12px;
-        border-radius: 999px;
-        font-size: 0.8rem;
-        font-weight: 700;
-    }
-
-    .type-tag { background: #edf7ee; color: #2e7d32; }
-    .category-tag { background: #f1f5f9; color: #475569; }
-
-    .opp-title {
-        padding: 14px 18px 0;
-        font-size: 1.1rem;
-        font-weight: 800;
-        color: #1e293b;
-        line-height: 1.6;
-        margin: 0;
-        flex: 1;
-    }
-
-    .opp-status {
-        display: inline-flex;
-        margin: 16px 18px 0;
-        padding: 8px 14px;
-        border-radius: 999px;
-        font-size: 0.82rem;
-        font-weight: 800;
-    }
-
-    .status-available { background: #edf7ee; color: #2e7d32; }
-    .status-expired { background: #fff1f2; color: #dc2626; }
-    .status-soon { background: #fff3e0; color: #c2410c; }
-
-    .opp-info-row {
-        padding: 18px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-
-    .opp-info-row .btn-details { flex: 1; }
-
-    .saved-empty {
-        text-align: center;
-        padding: 64px 16px;
-        color: #64748b;
-    }
-
-    .saved-empty i {
-        font-size: 3rem;
-        color: #cbd5e1;
-        display: block;
-        margin-bottom: 12px;
-    }
-
-    .saved-empty a {
-        color: #2e7d32;
-        font-weight: 700;
-    }
-</style>
-
-<div class="page-wrapper container">
-    <header class="saved-header">
-        <i class="bi bi-bookmark-fill" style="font-size:1.8rem; color:#2e7d32;"></i>
-        <h1>@pageTitle</h1>
-        <span class="saved-count">(@Model.Count)</span>
+<div class="my-page">
+    <header class="my-head">
+        <h1><i class="bi bi-bookmark-star-fill"></i> @pageTitle</h1>
+        <a class="my-head__browse" href="@Url.Action("AllOpportunities", "Home")">@T("+ أضف فرصًا", "+ Add more", "+ Ajouter")</a>
     </header>
 
-    @if (!Model.Any())
+    @await Html.PartialAsync("_PushCard", "full")
+
+    @if (Model.Total == 0)
     {
-        <div class="saved-empty">
-            <i class="bi bi-bookmark"></i>
+        <div class="my-empty">
+            <i class="bi bi-bookmark-plus"></i>
             <p>
-                @(lang == "en" ? "You haven't saved any opportunity yet."
-                    : lang == "fr" ? "Vous n'avez encore enregistré aucune opportunité."
-                    : "لم تحفظ أي فرصة بعد.")
+                @T("هنا تجتمع كل فرصك: احفظ أي فرصة بزر", "All your opportunities live here: save any opportunity with the", "Toutes vos opportunités sont ici : enregistrez-en une avec le bouton")
+                <i class="bi bi-bookmark"></i>
+                @T("وسنعرض لك كم بقي على موعدها ونذكّرك قبل أن ينتهي.", "button and we'll count down to its deadline and remind you before it closes.", "et nous suivrons son échéance et vous la rappellerons.")
             </p>
-            <a href="@Url.Action("AllOpportunities", "Home")">
-                @(lang == "en" ? "Browse opportunities" : lang == "fr" ? "Parcourir les opportunités" : "تصفّح الفرص")
-            </a>
+            <a class="my-btn" href="@Url.Action("AllOpportunities", "Home")"><i class="bi bi-compass"></i> @T("تصفّح الفرص", "Browse opportunities", "Parcourir les opportunités")</a>
         </div>
     }
     else
     {
-        <div class="row g-4">
-            @foreach (var opp in Model)
-            {
-                var title = lang switch { "en" => opp.TitleEn, "fr" => opp.TitleFr, _ => opp.TitleAr };
-                bool isExpired = opp.DeadlineType == DeadlineType.SpecificDate && opp.EndDate.HasValue && opp.EndDate.Value.Date < DateTime.Now.Date;
-                string statusText = isExpired
-                    ? (lang == "en" ? "Application Closed" : lang == "fr" ? "Candidature Terminée" : "انتهت فترة التقديم")
-                    : opp.IsDeadlineSoon
-                        ? (lang == "en" ? "Closing soon" : lang == "fr" ? "Bientôt clôturé" : "ينتهي قريبًا")
-                        : (lang == "en" ? "Available" : lang == "fr" ? "Disponible" : "متاح التقديم");
-                string statusClass = isExpired ? "status-expired" : opp.IsDeadlineSoon ? "status-soon" : "status-available";
-
-                <div class="col-lg-4 col-md-6">
-                    <div class="opp-card shadow-sm">
-                        @if (!string.IsNullOrEmpty(opp.ImagePath))
-                        {
-                            <img src="@opp.ImagePath" class="opp-image" alt="@title" loading="lazy" decoding="async">
-                        }
-
-                        <div class="opp-category-row">
-                            <span class="type-tag">@opp.Type.GetDisplayName(lang)</span>
-                            @if (!string.IsNullOrWhiteSpace(opp.AvailableCountriesNames))
-                            {
-                                var countries = opp.AvailableCountriesNames.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(c => c.Trim()).ToList();
-                                <span class="category-tag">@(string.Join(", ", countries.Take(2)) + (countries.Count > 2 ? "..." : ""))</span>
-                            }
-                        </div>
-
-                        <h3 class="opp-title">@title</h3>
-
-                        <span class="opp-status @statusClass">@statusText</span>
-
-                        <div class="opp-info-row">
-                            <a href="@Url.Action("Details", "Opportunity", new { id = opp.Id, slug = SlugHelper.Make(title) })" class="btn-details">
-                                @(lang == "en" ? "View details" : lang == "fr" ? "Voir les détails" : "عرض التفاصيل")
-                            </a>
-                            @await Html.PartialAsync("_SaveButton", (opp.Id, true))
-                        </div>
-                        @if (ViewBag.TrackerCards is Dictionary<int, Foras_Khadra.Services.TrackerCard> cards && cards.TryGetValue(opp.Id, out var card))
-                        {
-                            @await Html.PartialAsync("_ApplicationTracker", card)
-                        }
-                    </div>
-                </div>
-            }
+        <div class="my-stats">
+            <div class="my-stat"><b>@Model.Total</b><span>@T("محفوظة", "Saved", "Enregistrées")</span></div>
+            <div class="my-stat"><b>@Model.AppliedCount</b><span>@T("قدّمت عليها", "Applied", "Candidatures")</span></div>
+            <div class="my-stat"><b>@Model.AcceptedCount</b><span>@T("قُبلت", "Accepted", "Acceptées")</span></div>
         </div>
+
+        await Group("my-group--urgent", "bi-alarm", T("تنتهي قريبًا", "Closing soon", "Bientôt clôturées"), Model.Urgent);
+        await Group("", "bi-hourglass-split", T("قيد التحضير", "To prepare", "À préparer"), Model.Preparing);
+        await Group("", "bi-send-check", T("قدّمت عليها", "Applied", "Candidatures envoyées"), Model.Applied);
+        await Group("", "bi-trophy", T("النتائج", "Results", "Résultats"), Model.Results);
+        await Group("", "bi-archive", T("انتهى موعدها", "Closed", "Clôturées"), Model.Expired, collapsed: true);
     }
 </div>

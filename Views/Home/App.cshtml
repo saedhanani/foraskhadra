@@ -1,0 +1,196 @@
+@* "حمّل التطبيق" (/app): يكتشف الجهاز (fkDevice في site.js) ويعرض خطواته أولًا، مع تنبيه لمن يتصفح من داخل إنستغرام/فيسبوك
+   أو من متصفح غير Safari على iPhone. زر التثبيت الحقيقي ([data-install-native]) يظهر حين يسمح Chrome/Edge بذلك. *@
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    ViewData["Title"] = T("حمّل تطبيق فرص خضراء", "Get the Foras Khadra app", "Installer l'application Foras Khadra");
+    ViewData["Description"] = T("ثبّت فرص خضراء على iPhone أو Android أو الحاسوب: كل فرصك في مكان واحد مع تذكير قبل انتهاء كل موعد.",
+        "Install Foras Khadra on iPhone, Android or desktop: all your opportunities in one place, with deadline reminders.",
+        "Installez Foras Khadra sur iPhone, Android ou ordinateur : toutes vos opportunités, avec des rappels d'échéance.");
+    var isAuth = User.Identity?.IsAuthenticated == true;
+    var appUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/app";
+
+    // خطوة مرقّمة بأيقونة
+    void Step(int n, string icon, string title, string hint)
+    {
+        <li class="app-step">
+            <span class="app-step__num">@n</span>
+            <span class="app-step__icon" aria-hidden="true"><i class="bi @icon"></i></span>
+            <span class="app-step__text"><strong>@title</strong><small>@hint</small></span>
+        </li>
+    }
+}
+
+<style>
+    .app-page { max-width: 720px; margin: 0 auto; padding: 24px 16px 40px; }
+    .app-hero { text-align: center; margin-bottom: 18px; }
+    .app-hero img { width: 88px; height: 88px; border-radius: 22px; box-shadow: 0 8px 24px rgba(13, 41, 16, .15); }
+    .app-hero h1 { margin: 14px 0 6px; font-size: 1.6rem; font-weight: 800; color: var(--fk-green); }
+    .app-hero p { margin: 0; color: #475569; line-height: 1.8; }
+    .app-perks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 18px 0; }
+    .app-perk { background: #fff; border: 1px solid #e8efe9; border-radius: 14px; padding: 12px 8px; text-align: center; font-size: .82rem; font-weight: 700; color: #334155; }
+    .app-perk i { display: block; font-size: 1.4rem; color: var(--fk-green); margin-bottom: 4px; }
+    .app-alert { display: flex; gap: 10px; align-items: flex-start; background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; border-radius: 14px; padding: 12px 14px; margin-bottom: 16px; line-height: 1.7; font-size: .9rem; }
+    .app-alert > i { font-size: 1.3rem; }
+    .app-copy { display: flex; gap: 8px; margin-top: 8px; }
+    .app-copy input { flex: 1; min-width: 0; border: 1px solid #fed7aa; border-radius: 10px; padding: 6px 10px; direction: ltr; font-size: .85rem; background: #fff; }
+    .app-copy button, .app-native { background: var(--fk-green); color: #fff; border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+    .app-native { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; font-size: 1.05rem; border-radius: 14px; margin-bottom: 14px; }
+    .app-native[hidden] { display: none; }
+    .app-done { text-align: center; background: var(--fk-green-soft); border-radius: 16px; padding: 16px; margin-bottom: 16px; color: var(--fk-green); font-weight: 800; }
+    .app-done[hidden] { display: none; }
+    .app-tabs { display: flex; gap: 6px; background: #eef2f0; border-radius: 14px; padding: 4px; margin-bottom: 14px; }
+    .app-tab { flex: 1; border: 0; background: none; border-radius: 10px; padding: 10px 6px; font-weight: 700; color: #475569; cursor: pointer; }
+    .app-tab.is-active { background: #fff; color: var(--fk-green); box-shadow: 0 2px 8px rgba(0, 0, 0, .06); }
+    .app-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .app-step { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #e8efe9; border-radius: 16px; padding: 12px 14px; }
+    .app-step__num { width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%; background: var(--fk-green); color: #fff; font-weight: 800; font-size: .85rem; display: flex; align-items: center; justify-content: center; }
+    .app-step__icon { width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; background: var(--fk-green-soft); color: var(--fk-green); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; }
+    .app-step__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .app-step__text strong { color: #1e293b; font-size: .95rem; }
+    .app-step__text small { color: #64748b; font-size: .8rem; line-height: 1.6; }
+    .app-login { text-align: center; margin-top: 20px; color: #475569; }
+    .app-login a { color: var(--fk-green); font-weight: 800; }
+    .app-section-title { font-size: 1rem; font-weight: 800; color: #334155; margin: 22px 0 10px; }
+</style>
+
+<div class="app-page">
+    <header class="app-hero">
+        <img src="/images/icon-192.png" alt="@T("فرص خضراء", "Foras Khadra", "Foras Khadra")" />
+        <h1>@T("فرص خضراء على هاتفك", "Foras Khadra on your phone", "Foras Khadra sur votre téléphone")</h1>
+        <p>@T("كل فرصك في مكان واحد، مع تذكير قبل انتهاء كل موعد. بلا متجر تطبيقات وبلا مساحة تُذكر.",
+              "All your opportunities in one place, with a reminder before every deadline. No app store, almost no storage.",
+              "Toutes vos opportunités au même endroit, avec un rappel avant chaque échéance. Sans store.")</p>
+    </header>
+
+    <div class="app-done" data-app-installed hidden>
+        <i class="bi bi-check-circle-fill"></i> @T("التطبيق مثبّت على هذا الجهاز ✓", "The app is installed on this device ✓", "L'application est installée sur cet appareil ✓")
+    </div>
+
+    <div class="app-perks">
+        <div class="app-perk"><i class="bi bi-bookmark-star"></i>@T("فرصك في مكان واحد", "All in one place", "Tout au même endroit")</div>
+        <div class="app-perk"><i class="bi bi-bell"></i>@T("تذكير قبل المواعيد", "Deadline reminders", "Rappels d'échéance")</div>
+        <div class="app-perk"><i class="bi bi-lightning-charge"></i>@T("بلمسة من الشاشة", "One tap away", "À portée de doigt")</div>
+    </div>
+
+    @* تنبيهات المتصفح غير المناسب — يُظهرها السكربت أسفل الصفحة *@
+    <div class="app-alert" data-app-alert="inapp" hidden>
+        <i class="bi bi-exclamation-triangle"></i>
+        <div>
+            @T("أنت تتصفح من داخل تطبيق (إنستغرام أو فيسبوك أو غيرهما) ولا يمكن التثبيت من هنا. اضغط زر القائمة ••• في الأعلى واختر «فتح في المتصفح» أو «Open in Safari/Chrome»، أو انسخ الرابط:",
+               "You're browsing inside another app (Instagram, Facebook…) where installing isn't possible. Tap the ••• menu and choose “Open in browser”, or copy the link:",
+               "Vous naviguez dans une autre application (Instagram, Facebook…). Touchez ••• puis « Ouvrir dans le navigateur », ou copiez le lien :")
+            <div class="app-copy"><input type="text" readonly value="@appUrl" aria-label="@appUrl" /><button type="button" data-app-copy>@T("نسخ", "Copy", "Copier")</button></div>
+        </div>
+    </div>
+    <div class="app-alert" data-app-alert="ios-other" hidden>
+        <i class="bi bi-compass"></i>
+        <div>
+            @T("على iPhone يُثبَّت التطبيق من Safari (المتصفح ذو البوصلة الزرقاء). انسخ الرابط والصقه في Safari:",
+               "On iPhone the app installs from Safari (the blue compass). Copy the link and paste it in Safari:",
+               "Sur iPhone, l'installation se fait depuis Safari (la boussole bleue). Copiez le lien dans Safari :")
+            <div class="app-copy"><input type="text" readonly value="@appUrl" aria-label="@appUrl" /><button type="button" data-app-copy>@T("نسخ", "Copy", "Copier")</button></div>
+        </div>
+    </div>
+
+    <div class="app-tabs" role="tablist" data-app-tabs>
+        <button type="button" class="app-tab" role="tab" data-app-tab="ios"><i class="bi bi-apple"></i> iPhone</button>
+        <button type="button" class="app-tab" role="tab" data-app-tab="android"><i class="bi bi-android2"></i> Android</button>
+        <button type="button" class="app-tab" role="tab" data-app-tab="desktop"><i class="bi bi-laptop"></i> @T("الحاسوب", "Computer", "Ordinateur")</button>
+    </div>
+
+    <section data-app-panel="ios">
+        <ol class="app-steps">
+            @{ Step(1, "bi-compass", T("افتح الموقع في Safari", "Open the site in Safari", "Ouvrez le site dans Safari"),
+                   T("المتصفح ذو البوصلة الزرقاء — لا يعمل التثبيت من داخل إنستغرام أو واتساب.", "The blue compass browser — installing doesn't work inside Instagram or WhatsApp.", "La boussole bleue — l'installation ne marche pas dans Instagram ou WhatsApp."));
+               Step(2, "bi-box-arrow-up", T("اضغط زر المشاركة", "Tap the Share button", "Touchez le bouton Partager"),
+                   T("المربع ذو السهم أسفل الشاشة. إن لم تجده اضغط ••• أولًا ثم «مشاركة».", "The square with an arrow at the bottom. If you don't see it, tap ••• then “Share”.", "Le carré avec une flèche en bas. Sinon touchez ••• puis « Partager »."));
+               Step(3, "bi-plus-square", T("اختر «إضافة إلى الشاشة الرئيسية»", "Choose “Add to Home Screen”", "Choisissez « Sur l'écran d'accueil »"),
+                   T("مرّر القائمة للأسفل إن لم يظهر الخيار مباشرة.", "Scroll the list down if you don't see it right away.", "Faites défiler la liste si besoin."));
+               Step(4, "bi-check2-circle", T("اضغط «إضافة»", "Tap “Add”", "Touchez « Ajouter »"),
+                   T("واترك خيار «فتح كتطبيق ويب» مفعّلًا إن ظهر.", "Keep “Open as Web App” switched on if you see it.", "Laissez « Ouvrir comme app web » activé s'il apparaît."));
+               Step(5, "bi-bell", T("افتح فرص خضراء من شاشتك وفعّل التنبيهات", "Open Foras Khadra from your Home Screen and turn on notifications", "Ouvrez Foras Khadra et activez les notifications"),
+                   T("تنبيهات iPhone تعمل من التطبيق المثبّت فقط (iOS 16.4 أو أحدث).", "iPhone notifications work only from the installed app (iOS 16.4 or later).", "Sur iPhone, les notifications fonctionnent depuis l'app installée (iOS 16.4+)."));
+            }
+        </ol>
+    </section>
+
+    <section data-app-panel="android">
+        <button type="button" class="app-native" data-install-native data-install-action hidden><i class="bi bi-download"></i> @T("ثبّت التطبيق الآن", "Install the app now", "Installer maintenant")</button>
+        <ol class="app-steps">
+            @{ Step(1, "bi-browser-chrome", T("افتح الموقع في Chrome", "Open the site in Chrome", "Ouvrez le site dans Chrome"),
+                   T("أو أي متصفح هاتف (Samsung Internet، Edge) — لا يعمل من داخل إنستغرام أو فيسبوك.", "Or any phone browser (Samsung Internet, Edge) — not inside Instagram or Facebook.", "Ou un autre navigateur (Samsung Internet, Edge) — pas dans Instagram ou Facebook."));
+               Step(2, "bi-three-dots-vertical", T("اضغط القائمة ⋮ أعلى الشاشة", "Tap the ⋮ menu at the top", "Touchez le menu ⋮ en haut"), "");
+               Step(3, "bi-download", T("اختر «تثبيت التطبيق»", "Choose “Install app”", "Choisissez « Installer l'application »"),
+                   T("أو «إضافة إلى الشاشة الرئيسية» حسب المتصفح، ثم «تثبيت».", "Or “Add to Home screen” depending on the browser, then “Install”.", "Ou « Ajouter à l'écran d'accueil », puis « Installer »."));
+               Step(4, "bi-bell", T("افتح فرص خضراء وفعّل التنبيهات", "Open Foras Khadra and turn on notifications", "Ouvrez Foras Khadra et activez les notifications"),
+                   T("سنذكّرك قبل انتهاء مواعيد فرصك المحفوظة.", "We'll remind you before your saved deadlines.", "Nous vous rappellerons vos échéances."));
+            }
+        </ol>
+    </section>
+
+    <section data-app-panel="desktop">
+        <button type="button" class="app-native" data-install-native data-install-action hidden><i class="bi bi-download"></i> @T("ثبّت التطبيق الآن", "Install the app now", "Installer maintenant")</button>
+        <ol class="app-steps">
+            @{ Step(1, "bi-window-plus", T("Chrome أو Edge: أيقونة التثبيت في شريط العنوان", "Chrome or Edge: the install icon in the address bar", "Chrome ou Edge : l'icône d'installation dans la barre d'adresse"),
+                   T("أو من القائمة: «حفظ ومشاركة» ← «تثبيت الصفحة كتطبيق» (Chrome)، «التطبيقات» ← «تثبيت هذا الموقع كتطبيق» (Edge).", "Or from the menu: “Cast, save and share” → “Install page as app” (Chrome), “Apps” → “Install this site as an app” (Edge).", "Ou via le menu : « Enregistrer et partager » → « Installer la page » (Chrome), « Applications » (Edge)."));
+               Step(2, "bi-apple", T("Safari على Mac: ملف ← إضافة إلى Dock", "Safari on Mac: File → Add to Dock", "Safari sur Mac : Fichier → Ajouter au Dock"), "");
+               Step(3, "bi-bell", T("افتح فرص خضراء وفعّل التنبيهات", "Open Foras Khadra and turn on notifications", "Ouvrez Foras Khadra et activez les notifications"), "");
+            }
+        </ol>
+    </section>
+
+    @if (isAuth)
+    {
+        <h2 class="app-section-title">@T("التنبيهات على هذا الجهاز", "Notifications on this device", "Notifications sur cet appareil")</h2>
+        @await Html.PartialAsync("_PushCard", "full")
+    }
+    else
+    {
+        <p class="app-login">
+            @T("سجّل الدخول لتجتمع فرصك المحفوظة في التطبيق وتصلك التنبيهات:", "Sign in so your saved opportunities and reminders follow you into the app:", "Connectez-vous pour retrouver vos opportunités et rappels dans l'app :")
+            <a asp-controller="Account" asp-action="Login">@T("تسجيل الدخول", "Sign in", "Se connecter")</a>
+        </p>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            var device = window.fkDevice || {};
+            var tab = device.isIos ? 'ios' : device.isAndroid ? 'android' : 'desktop';
+
+            function select(name) {
+                document.querySelectorAll('[data-app-tab]').forEach(function (b) {
+                    var active = b.getAttribute('data-app-tab') === name;
+                    b.classList.toggle('is-active', active);
+                    b.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+                document.querySelectorAll('[data-app-panel]').forEach(function (p) {
+                    p.hidden = p.getAttribute('data-app-panel') !== name;
+                });
+            }
+
+            document.querySelectorAll('[data-app-tab]').forEach(function (b) {
+                b.addEventListener('click', function () { select(b.getAttribute('data-app-tab')); });
+            });
+            select(tab);
+
+            if (device.standalone) document.querySelector('[data-app-installed]').hidden = false;
+            else if (device.inApp) document.querySelector('[data-app-alert="inapp"]').hidden = false;
+            else if (device.isIos && !device.iosSafari) document.querySelector('[data-app-alert="ios-other"]').hidden = false;
+
+            document.querySelectorAll('[data-app-copy]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var input = btn.parentElement.querySelector('input');
+                    var done = function () { btn.textContent = '✓'; };
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(input.value).then(done, function () { input.select(); document.execCommand('copy'); done(); });
+                    } else {
+                        input.select(); document.execCommand('copy'); done();
+                    }
+                });
+            });
+        })();
+    </script>
+}

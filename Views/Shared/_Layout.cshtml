@@ -709,7 +709,7 @@
                                 else
                                 {
                                     <a asp-controller="User" asp-action="Dashboard" data-close-menu>@(culture == "en" ? "My page" : culture == "fr" ? "Ma page" : "صفحتي")</a>
-                                    <a asp-controller="Opportunity" asp-action="Saved" data-close-menu>@(culture == "en" ? "Saved opportunities" : culture == "fr" ? "Opportunités enregistrées" : "الفرص المحفوظة")</a>
+                                    <a asp-controller="Opportunity" asp-action="Saved" data-close-menu>@(culture == "en" ? "My opportunities" : culture == "fr" ? "Mes opportunités" : "فرصي")</a>
                                     <a asp-controller="Resources" asp-action="Vault" data-close-menu>@(culture == "en" ? "Members' vault" : culture == "fr" ? "Coffre des membres" : "خزانة الأعضاء")</a>
                                     <a asp-controller="Account" asp-action="ProfileSettings" data-close-menu>@Localizer["AccountSettings"]</a>
                                     <form asp-controller="Account" asp-action="Logout" method="post">
@@ -803,6 +803,7 @@ else
 
                     @* على الهاتف (≤768px) تختفي أزرار الدخول ومبدّل اللغة من الشريط العلوي وتظهر هنا داخل القائمة (brand.css) *@
                     <div class="menu-mobile-extra">
+                        <a href="/app" class="fk-hide-standalone" data-close-menu><i class="bi bi-phone"></i> @(culture == "en" ? "Get the app" : culture == "fr" ? "Installer l'application" : "حمّل التطبيق")</a>
                         @if (!userIsAuthenticated)
                         {
                             <a asp-controller="Account" asp-action="Login" data-close-menu>@Localizer["Login"] · @Localizer["Individual"]</a>
@@ -886,8 +887,8 @@ else
                         <li><a href="~/Home/Articles">@Localizer["Articles"]</a></li>
                         <li><a href="~/Home/AboutUs">@Localizer["AboutUs"]</a></li>
                         <li><a href="~/contact/Index">@Localizer["ContactUs"]</a></li>
-                        @* يظهر فقط حين يمكن تثبيت الموقع كتطبيق (انظر _InstallPrompt) *@
-                        <li data-install-trigger hidden><a href="#" data-install-action><i class="bi bi-download" aria-hidden="true"></i> @(culture == "en" ? "Install the app" : culture == "fr" ? "Installer l'application" : "ثبّت التطبيق")</a></li>
+                        @* شرح التثبيت لكل جهاز (Views/Home/App.cshtml)؛ يختفي داخل التطبيق المثبّت *@
+                        <li class="fk-hide-standalone"><a href="/app"><i class="bi bi-phone" aria-hidden="true"></i> @(culture == "en" ? "Get the app" : culture == "fr" ? "Installer l'application" : "حمّل التطبيق")</a></li>
                     </ul>
                 </div>
 

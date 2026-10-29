@@ -1,0 +1,48 @@
+@* شريط "فرصي" أعلى الرئيسية للفرد المسجّل: أقرب 3 مواعيد لم يقدّم عليها بعد + بطاقة التنبيهات المختصرة. التنسيق في wwwroot/css/my-opps.css *@
+@model Foras_Khadra.Models.MyOpportunitiesViewModel
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var next = Model.UpNext.Take(3).ToList();
+    var rowData = new ViewDataDictionary(ViewData) { ["Compact"] = true };
+}
+<section class="my-strip" aria-labelledby="myStripTitle">
+    <div class="my-strip__card">
+        <div class="my-strip__head">
+            <h2 id="myStripTitle"><i class="bi bi-bookmark-star-fill"></i> @T("فرصي", "My opportunities", "Mes opportunités")</h2>
+            @if (Model.Total > 0)
+            {
+                <a class="my-strip__all" href="@Url.Action("Saved", "Opportunity")">@T($"الكل ({Model.Total})", $"All ({Model.Total})", $"Tout ({Model.Total})") <i class="bi bi-chevron-left"></i></a>
+            }
+        </div>
+
+        @if (next.Any())
+        {
+            <div class="my-list">
+                @foreach (var item in next)
+                {
+                    await Html.RenderPartialAsync("_MyOpportunityRow", item, rowData);
+                }
+            </div>
+        }
+        else if (Model.Total > 0)
+        {
+            <div class="my-empty">
+                <p>@T("لا مواعيد مفتوحة تنتظرك الآن — تابع حالة تقديماتك من صفحة فرصي.", "No open deadlines waiting — follow your applications in My opportunities.", "Aucune échéance ouverte — suivez vos candidatures dans Mes opportunités.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="my-empty">
+                <p>
+                    @T("احفظ الفرص التي تهمّك بزر", "Save the opportunities you like with the", "Enregistrez les opportunités avec le bouton")
+                    <i class="bi bi-bookmark"></i>
+                    @T("لتجتمع هنا مع العدّ التنازلي لمواعيدها.", "button to see them here with a countdown.", "pour les retrouver ici avec un compte à rebours.")
+                </p>
+                <a class="my-btn" href="@Url.Action("AllOpportunities", "Home")"><i class="bi bi-compass"></i> @T("تصفّح الفرص", "Browse opportunities", "Parcourir")</a>
+            </div>
+        }
+
+        @await Html.PartialAsync("_PushCard", "compact")
+    </div>
+</section>

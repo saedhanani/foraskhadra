@@ -36,8 +36,8 @@
     else if (isAuth)
     {
         <a asp-controller="Opportunity" asp-action="Saved" class="fk-tab @(Is("Opportunity", "Saved") ? "is-active" : "")">
-            <i class="bi bi-bookmark fk-tab__ic" aria-hidden="true"></i><i class="bi bi-bookmark-fill fk-tab__ic--on" aria-hidden="true"></i>
-            <span>@T("المحفوظة", "Saved", "Enregistrées")</span>
+            <i class="bi bi-bookmark-star fk-tab__ic" aria-hidden="true"></i><i class="bi bi-bookmark-star-fill fk-tab__ic--on" aria-hidden="true"></i>
+            <span>@T("فرصي", "Mine", "Les miennes")</span>
         </a>
         <a asp-controller="User" asp-action="Dashboard" class="fk-tab @(Is("User", "Dashboard") ? "is-active" : "")">
             <i class="bi bi-person fk-tab__ic" aria-hidden="true"></i><i class="bi bi-person-fill fk-tab__ic--on" aria-hidden="true"></i>

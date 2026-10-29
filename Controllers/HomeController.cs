@@ -21,9 +21,10 @@ namespace Foras_Khadra.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IMatchService _match;
         private readonly IReferralService _referrals;
+        private readonly IApplicationTracker _tracker;
 
         public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, ISavedOpportunityService saved,
-            UserManager<ApplicationUser> userManager, IMatchService match, IReferralService referrals)
+            UserManager<ApplicationUser> userManager, IMatchService match, IReferralService referrals, IApplicationTracker tracker)
         {
             _logger = logger;
             _context = context;
@@ -31,6 +32,7 @@ namespace Foras_Khadra.Controllers
             _userManager = userManager;
             _match = match;
             _referrals = referrals;
+            _tracker = tracker;
         }
 
         /// <summary>لوحة سفراء الشهر (5-3): أعلى 10 داعين، بالاسم الأول فقط.</summary>
@@ -57,7 +59,7 @@ namespace Foras_Khadra.Controllers
                 : await _saved.SavedIdsAsync(userId, opportunities.Select(o => o.Id));
         }
 
-  public IActionResult Index(bool filterByAvailable = false)
+  public async Task<IActionResult> Index(bool filterByAvailable = false)
 {
     var latestArticles = _context.Articles
         .OrderByDescending(a => a.PublishDate)
@@ -96,6 +98,15 @@ namespace Foras_Khadra.Controllers
         LatestOpportunities = latestOpportunities,
         Organizations = organizations
     };
+
+    // شريط "فرصي" أعلى الرئيسية للفرد المسجّل (نقطة البداية في تطبيق الهاتف)
+    var userId = _userManager.GetUserId(User);
+    if (userId != null && !User.IsInRole("Organization") && !User.IsInRole("Admin"))
+    {
+        var saved = await _saved.ListAsync(userId);
+        var cards = await _tracker.CardsAsync(userId, saved.Select(o => o.Id));
+        model.My = MyOpportunitiesViewModel.Build(saved, cards, CultureInfo.CurrentUICulture.TwoLetterISOLanguageName);
+    }
 
     return View(model);
 }
@@ -166,6 +177,11 @@ namespace Foras_Khadra.Controllers
 
             return View("Error", model);
         }
+
+        /// <summary>"حمّل التطبيق": خطوات تثبيت فرص خضراء على iPhone (من Safari) وAndroid والحاسوب، وتفعيل التنبيهات.
+        /// رابط قصير للمشاركة في وسائل التواصل: foraskhadra.com/app</summary>
+        [HttpGet("/app")]
+        public IActionResult App() => View();
 
         public IActionResult AboutUs()
         {

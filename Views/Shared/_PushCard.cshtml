@@ -1,0 +1,49 @@
+@* بطاقة "فعّل التنبيهات" (إشعارات الدفع). Model = "full" (تعرض حالة التفعيل وزر الإيقاف) أو "compact" (تختفي بعد التفعيل).
+   الحالة يحدّدها site.js (fkPush): ios-install / off / on / denied / error. الاشتراك: Controllers/PushController.cs *@
+@model string
+@inject Foras_Khadra.Services.IVapidKeyStore Vapid
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var isAuth = User.Identity?.IsAuthenticated == true;
+}
+@if (isAuth)
+{
+    <div class="fk-push" data-push-card data-variant="@Model" data-key="@Vapid.PublicKey" hidden>
+        <span class="fk-push__icon" aria-hidden="true"><i class="bi bi-bell-fill"></i></span>
+        <div class="fk-push__body">
+            <div data-when="off">
+                <strong>@T("فعّل التنبيهات", "Turn on notifications", "Activer les notifications")</strong>
+                <p>@T("نذكّرك قبل أن تنتهي مواعيد فرصك المحفوظة، ونخبرك بالجديد في اهتماماتك.",
+                      "We'll remind you before your saved deadlines close and tell you about new matches.",
+                      "Nous vous rappelons vos échéances et vous signalons les nouveautés.")</p>
+            </div>
+            <div data-when="on">
+                <strong>@T("التنبيهات مفعّلة ✓", "Notifications are on ✓", "Notifications activées ✓")</strong>
+                <p>@T("ستصلك تذكيرات المواعيد على هذا الجهاز (ليس ليلًا).", "Deadline reminders will reach this device (never at night).", "Les rappels arriveront sur cet appareil (jamais la nuit).")</p>
+            </div>
+            <div data-when="denied">
+                <strong>@T("التنبيهات محظورة", "Notifications are blocked", "Notifications bloquées")</strong>
+                <p>@T("اسمح بالإشعارات لفرص خضراء من إعدادات المتصفح أو الهاتف، ثم أعد فتح الصفحة.",
+                      "Allow notifications for Foras Khadra in your browser or phone settings, then reopen this page.",
+                      "Autorisez les notifications dans les réglages du navigateur ou du téléphone, puis rouvrez la page.")</p>
+            </div>
+            <div data-when="ios-install">
+                <strong>@T("التنبيهات على iPhone", "Notifications on iPhone", "Notifications sur iPhone")</strong>
+                <p>@T("تعمل بعد تثبيت فرص خضراء على الشاشة الرئيسية من Safari.", "They work once Foras Khadra is added to your Home Screen from Safari.", "Elles fonctionnent après l'ajout à l'écran d'accueil depuis Safari.")</p>
+            </div>
+            <div data-when="error">
+                <strong>@T("تعذّر التفعيل", "Couldn't turn on", "Activation impossible")</strong>
+                <p>@T("تحقّق من الاتصال وحاول مرة أخرى.", "Check your connection and try again.", "Vérifiez la connexion et réessayez.")</p>
+            </div>
+        </div>
+        <div class="fk-push__actions">
+            <button type="button" class="fk-push__btn" data-when="off error" data-push-enable>@T("فعّل", "Turn on", "Activer")</button>
+            <a class="fk-push__btn" data-when="ios-install" href="/app">@T("الطريقة", "How", "Comment")</a>
+            @if (Model == "full")
+            {
+                <button type="button" class="fk-push__link" data-when="on" data-push-disable>@T("إيقاف", "Turn off", "Désactiver")</button>
+            }
+        </div>
+    </div>
+}

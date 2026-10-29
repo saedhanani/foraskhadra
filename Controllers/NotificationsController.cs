@@ -40,7 +40,7 @@ namespace Foras_Khadra.Controllers
 
             // إشعار الموعد يذكّر بنسبة جاهزية الملف (رفيق التقديم) إن لم تكتمل
             var deadlineIds = items
-                .Where(n => n.Kind == NotificationKind.SavedDeadlineSoon && n.OpportunityId.HasValue)
+                .Where(n => (n.Kind == NotificationKind.SavedDeadlineSoon || n.Kind == NotificationKind.SavedDeadlineLastDay) && n.OpportunityId.HasValue)
                 .Select(n => n.OpportunityId!.Value);
             ViewData["TrackerCards"] = await _tracker.CardsAsync(userId, deadlineIds);
 

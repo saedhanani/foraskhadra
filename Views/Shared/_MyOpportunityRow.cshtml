@@ -1,0 +1,35 @@
+@* صف فرصة محفوظة في "فرصي" (الصفحة وشريط الرئيسية). ViewData["Compact"] = true يخفي شريط حالة التقديم. التنسيق في wwwroot/css/my-opps.css *@
+@using Foras_Khadra.Helpers
+@using Foras_Khadra.Models
+@model Foras_Khadra.Models.MyOpportunityItem
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var compact = ViewData["Compact"] as bool? == true;
+    var opp = Model.Opportunity;
+}
+<article class="my-row @(Model.Deadline.IsExpired && Model.Status == ApplicationStatus.NotApplied ? "my-row--expired" : "")">
+    <a class="my-row__main" href="@Url.Action("Details", "Opportunity", new { id = opp.Id, slug = SlugHelper.Make(Model.Title) })">
+        <span class="my-row__thumb">
+            @if (!string.IsNullOrEmpty(opp.ImagePath))
+            {
+                <img src="@opp.ImagePath" alt="" loading="lazy" decoding="async" />
+            }
+            else
+            {
+                <i class="bi bi-award" aria-hidden="true"></i>
+            }
+        </span>
+        <span class="my-row__text">
+            @if (opp.Type.HasValue)
+            {
+                <span class="my-row__type">@opp.Type.GetDisplayName(lang)</span>
+            }
+            <span class="my-row__title">@Model.Title</span>
+        </span>
+        <span class="dl-pill @Model.Deadline.CssClass">@Model.Deadline.Label</span>
+    </a>
+    @if (!compact && Model.Tracker != null)
+    {
+        @await Html.PartialAsync("_ApplicationTracker", Model.Tracker)
+    }
+</article>

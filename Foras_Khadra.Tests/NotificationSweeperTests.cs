@@ -100,6 +100,38 @@ namespace Foras_Khadra.Tests
             Assert.Equal(0, await _sweeper.SweepAsync());
         }
 
+        [Fact]
+        public async Task LastDay_ReplacesSevenDayReminder_ForDeadlinesTomorrow()
+        {
+            AddOpportunity(1, "غدًا", OpportunityType.Jobs,
+                endDate: DateTime.Now.Date.AddDays(1), deadlineType: DeadlineType.SpecificDate);
+            AddOpportunity(2, "بعد 3 أيام", OpportunityType.Jobs,
+                endDate: DateTime.Now.Date.AddDays(3), deadlineType: DeadlineType.SpecificDate);
+            _db.SavedOpportunities.AddRange(
+                new SavedOpportunity { UserId = "u1", OpportunityId = 1 },
+                new SavedOpportunity { UserId = "u1", OpportunityId = 2 });
+            _db.SaveChanges();
+
+            await _sweeper.SweepAsync();
+            await _sweeper.SweepAsync();
+
+            // ما ينتهي غدًا: تذكير اليوم الأخير وحده (لا تذكيران معًا)، ومرة واحدة
+            Assert.Equal(1, Assert.Single(_db.Notifications.Where(x => x.Kind == NotificationKind.SavedDeadlineLastDay)).OpportunityId);
+            Assert.Equal(2, Assert.Single(_db.Notifications.Where(x => x.Kind == NotificationKind.SavedDeadlineSoon)).OpportunityId);
+        }
+
+        [Fact]
+        public async Task LastDay_SkipsOpportunitiesAlreadyAppliedTo()
+        {
+            AddOpportunity(1, "اليوم", OpportunityType.Jobs,
+                endDate: DateTime.Now.Date, deadlineType: DeadlineType.SpecificDate);
+            _db.SavedOpportunities.Add(new SavedOpportunity { UserId = "u1", OpportunityId = 1, Status = ApplicationStatus.Applied });
+            _db.SaveChanges();
+
+            await _sweeper.SweepAsync();
+            Assert.Empty(_db.Notifications.Where(x => x.Kind == NotificationKind.SavedDeadlineLastDay));
+        }
+
         // ===== إشعار الاهتمامات =====
 
         [Fact]

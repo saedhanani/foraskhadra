@@ -20,6 +20,9 @@ namespace Foras_Khadra.Services
         /// <summary>نافذة "ينتهي قريبًا" بالأيام — نفس نافذة شارة IsDeadlineSoon.</summary>
         public const int DeadlineWindowDays = 7;
 
+        /// <summary>تذكير اليوم الأخير: ما ينتهي اليوم أو غدًا.</summary>
+        public const int LastDayWindowDays = 1;
+
         public NotificationSweeper(ApplicationDbContext db)
         {
             _db = db;
@@ -29,6 +32,7 @@ namespace Foras_Khadra.Services
         {
             var created = 0;
             created += await SweepSavedDeadlinesAsync(ct);
+            created += await SweepLastDayAsync(ct);
             created += await SweepInterestsAsync(ct);
             created += await SweepSavedSearchesAsync(ct);
             created += await SweepCycleWatchesAsync(ct);
@@ -39,10 +43,12 @@ namespace Foras_Khadra.Services
             return created;
         }
 
-        /// <summary>فرصة محفوظة دخل موعدها نافذة الأيام السبعة → إشعار واحد لكل (مستخدم، فرصة).</summary>
+        /// <summary>فرصة محفوظة دخل موعدها نافذة الأيام السبعة → إشعار واحد لكل (مستخدم، فرصة).
+        /// ما ينتهي اليوم أو غدًا يأخذ تذكير اليوم الأخير وحده (SweepLastDayAsync) حتى لا يصل تذكيران معًا.</summary>
         private async Task<int> SweepSavedDeadlinesAsync(CancellationToken ct)
         {
             var today = DateTime.Now.Date;
+            var windowStart = today.AddDays(LastDayWindowDays + 1);
             var windowEnd = today.AddDays(DeadlineWindowDays);
 
             // من قدّم فعلًا لا يحتاج تذكيرًا بالموعد
@@ -51,7 +57,7 @@ namespace Foras_Khadra.Services
                             && s.Opportunity!.Status == OpportunityStatus.Published
                             && s.Opportunity.DeadlineType == DeadlineType.SpecificDate
                             && s.Opportunity.EndDate != null
-                            && s.Opportunity.EndDate >= today
+                            && s.Opportunity.EndDate >= windowStart
                             && s.Opportunity.EndDate <= windowEnd
                             && !_db.Notifications.Any(n => n.UserId == s.UserId
                                                            && n.Kind == NotificationKind.SavedDeadlineSoon
@@ -66,6 +72,39 @@ namespace Foras_Khadra.Services
                 {
                     UserId = s.UserId,
                     Kind = NotificationKind.SavedDeadlineSoon,
+                    OpportunityId = s.OpportunityId
+                });
+            }
+
+            return due.Count;
+        }
+
+        /// <summary>فرصة محفوظة لم يُقدَّم عليها وينتهي موعدها اليوم أو غدًا → تذكير أخير واحد لكل (مستخدم، فرصة).</summary>
+        private async Task<int> SweepLastDayAsync(CancellationToken ct)
+        {
+            var today = DateTime.Now.Date;
+            var windowEnd = today.AddDays(LastDayWindowDays);
+
+            var due = await _db.SavedOpportunities
+                .Where(s => s.Status == ApplicationStatus.NotApplied
+                            && s.Opportunity!.Status == OpportunityStatus.Published
+                            && s.Opportunity.DeadlineType == DeadlineType.SpecificDate
+                            && s.Opportunity.EndDate != null
+                            && s.Opportunity.EndDate >= today
+                            && s.Opportunity.EndDate <= windowEnd
+                            && !_db.Notifications.Any(n => n.UserId == s.UserId
+                                                           && n.Kind == NotificationKind.SavedDeadlineLastDay
+                                                           && n.OpportunityId == s.OpportunityId))
+                .Select(s => new { s.UserId, s.OpportunityId })
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            foreach (var s in due)
+            {
+                _db.Notifications.Add(new Notification
+                {
+                    UserId = s.UserId,
+                    Kind = NotificationKind.SavedDeadlineLastDay,
                     OpportunityId = s.OpportunityId
                 });
             }

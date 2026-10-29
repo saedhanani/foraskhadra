@@ -31,6 +31,7 @@ namespace Foras_Khadra.Data
         public DbSet<Resource> Resources { get; set; }
         public DbSet<FlagshipProgram> FlagshipPrograms { get; set; }
         public DbSet<ImpactStat> ImpactStats { get; set; }
+        public DbSet<PushSubscription> PushSubscriptions { get; set; }
 
         // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -90,6 +91,17 @@ namespace Foras_Khadra.Data
             // الإشعارات والبحوث المحفوظة: جهة المستخدم بلا cascade في القاعدة لنفس سبب SavedOpportunities أعلاه.
             modelBuilder.Entity<Notification>()
                 .HasIndex(n => new { n.UserId, n.ReadAt });
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => n.PushedAt);
+
+            // إشعارات الدفع: اشتراكات المستخدم تُحذف معه
+            modelBuilder.Entity<PushSubscription>()
+                .HasIndex(s => s.UserId);
+            modelBuilder.Entity<PushSubscription>()
+                .HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<Notification>()
                 .HasOne(n => n.User)
                 .WithMany()

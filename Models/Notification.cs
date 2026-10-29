@@ -16,7 +16,9 @@ namespace Foras_Khadra.Models
         /// <summary>فُتح باب التقديم في برنامج سجّل المستخدم اهتمامه به (LinkParams = slug البرنامج، Label = اسمه).</summary>
         ProgramOpened = 5,
         /// <summary>ملخص الأسبوع جاهز (Count = الفرص الجديدة المطابقة).</summary>
-        WeeklySummary = 6
+        WeeklySummary = 6,
+        /// <summary>فرصة محفوظة ينتهي موعدها اليوم أو غدًا — التذكير الأخير بعد تذكير الأيام السبعة.</summary>
+        SavedDeadlineLastDay = 7
     }
 
     /// <summary>إشعار داخل الموقع — يولّده NotificationSweeper ويظهر في جرس الهيدر.</summary>
@@ -46,5 +48,8 @@ namespace Foras_Khadra.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? ReadAt { get; set; }
+
+        /// <summary>متى عالجه مُرسل إشعارات الدفع (PushDispatcher) — أُرسل أو تُجووز. null = لم يُعالج بعد.</summary>
+        public DateTime? PushedAt { get; set; }
     }
 }

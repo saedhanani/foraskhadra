@@ -105,3 +105,40 @@ async function withSlot(work) {
         if (next) next();
     }
 }
+
+// ===== إشعارات الدفع (يرسلها Services/PushDispatcher.cs؛ الحمولة من Helpers/NotificationText.cs) =====
+self.addEventListener('push', (event) => {
+    let data = {};
+    try { data = event.data ? event.data.json() : {}; } catch (err) { data = { body: event.data ? event.data.text() : '' }; }
+    // Safari على iPhone يلغي الاشتراك إن وصل إشعار دون أن يُعرض، فنعرض دائمًا
+    event.waitUntil(self.registration.showNotification(data.title || 'فرص خضراء', {
+        body: data.body || '',
+        icon: '/images/icon-192.png',
+        tag: data.tag || undefined,
+        lang: data.lang || 'ar',
+        dir: data.dir || 'auto',
+        data: { url: data.url || '/' }
+    }));
+});
+
+// النقر على الإشعار: يفتح صفحته في نافذة الموقع المفتوحة إن وُجدت، وإلا في نافذة جديدة (روابط الموقع فقط)
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close();
+    const target = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin);
+    const url = target.origin === self.location.origin ? target.href : self.location.origin + '/';
+    event.waitUntil((async () => {
+        const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        for (const client of windows) {
+            if (client.url.startsWith(self.location.origin) && 'focus' in client && 'navigate' in client) {
+                try {
+                    await client.focus();
+                    await client.navigate(url);
+                    return;
+                } catch (err) {
+                    break; // نافذة لا يتحكم بها الـ worker: نفتح نافذة جديدة
+                }
+            }
+        }
+        await self.clients.openWindow(url);
+    })());
+});

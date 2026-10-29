@@ -786,6 +786,9 @@ namespace Foras_Khadra.Migrations
                     b.Property<int?>("OpportunityId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("PushedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("ReadAt")
                         .HasColumnType("datetime2");
 
@@ -796,6 +799,8 @@ namespace Foras_Khadra.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OpportunityId");
+
+                    b.HasIndex("PushedAt");
 
                     b.HasIndex("UserId", "ReadAt");
 
@@ -1022,6 +1027,54 @@ namespace Foras_Khadra.Migrations
                         .IsUnique();
 
                     b.ToTable("ProgramInterests");
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.PushSubscription", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Auth")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Lang")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("nvarchar(5)");
+
+                    b.Property<DateTime?>("LastSentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("P256dh")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("TzOffsetMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PushSubscriptions");
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.RecentView", b =>
@@ -1517,6 +1570,17 @@ namespace Foras_Khadra.Migrations
                         .IsRequired();
 
                     b.Navigation("Program");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.PushSubscription", b =>
+                {
+                    b.HasOne("Foras_Khadra.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });
