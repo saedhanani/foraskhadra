@@ -337,6 +337,7 @@ namespace Foras_Khadra.Controllers
 
             ViewBag.SavedIds = await SavedIdsFor(allOpportunities);
             ViewBag.MatchScores = await MatchScoresFor(allOpportunities);
+            ViewBag.SaveCounts = await _saved.SaveCountsAsync(allOpportunities.Select(o => o.Id));
             return View(model);
         }
 

@@ -221,6 +221,25 @@
                         }
                     }
                     <span class="deadline-label @deadlineClass">@deadlineText</span>
+                    @if (!isExpired && Model.DeadlineType == DeadlineType.SpecificDate && Model.EndDate.HasValue)
+                    {
+                        @* عدّاد تنازلي حيّ (4-5): الموعد = نهاية ذلك اليوم بتوقيت المتصفح *@
+                        <span class="deadline-countdown" id="deadlineCountdown"
+                              data-deadline="@Model.EndDate.Value.ToString("yyyy-MM-dd")T23:59:59"
+                              data-left="@(lang == "en" ? "left" : lang == "fr" ? "restant" : "تبقى")"
+                              data-d="@(lang == "en" ? "d" : lang == "fr" ? "j" : "يوم")"
+                              data-h="@(lang == "en" ? "h" : lang == "fr" ? "h" : "ساعة")"
+                              data-m="@(lang == "en" ? "m" : lang == "fr" ? "min" : "دقيقة")"
+                              data-ended="@(lang == "en" ? "Deadline passed" : lang == "fr" ? "Date limite dépassée" : "انتهى الموعد")">
+                            <i class="bi bi-hourglass-split"></i><span></span>
+                        </span>
+                    }
+                    @if (ViewBag.SaveCount is int saveCount && saveCount >= 2)
+                    {
+                        <span class="deadline-countdown" style="color:#1B6B23;" title="@(lang == "en" ? "People who saved this opportunity" : lang == "fr" ? "Personnes ayant enregistré cette opportunité" : "عدد من حفظوا هذه الفرصة")">
+                            <i class="bi bi-bookmark-fill"></i> @(lang == "en" ? $"{saveCount} people saved this" : lang == "fr" ? $"{saveCount} personnes l'ont enregistrée" : $"{saveCount} شخصًا حفظ هذه الفرصة")
+                        </span>
+                    }
                 </span>
 
                 <span class="info-label">@Localizer["OpportunityType"]</span>
@@ -323,6 +342,26 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // عدّاد تنازلي حيّ للموعد النهائي (4-5) — يُحدَّث كل دقيقة
+        (function () {
+            var el = document.getElementById('deadlineCountdown');
+            if (!el) return;
+            var out = el.querySelector('span');
+            var deadline = new Date(el.getAttribute('data-deadline')).getTime();
+            function tick() {
+                var ms = deadline - Date.now();
+                if (ms <= 0) { out.textContent = el.getAttribute('data-ended'); return; }
+                var mins = Math.floor(ms / 60000), d = Math.floor(mins / 1440), h = Math.floor(mins % 1440 / 60), m = mins % 60;
+                var parts = [];
+                if (d > 0) parts.push(d + ' ' + el.getAttribute('data-d'));
+                if (d < 7) { parts.push(h + ' ' + el.getAttribute('data-h')); if (d === 0) parts.push(m + ' ' + el.getAttribute('data-m')); }
+                out.textContent = el.getAttribute('data-left') + ' ' + parts.join(' · ');
+            }
+            tick();
+            setInterval(tick, 60000);
+        })();
+    </script>
     <script>
         const currentLang = '@CultureInfo.CurrentUICulture.TwoLetterISOLanguageName';
         const registerUrl = '@Url.Action("RegisterUser", "Account")';

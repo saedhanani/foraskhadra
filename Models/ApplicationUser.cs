@@ -36,6 +36,12 @@ namespace Foras_Khadra.Models
         /// <summary>آخر وقت وُلِّد له إشعار "فرص جديدة في اهتماماتك" — يضبطه NotificationSweeper.</summary>
         public DateTime? LastInterestNotifiedAt { get; set; }
 
+        // ===== "جديد منذ آخر زيارة" (البند 4-1) =====
+        /// <summary>آخر فتح لـ"صفحتي"؛ يُحدَّث عند كل فتح.</summary>
+        public DateTime? LastSeenAt { get; set; }
+        /// <summary>بداية الزيارة السابقة (قبل فجوة تزيد على 30 دقيقة) — الفرص المنشورة بعدها "جديدة".</summary>
+        public DateTime? PreviousVisitAt { get; set; }
+
         [NotMapped]
         public List<string> Interests
         {

@@ -17,6 +17,10 @@
     // شارة "تطابق N%" (المرحلة 3) — تُحسب في المتحكم وتُمرَّر عبر ViewData["MatchScores"]
     int? matchScore = ViewData["MatchScores"] is Dictionary<int, int> scores && scores.TryGetValue(opp.Id, out var sc) ? sc : null;
     string matchClass = matchScore >= 80 ? "match-high" : matchScore >= 50 ? "match-mid" : "match-low";
+
+    // المرحلة 4: "جديد" منذ الزيارة السابقة (4-1) وعدد من حفظوا الفرصة (4-3، يظهر من 2 فأكثر)
+    bool isNew = ViewData["NewSince"] is DateTime newSince && opp.PublishDate > newSince;
+    int saveCount = ViewData["SaveCounts"] is Dictionary<int, int> counts && counts.TryGetValue(opp.Id, out var c) ? c : 0;
 }
 <div class="opp-card shadow-sm">
     @if (matchScore.HasValue)
@@ -30,8 +34,18 @@
         <img src="@opp.ImagePath" class="opp-image" alt="@title" loading="lazy" decoding="async">
     }
 
+    @if (isNew)
+    {
+        <span class="new-tag">@(lang == "en" ? "New" : lang == "fr" ? "Nouveau" : "جديد")</span>
+    }
     <div class="opp-category-row">
         <span class="type-tag">@opp.Type.GetDisplayName(lang)</span>
+        @if (saveCount >= 2)
+        {
+            <span class="category-tag save-count-tag" title="@(lang == "en" ? "People who saved this opportunity" : lang == "fr" ? "Personnes ayant enregistré cette opportunité" : "عدد من حفظوا هذه الفرصة")">
+                <i class="bi bi-bookmark-fill"></i> @(lang == "en" ? $"{saveCount} saved" : lang == "fr" ? $"{saveCount} favoris" : $"{saveCount} حفظوها")
+            </span>
+        }
         @if (!string.IsNullOrWhiteSpace(opp.AvailableCountriesNames))
         {
             var countries = opp.AvailableCountriesNames.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(c => c.Trim()).ToList();

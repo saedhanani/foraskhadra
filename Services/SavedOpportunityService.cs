@@ -13,6 +13,8 @@ namespace Foras_Khadra.Services
         Task<HashSet<int>> SavedIdsAsync(string userId, IEnumerable<int> opportunityIds);
         /// <summary>الفرص المحفوظة للمستخدم من الأحدث حفظًا، المنشورة فقط.</summary>
         Task<List<Opportunity>> ListAsync(string userId);
+        /// <summary>كم مستخدمًا حفظ كل فرصة من المعروضة (البند 4-3 "X شخصًا حفظ هذه الفرصة") — المفتاح OpportunityId.</summary>
+        Task<Dictionary<int, int>> SaveCountsAsync(IEnumerable<int> opportunityIds);
     }
 
     public class SavedOpportunityService : ISavedOpportunityService
@@ -67,6 +69,18 @@ namespace Foras_Khadra.Services
                 .Select(s => s.OpportunityId)
                 .ToListAsync();
             return saved.ToHashSet();
+        }
+
+        public async Task<Dictionary<int, int>> SaveCountsAsync(IEnumerable<int> opportunityIds)
+        {
+            var ids = opportunityIds.Distinct().ToList();
+            if (ids.Count == 0) return new Dictionary<int, int>();
+
+            return await _context.SavedOpportunities
+                .Where(s => ids.Contains(s.OpportunityId))
+                .GroupBy(s => s.OpportunityId)
+                .Select(g => new { g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Key, x => x.Count);
         }
 
         public async Task<List<Opportunity>> ListAsync(string userId)

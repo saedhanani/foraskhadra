@@ -44,6 +44,19 @@ namespace Foras_Khadra.Controllers
                 return RedirectToAction("Login", "Account");
 
             var today = DateTime.Now.Date;
+
+            // 4-1 "جديد منذ آخر زيارة": فجوة تزيد على 30 دقيقة = زيارة جديدة، فتصبح الزيارة السابقة مرجع "الجديد"
+            var now = DateTime.Now;
+            if (user.LastSeenAt == null || now - user.LastSeenAt.Value > TimeSpan.FromMinutes(30))
+                user.PreviousVisitAt = user.LastSeenAt;
+            user.LastSeenAt = now;
+            await _context.SaveChangesAsync();
+
+            var newSince = user.PreviousVisitAt;
+            var newSinceCount = newSince.HasValue
+                ? await _context.Opportunities.CountAsync(o => o.Status == OpportunityStatus.Published && o.PublishDate > newSince.Value)
+                : 0;
+
             var saved = await _savedService.ListAsync(user.Id);
             var savedIds = saved.Select(o => o.Id).ToHashSet();
 
@@ -97,9 +110,17 @@ namespace Foras_Khadra.Controllers
             var savedShown = saved.OrderByDescending(o => o.IsDeadlineSoon).Take(6).ToList();
             var stats = await _tracker.StatsAsync(user.Id);
 
+            var shownAll = recommended.Concat(savedShown).Concat(latest).ToList();
+            var completion = ProfileCompletion.Compute(user);
+
             var vm = new UserDashboardViewModel
             {
-                MatchScores = _match.Scores(profile, recommended.Concat(savedShown).Concat(latest)),
+                NewSince = newSince,
+                NewSinceCount = newSinceCount,
+                Profile = completion,
+                Achievements = Helpers.Achievements.Compute(stats, completion.Percent),
+                SaveCounts = await _savedService.SaveCountsAsync(shownAll.Select(o => o.Id)),
+                MatchScores = _match.Scores(profile, shownAll),
                 MatchesNationality = profile.HasLocation,
                 SavedSearches = savedSearches,
                 Tracker = await _tracker.CardsAsync(user.Id, savedShown.Select(o => o.Id)),

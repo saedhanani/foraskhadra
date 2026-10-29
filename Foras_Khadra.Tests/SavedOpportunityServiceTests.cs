@@ -43,6 +43,20 @@ namespace Foras_Khadra.Tests
             Status = status
         };
 
+        [Fact]
+        public async Task SaveCounts_CountsUsersPerOpportunity()
+        {
+            await _service.ToggleAsync("u1", 1);
+            await _service.ToggleAsync("u2", 1);
+            await _service.ToggleAsync("u1", 2);
+
+            var counts = await _service.SaveCountsAsync(new[] { 1, 2, 3 });
+            Assert.Equal(2, counts[1]);
+            Assert.Equal(1, counts[2]);
+            Assert.False(counts.ContainsKey(3)); // لا صفوف = لا مفتاح
+            Assert.Empty(await _service.SaveCountsAsync(Array.Empty<int>()));
+        }
+
         public void Dispose()
         {
             _db.Dispose();

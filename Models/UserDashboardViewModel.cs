@@ -43,5 +43,14 @@ namespace Foras_Khadra.Models
         public Dictionary<int, int> MatchScores { get; set; } = new();
         /// <summary>هل عرفنا جنسية/بلد المستخدم فرشّحنا على أساسها؟</summary>
         public bool MatchesNationality { get; set; }
+
+        // ===== المرحلة 4: الموقع يعرفك =====
+        /// <summary>بداية الزيارة السابقة — الفرص المنشورة بعدها تحمل شارة "جديد" (null في أول زيارة).</summary>
+        public DateTime? NewSince { get; set; }
+        public int NewSinceCount { get; set; }
+        public Foras_Khadra.Helpers.ProfileCompletionResult Profile { get; set; } = new(0, Array.Empty<string>());
+        public List<Foras_Khadra.Helpers.Achievement> Achievements { get; set; } = new();
+        /// <summary>كم مستخدمًا حفظ كل فرصة معروضة (المفتاح OpportunityId).</summary>
+        public Dictionary<int, int> SaveCounts { get; set; } = new();
     }
 }

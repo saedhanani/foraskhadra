@@ -9,6 +9,8 @@
 
     string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
     ViewData["MatchScores"] = Model.MatchScores; // شارة "تطابق N%" على بطاقات _OpportunityCard
+    ViewData["NewSince"] = Model.NewSince;       // شارة "جديد" (4-1)
+    ViewData["SaveCounts"] = Model.SaveCounts;   // "N حفظوها" (4-3)
 }
 
 <link asp-append-version="true" rel="stylesheet" href="~/css/all-opportunities.css" />
@@ -248,6 +250,77 @@
 
     .fk-chips .edit:hover { color: var(--fk-green); }
 
+    /* اكتمال الملف (4-4) */
+    .fk-profile {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-top: 18px;
+        padding: 12px 16px;
+        background: var(--fk-orange-soft);
+        border: 1px solid #fbe0b8;
+        border-radius: 14px;
+        text-decoration: none;
+        color: #7c2d12;
+        font-size: 0.92rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .fk-profile:hover { border-color: var(--fk-orange); }
+    .fk-profile-bar { flex: none; width: 90px; height: 8px; border-radius: 999px; background: #fff; overflow: hidden; }
+    .fk-profile-bar span { display: block; height: 100%; background: var(--fk-orange); border-radius: 999px; }
+    .fk-profile-text b { color: #b06410; }
+
+    /* شارات الإنجاز (4-2) */
+    .fk-badges {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        margin-bottom: 30px;
+    }
+
+    .fk-badge {
+        background: #fff;
+        border: 1px solid #e6efe6;
+        border-radius: 16px;
+        padding: 14px 12px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .fk-badge-ico {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+    }
+
+    .fk-badge.earned .fk-badge-ico { background: var(--fk-orange); color: #fff; box-shadow: 0 6px 14px rgba(250, 156, 40, 0.35); }
+    .fk-badge.earned { border-color: var(--fk-leaf); }
+    .fk-badge.locked .fk-badge-ico { background: #f1f5f1; color: #a3b1a5; }
+    .fk-badge.locked .fk-badge-title { color: #7a8c7c; }
+    .fk-badge-title { font-weight: 700; font-size: 0.88rem; color: var(--fk-green); }
+    .fk-badge-hint { font-size: 0.75rem; color: #8a9a8c; }
+    .fk-badge-prog { width: 70%; height: 5px; border-radius: 999px; background: #eef3ee; overflow: hidden; }
+    .fk-badge-prog span { display: block; height: 100%; background: var(--fk-leaf); }
+
+    /* "N جديدة منذ زيارتك" (4-1) */
+    .fk-new-count {
+        background: var(--fk-orange-soft);
+        color: #b06410;
+        border-radius: 999px;
+        padding: 4px 12px;
+        font-size: 0.82rem;
+        font-weight: 700;
+    }
+
     /* تابعت مؤخرًا */
     .fk-recent {
         display: flex;
@@ -394,7 +467,36 @@
             <span class="bar"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="bar"></span>
         </div>
         <span class="tag">#@T("من_وإلى_الشباب_العربي", "from_and_to_Arabian_youth", "de_et_pour_la_jeunesse_arabe")</span>
+
+        @* اكتمال الملف (4-4) — يختفي عند 100% *@
+        @if (!Model.Profile.IsComplete)
+        {
+            <a class="fk-profile" href="@Url.Action("ProfileSettings", "Account")">
+                <span class="fk-profile-bar"><span style="width:@Model.Profile.Percent%"></span></span>
+                <span class="fk-profile-text">
+                    <b>@T($"ملفك {Model.Profile.Percent}%", $"Your profile is {Model.Profile.Percent}% complete", $"Votre profil est complet à {Model.Profile.Percent} %")</b>
+                    — @ProfileCompletion.Prompt(Model.Profile.NextKey!, lang)
+                    <i class="bi bi-arrow-left-short"></i>
+                </span>
+            </a>
+        }
     </section>
+
+    @* ===== شارات الإنجاز (4-2) ===== *@
+    <div class="fk-badges">
+        @foreach (var a in Model.Achievements)
+        {
+            <div class="fk-badge @(a.Earned ? "earned" : "locked")" title="@(a.Earned ? Achievements.Title(a.Key, lang) : Achievements.Hint(a.Key, lang))">
+                <span class="fk-badge-ico"><i class="bi @a.Icon"></i></span>
+                <span class="fk-badge-title">@Achievements.Title(a.Key, lang)</span>
+                @if (!a.Earned)
+                {
+                    <span class="fk-badge-hint">@Achievements.Hint(a.Key, lang)</span>
+                    <span class="fk-badge-prog"><span style="width:@a.Percent%"></span></span>
+                }
+            </div>
+        }
+    </div>
 
     @* ===== الأرقام ===== *@
     <div class="fk-stats">
@@ -613,6 +715,13 @@
             <div class="fk-section-head">
                 @Leaves(34)
                 <h2>@T("أحدث الفرص", "Latest opportunities", "Dernières opportunités")</h2>
+                @if (Model.NewSinceCount > 0)
+                {
+                    <span class="fk-new-count">
+                        <i class="bi bi-sparkles"></i>
+                        @T($"{Model.NewSinceCount} جديدة منذ زيارتك الأخيرة", $"{Model.NewSinceCount} new since your last visit", $"{Model.NewSinceCount} nouvelles depuis votre dernière visite")
+                    </span>
+                }
                 <a class="view-all" href="@Url.Action("AllOpportunities", "Home")">
                     @T("عرض الكل", "View all", "Tout voir")
                 </a>

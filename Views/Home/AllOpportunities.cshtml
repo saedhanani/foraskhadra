@@ -664,6 +664,12 @@
 
                             <div class="status-wrapper">
                                 <span class="opp-status @statusClass">@statusText</span>
+                                @if (ViewBag.SaveCounts is Dictionary<int, int> saveCounts && saveCounts.TryGetValue(opp.Id, out var saveCount) && saveCount >= 2)
+                                {
+                                    <span class="category-tag save-count-tag" style="margin-inline-start:8px;" title="@(lang == "en" ? "People who saved this opportunity" : lang == "fr" ? "Personnes ayant enregistré cette opportunité" : "عدد من حفظوا هذه الفرصة")">
+                                        <i class="bi bi-bookmark-fill"></i> @(lang == "en" ? $"{saveCount} saved" : lang == "fr" ? $"{saveCount} favoris" : $"{saveCount} حفظوها")
+                                    </span>
+                                }
                                 @if (ViewBag.MatchScores is Dictionary<int, int> matchScores && matchScores.TryGetValue(opp.Id, out var matchScore))
                                 {
                                     var matchClass = matchScore >= 80 ? "match-high" : matchScore >= 50 ? "match-mid" : "match-low";

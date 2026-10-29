@@ -447,3 +447,30 @@ a:hover {
 .match-badge.match-high { color: #1B6B23; border: 1.5px solid #ABE188; }
 .match-badge.match-mid { color: #b06410; border: 1.5px solid #fbe0b8; }
 .match-badge.match-low { color: #64748b; border: 1.5px solid #e2e8f0; }
+
+/* ===== المرحلة 4: شارة "جديد" وعدّاد الحفظ ===== */
+.new-tag {
+    position: absolute;
+    top: 12px;
+    inset-inline-end: 12px;
+    z-index: 2;
+    background: #FA9C28;
+    color: #fff;
+    font-size: 0.74rem;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 999px;
+    box-shadow: 0 4px 12px rgba(250, 156, 40, 0.35);
+}
+.save-count-tag { gap: 5px; }
+.save-count-tag i { color: #1B6B23; font-size: 0.8rem; }
+.deadline-countdown {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-inline-start: 8px;
+    color: #c2410c;
+    font-weight: 700;
+    font-size: 0.88rem;
+    white-space: nowrap;
+}

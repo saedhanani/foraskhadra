@@ -403,6 +403,7 @@ public async Task<IActionResult> Create()
             var userId = _userManager.GetUserId(User);
             ViewBag.IsSaved = userId != null && await _saved.IsSavedAsync(userId, opp.Id);
             ViewBag.IsWatching = userId != null && await _tracker.IsWatchingAsync(userId, opp.Id);
+            ViewBag.SaveCount = (await _saved.SaveCountsAsync(new[] { opp.Id })).GetValueOrDefault(opp.Id);
 
             // "تابعت مؤخرًا" للمسجّلين (المنظمات والإدارة تتصفح لأغراض أخرى)
             if (userId != null && opp.Status == OpportunityStatus.Published && !User.IsInRole("Organization") && !User.IsInRole("Admin"))
