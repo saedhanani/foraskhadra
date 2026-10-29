@@ -1048,7 +1048,8 @@ namespace Foras_Khadra.Migrations
                     b.Property<string>("Endpoint")
                         .IsRequired()
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("PushUrl");
 
                     b.Property<string>("Lang")
                         .IsRequired()

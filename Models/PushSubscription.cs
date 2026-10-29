@@ -13,8 +13,10 @@ namespace Foras_Khadra.Models
         [ForeignKey("UserId")]
         public ApplicationUser? User { get; set; }
 
-        /// <summary>رابط خدمة الدفع الخاص بهذا المتصفح (Google/Apple/Mozilla/Microsoft) — انظر PushEndpoints.</summary>
+        /// <summary>رابط خدمة الدفع الخاص بهذا المتصفح (Google/Apple/Mozilla/Microsoft) — انظر PushEndpoints.
+        /// العمود اسمه PushUrl لا Endpoint: بوابة SQL Studio في الاستضافة ترفض أي استعلام فيه كلمة ENDPOINT (كلمة محجوزة لكائنات الخادم).</summary>
         [MaxLength(1000)]
+        [Column("PushUrl")]
         public string Endpoint { get; set; } = string.Empty;
 
         /// <summary>المفتاح العام للمتصفح (P-256، base64url) — لتشفير الحمولة.</summary>

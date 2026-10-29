@@ -24,7 +24,7 @@ namespace Foras_Khadra.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Endpoint = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    PushUrl = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
                     P256dh = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Auth = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Lang = table.Column<string>(type: "nvarchar(5)", maxLength: 5, nullable: false),

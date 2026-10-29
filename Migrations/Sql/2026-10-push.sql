@@ -1,5 +1,6 @@
 -- إشعارات الدفع (تطبيق الهاتف): جدول PushSubscriptions + عمود Notifications.PushedAt. ينفَّذ على قاعدة الإنتاج قبل نشر الكود الجديد.
 -- آمن للتكرار. خذ نسخة احتياطية من القاعدة قبل التشغيل. بلا EXEC إطلاقًا.
+-- بوابة SQL Studio ترفض أي استعلام فيه كلمة ENDPOINT، لذا عمود رابط الاشتراك اسمه PushUrl.
 -- بديل عن: dotnet ef database update (الهجرة 20261029190916_PushNotifications)
 
 IF COL_LENGTH('Notifications', 'PushedAt') IS NULL
@@ -9,7 +10,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Notifications_PushedAt
     CREATE INDEX IX_Notifications_PushedAt ON Notifications (PushedAt);
 
 IF OBJECT_ID('PushSubscriptions') IS NULL
-    CREATE TABLE PushSubscriptions (Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_PushSubscriptions PRIMARY KEY, UserId nvarchar(450) NOT NULL CONSTRAINT FK_PushSubscriptions_AspNetUsers_UserId FOREIGN KEY REFERENCES AspNetUsers (Id) ON DELETE CASCADE, Endpoint nvarchar(1000) NOT NULL, P256dh nvarchar(200) NOT NULL, Auth nvarchar(100) NOT NULL, Lang nvarchar(5) NOT NULL, TzOffsetMinutes int NOT NULL, CreatedAt datetime2 NOT NULL, LastSentAt datetime2 NULL);
+    CREATE TABLE PushSubscriptions (Id int IDENTITY(1,1) NOT NULL CONSTRAINT PK_PushSubscriptions PRIMARY KEY, UserId nvarchar(450) NOT NULL CONSTRAINT FK_PushSubscriptions_AspNetUsers_UserId FOREIGN KEY REFERENCES AspNetUsers (Id) ON DELETE CASCADE, PushUrl nvarchar(1000) NOT NULL, P256dh nvarchar(200) NOT NULL, Auth nvarchar(100) NOT NULL, Lang nvarchar(5) NOT NULL, TzOffsetMinutes int NOT NULL, CreatedAt datetime2 NOT NULL, LastSentAt datetime2 NULL);
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_PushSubscriptions_UserId' AND object_id = OBJECT_ID('PushSubscriptions'))
     CREATE INDEX IX_PushSubscriptions_UserId ON PushSubscriptions (UserId);
