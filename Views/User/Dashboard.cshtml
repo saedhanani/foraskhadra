@@ -11,6 +11,7 @@
 }
 
 <link asp-append-version="true" rel="stylesheet" href="~/css/all-opportunities.css" />
+<link asp-append-version="true" rel="stylesheet" href="~/css/tracker.css" />
 
 <style>
     /* ====== صفحتي — بتصميم الهوية البصرية (brand.css) ====== */
@@ -246,6 +247,34 @@
 
     .fk-chips .edit:hover { color: var(--fk-green); }
 
+    /* تابعت مؤخرًا */
+    .fk-recent {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin: -10px 0 30px;
+    }
+
+    .fk-recent-title { color: #5c715e; font-weight: 600; font-size: 0.9rem; }
+    .fk-recent a.fk-chip { text-decoration: none; }
+    .fk-recent a.fk-chip:hover { background: var(--fk-leaf-soft); }
+
+    /* بطاقة محفوظة مع شريط التتبّع أسفلها */
+    .fk-saved-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid #e6efe6;
+        overflow: hidden;
+    }
+
+    .fk-saved-card .opp-card { border: none; border-radius: 0; flex: 1; }
+    .fk-saved-card .opp-card:hover { transform: none; box-shadow: none; }
+    .fk-saved-card:hover { box-shadow: 0 16px 30px rgba(27, 107, 35, 0.1); border-color: var(--fk-leaf); }
+
     /* ===== الصناديق الفارغة ===== */
     .fk-empty {
         background: #fff;
@@ -379,7 +408,21 @@
                 <div><strong>@Model.ExpiringSaved.Count</strong><span>@T("تنتهي قريبًا", "closing soon", "bientôt clôturées")</span></div>
             </div>
         }
-        @if (Model.Recommended.Any())
+        @if (Model.AppliedCount > 0)
+        {
+            <div class="fk-stat picked">
+                <i class="bi bi-send-check"></i>
+                <div><strong>@Model.AppliedCount</strong><span>@T("قدّمت عليها", "applied", "candidatures envoyées")</span></div>
+            </div>
+        }
+        @if (Model.AcceptedCount > 0)
+        {
+            <div class="fk-stat saved">
+                <i class="bi bi-trophy"></i>
+                <div><strong>@Model.AcceptedCount</strong><span>@T("قُبلت 🎉", "accepted 🎉", "acceptées 🎉")</span></div>
+            </div>
+        }
+        @if (Model.Recommended.Any() && Model.AppliedCount == 0)
         {
             <div class="fk-stat picked">
                 <i class="bi bi-stars"></i>
@@ -387,6 +430,19 @@
             </div>
         }
     </div>
+
+    @* ===== تابعت مؤخرًا ===== *@
+    @if (Model.Recent.Any())
+    {
+        <div class="fk-recent">
+            <span class="fk-recent-title"><i class="bi bi-clock-history"></i> @T("تابعت مؤخرًا:", "Recently viewed:", "Vus récemment :")</span>
+            @foreach (var opp in Model.Recent)
+            {
+                var rTitle = lang switch { "en" => opp.TitleEn, "fr" => opp.TitleFr, _ => opp.TitleAr };
+                <a class="fk-chip" href="@Url.Action("Details", "Opportunity", new { id = opp.Id, slug = SlugHelper.Make(rTitle) })">@rTitle</a>
+            }
+        </div>
+    }
 
     @* ===== محفوظات تنتهي قريبًا ===== *@
     @if (Model.ExpiringSaved.Any())
@@ -526,7 +582,13 @@
                 @foreach (var opp in Model.Saved)
                 {
                     <div class="col-lg-4 col-md-6">
-                        @await Html.PartialAsync("_OpportunityCard", (opp, true))
+                        <div class="fk-saved-card">
+                            @await Html.PartialAsync("_OpportunityCard", (opp, true))
+                            @if (Model.Tracker.TryGetValue(opp.Id, out var card))
+                            {
+                                @await Html.PartialAsync("_ApplicationTracker", card)
+                            }
+                        </div>
                     </div>
                 }
             </div>

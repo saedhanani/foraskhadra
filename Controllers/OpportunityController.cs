@@ -25,14 +25,16 @@ namespace Foras_Khadra.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IImageUploadService _images;
         private readonly ISavedOpportunityService _saved;
+        private readonly IApplicationTracker _tracker;
 
-        public OpportunityController(ApplicationDbContext context, IWebHostEnvironment env, UserManager<ApplicationUser> userManager, IImageUploadService images, ISavedOpportunityService saved)
+        public OpportunityController(ApplicationDbContext context, IWebHostEnvironment env, UserManager<ApplicationUser> userManager, IImageUploadService images, ISavedOpportunityService saved, IApplicationTracker tracker)
         {
             _context = context;
             _env = env;
             _userManager = userManager;
             _images = images;
             _saved = saved;
+            _tracker = tracker;
         }
 
         // ================= INDEX =================
@@ -401,7 +403,30 @@ public async Task<IActionResult> Create()
             var userId = _userManager.GetUserId(User);
             ViewBag.IsSaved = userId != null && await _saved.IsSavedAsync(userId, opp.Id);
 
+            // "تابعت مؤخرًا" للمسجّلين (المنظمات والإدارة تتصفح لأغراض أخرى)
+            if (userId != null && opp.Status == OpportunityStatus.Published && !User.IsInRole("Organization") && !User.IsInRole("Admin"))
+                await _tracker.RecordViewAsync(userId, opp.Id);
+
             return View(opp);
+        }
+
+        /// <summary>ملف تقويم (.ics) ليوم الموعد النهائي مع تنبيه قبله بثلاثة أيام — زر "ذكّرني بالموعد".</summary>
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> Calendar(int id)
+        {
+            var opp = await _context.Opportunities.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id);
+            if (opp == null || opp.Status != OpportunityStatus.Published
+                || opp.DeadlineType != Foras_Khadra.Models.DeadlineType.SpecificDate || !opp.EndDate.HasValue)
+                return NotFound();
+
+            var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            var title = lang switch { "en" => opp.TitleEn, "fr" => opp.TitleFr, _ => opp.TitleAr };
+            var prefix = lang == "en" ? "Deadline: " : lang == "fr" ? "Date limite : " : "الموعد النهائي: ";
+            var url = Url.Action("Details", "Opportunity", new { id = opp.Id, slug = SlugHelper.Make(title) }, Request.Scheme) ?? "";
+
+            var ics = CalendarHelper.BuildDeadlineEvent(opp.Id, prefix + title, opp.EndDate.Value, url);
+            return File(System.Text.Encoding.UTF8.GetBytes(ics), "text/calendar; charset=utf-8", $"foras-khadra-{opp.Id}.ics");
         }
 
         // ================= SAVED OPPORTUNITIES =================
@@ -427,6 +452,7 @@ public async Task<IActionResult> Create()
             foreach (var opp in opportunities)
                 opp.IsExpired = opp.EndDate.HasValue && opp.EndDate.Value < DateTime.Now;
 
+            ViewBag.TrackerCards = await _tracker.CardsAsync(userId, opportunities.Select(o => o.Id));
             return View(opportunities);
         }
 

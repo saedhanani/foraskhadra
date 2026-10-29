@@ -15,15 +15,18 @@ namespace Foras_Khadra.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISavedOpportunityService _savedService;
+        private readonly IApplicationTracker _tracker;
 
         public UserController(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
-            ISavedOpportunityService savedService)
+            ISavedOpportunityService savedService,
+            IApplicationTracker tracker)
         {
             _context = context;
             _userManager = userManager;
             _savedService = savedService;
+            _tracker = tracker;
         }
 
         // GET: User/Dashboard — صفحة "صفحتي": مقترحة حسب الاهتمامات + المحفوظة مع حالة الموعد + أحدث الفرص
@@ -85,14 +88,21 @@ namespace Foras_Khadra.Controllers
                 .AsNoTracking()
                 .ToListAsync();
 
+            var savedShown = saved.OrderByDescending(o => o.IsDeadlineSoon).Take(6).ToList();
+            var stats = await _tracker.StatsAsync(user.Id);
+
             var vm = new UserDashboardViewModel
             {
                 SavedSearches = savedSearches,
+                Tracker = await _tracker.CardsAsync(user.Id, savedShown.Select(o => o.Id)),
+                AppliedCount = stats.Applied,
+                AcceptedCount = stats.Accepted,
+                Recent = (await _tracker.RecentAsync(user.Id, 5)).Where(o => !savedIds.Contains(o.Id)).ToList(),
                 FirstName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
                 InterestNames = interestTypes.Select(t => t.GetDisplayName(culture)).ToList(),
                 ExpiringSaved = saved.Where(o => o.IsDeadlineSoon).OrderBy(o => o.EndDate).ToList(),
                 Recommended = recommended,
-                Saved = saved.OrderByDescending(o => o.IsDeadlineSoon).Take(6).ToList(),
+                Saved = savedShown,
                 SavedCount = saved.Count,
                 Latest = latest,
                 SavedIds = savedIds

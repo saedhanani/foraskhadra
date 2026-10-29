@@ -28,5 +28,14 @@ namespace Foras_Khadra.Models
 
         /// <summary>بحوث المستخدم المحفوظة — تُدار من "صفحتي" ويفحصها ماسح الإشعارات.</summary>
         public List<SavedSearch> SavedSearches { get; set; } = new();
+
+        // ===== المرحلة 2: تتبّع التقديم =====
+        /// <summary>حالة التقديم وتقدّم رفيق التقديم لكل فرصة محفوظة معروضة (المفتاح OpportunityId).</summary>
+        public Dictionary<int, Foras_Khadra.Services.TrackerCard> Tracker { get; set; } = new();
+        public int AppliedCount { get; set; }
+        public int AcceptedCount { get; set; }
+
+        /// <summary>آخر فرص فتحها المستخدم ("تابعت مؤخرًا").</summary>
+        public List<Opportunity> Recent { get; set; } = new();
     }
 }

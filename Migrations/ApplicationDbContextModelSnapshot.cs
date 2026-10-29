@@ -262,6 +262,38 @@ namespace Foras_Khadra.Migrations
                     b.ToTable("Articles");
                 });
 
+            modelBuilder.Entity("Foras_Khadra.Models.ChecklistItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Done")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Key")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int>("SavedOpportunityId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Text")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SavedOpportunityId");
+
+                    b.ToTable("ChecklistItems");
+                });
+
             modelBuilder.Entity("Foras_Khadra.Models.Country", b =>
                 {
                     b.Property<int>("Id")
@@ -906,6 +938,34 @@ namespace Foras_Khadra.Migrations
                     b.ToTable("Organizations");
                 });
 
+            modelBuilder.Entity("Foras_Khadra.Models.RecentView", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("OpportunityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("ViewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OpportunityId");
+
+                    b.HasIndex("UserId", "OpportunityId")
+                        .IsUnique();
+
+                    b.ToTable("RecentViews");
+                });
+
             modelBuilder.Entity("Foras_Khadra.Models.ReelsRequest", b =>
                 {
                     b.Property<int>("Id")
@@ -961,6 +1021,12 @@ namespace Foras_Khadra.Migrations
                         .HasColumnType("int");
 
                     b.Property<DateTime>("SavedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StatusChangedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("UserId")
@@ -1228,6 +1294,17 @@ namespace Foras_Khadra.Migrations
                     b.Navigation("Program");
                 });
 
+            modelBuilder.Entity("Foras_Khadra.Models.ChecklistItem", b =>
+                {
+                    b.HasOne("Foras_Khadra.Models.SavedOpportunity", "SavedOpportunity")
+                        .WithMany("Checklist")
+                        .HasForeignKey("SavedOpportunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SavedOpportunity");
+                });
+
             modelBuilder.Entity("Foras_Khadra.Models.Notification", b =>
                 {
                     b.HasOne("Foras_Khadra.Models.Opportunity", "Opportunity")
@@ -1263,6 +1340,25 @@ namespace Foras_Khadra.Migrations
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.RecentView", b =>
+                {
+                    b.HasOne("Foras_Khadra.Models.Opportunity", "Opportunity")
+                        .WithMany()
+                        .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Foras_Khadra.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .IsRequired();
+
+                    b.Navigation("Opportunity");
 
                     b.Navigation("User");
                 });
@@ -1374,6 +1470,11 @@ namespace Foras_Khadra.Migrations
             modelBuilder.Entity("Foras_Khadra.Models.Opportunity", b =>
                 {
                     b.Navigation("ReelsRequests");
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.SavedOpportunity", b =>
+                {
+                    b.Navigation("Checklist");
                 });
 #pragma warning restore 612, 618
         }

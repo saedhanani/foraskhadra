@@ -8,6 +8,7 @@
 }
 
 <link asp-append-version="true" rel="stylesheet" href="~/css/all-opportunities.css" />
+<link asp-append-version="true" rel="stylesheet" href="~/css/tracker.css" />
 
 <style>
     .saved-header {
@@ -183,6 +184,10 @@
                             </a>
                             @await Html.PartialAsync("_SaveButton", (opp.Id, true))
                         </div>
+                        @if (ViewBag.TrackerCards is Dictionary<int, Foras_Khadra.Services.TrackerCard> cards && cards.TryGetValue(opp.Id, out var card))
+                        {
+                            @await Html.PartialAsync("_ApplicationTracker", card)
+                        }
                     </div>
                 </div>
             }

@@ -24,6 +24,8 @@ namespace Foras_Khadra.Data
         public DbSet<Activity> Activities { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<SavedSearch> SavedSearches { get; set; }
+        public DbSet<ChecklistItem> ChecklistItems { get; set; }
+        public DbSet<RecentView> RecentViews { get; set; }
         public DbSet<FlagshipProgram> FlagshipPrograms { get; set; }
         public DbSet<ImpactStat> ImpactStats { get; set; }
 
@@ -94,6 +96,30 @@ namespace Foras_Khadra.Data
                 .HasOne(n => n.Opportunity)
                 .WithMany()
                 .HasForeignKey(n => n.OpportunityId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // رفيق التقديم: البنود تُحذف مع إلغاء حفظ الفرصة
+            modelBuilder.Entity<ChecklistItem>()
+                .HasIndex(c => c.SavedOpportunityId);
+            modelBuilder.Entity<ChecklistItem>()
+                .HasOne(c => c.SavedOpportunity)
+                .WithMany(s => s.Checklist)
+                .HasForeignKey(c => c.SavedOpportunityId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // "تابعت مؤخرًا": صف واحد لكل (مستخدم، فرصة)؛ جهة المستخدم بلا cascade كالمعتاد
+            modelBuilder.Entity<RecentView>()
+                .HasIndex(r => new { r.UserId, r.OpportunityId })
+                .IsUnique();
+            modelBuilder.Entity<RecentView>()
+                .HasOne(r => r.User)
+                .WithMany()
+                .HasForeignKey(r => r.UserId)
+                .OnDelete(DeleteBehavior.ClientCascade);
+            modelBuilder.Entity<RecentView>()
+                .HasOne(r => r.Opportunity)
+                .WithMany()
+                .HasForeignKey(r => r.OpportunityId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<SavedSearch>()

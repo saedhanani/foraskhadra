@@ -16,5 +16,13 @@ namespace Foras_Khadra.Models
         public Opportunity? Opportunity { get; set; }
 
         public DateTime SavedAt { get; set; } = DateTime.Now;
+
+        // ===== تتبّع التقديم (المرحلة 2) =====
+        /// <summary>حالة التقديم كما يحدّدها المستخدم. تغييرها إلى "قدّمت" فما بعد يُكمل بنود رفيق التقديم.</summary>
+        public ApplicationStatus Status { get; set; } = ApplicationStatus.NotApplied;
+        public DateTime? StatusChangedAt { get; set; }
+
+        /// <summary>بنود رفيق التقديم لهذه الفرصة.</summary>
+        public ICollection<ChecklistItem> Checklist { get; set; } = new List<ChecklistItem>();
     }
 }

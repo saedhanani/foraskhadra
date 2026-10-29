@@ -1,5 +1,6 @@
 ﻿using Foras_Khadra.Data;
 using Foras_Khadra.Models;
+using Foras_Khadra.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -13,11 +14,13 @@ namespace Foras_Khadra.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IApplicationTracker _tracker;
 
-        public NotificationsController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+        public NotificationsController(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IApplicationTracker tracker)
         {
             _db = db;
             _userManager = userManager;
+            _tracker = tracker;
         }
 
         // GET: /Notifications/Menu — محتوى القائمة المنسدلة (يُجلب عند فتح الجرس)
@@ -34,6 +37,12 @@ namespace Foras_Khadra.Controllers
                 .Include(n => n.Opportunity)
                 .AsNoTracking()
                 .ToListAsync();
+
+            // إشعار الموعد يذكّر بنسبة جاهزية الملف (رفيق التقديم) إن لم تكتمل
+            var deadlineIds = items
+                .Where(n => n.Kind == NotificationKind.SavedDeadlineSoon && n.OpportunityId.HasValue)
+                .Select(n => n.OpportunityId!.Value);
+            ViewData["TrackerCards"] = await _tracker.CardsAsync(userId, deadlineIds);
 
             return PartialView("_NotificationMenu", items);
         }

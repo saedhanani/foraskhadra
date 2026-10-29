@@ -30,9 +30,16 @@ else
                 : days == 1
                     ? T("يبقى يوم واحد", "1 day left", "1 jour restant")
                     : T($"تبقى {days} أيام", $"{days} days left", $"{days} jours restants");
+            var prepHint = "";
+            if (ViewData["TrackerCards"] is Dictionary<int, Foras_Khadra.Services.TrackerCard> cards
+                && cards.TryGetValue(n.OpportunityId!.Value, out var card)
+                && card.HasChecklist && card.Percent < 100)
+            {
+                prepHint = T($" · ملفك جاهز {card.Percent}% فقط", $" · your file is only {card.Percent}% ready", $" · dossier prêt à {card.Percent} % seulement");
+            }
             <a class="notif-item @unread" href="@Url.Action("Details", "Opportunity", new { id = n.OpportunityId, slug = SlugHelper.Make(title) })">
                 <i class="bi bi-alarm notif-ico orange"></i>
-                <span>@T("فرصتك المحفوظة ", "Your saved opportunity ", "Votre opportunité enregistrée ")<b>@title</b> — @when</span>
+                <span>@T("فرصتك المحفوظة ", "Your saved opportunity ", "Votre opportunité enregistrée ")<b>@title</b> — @when@prepHint</span>
             </a>
         }
         else if (n.Kind == NotificationKind.InterestMatches)

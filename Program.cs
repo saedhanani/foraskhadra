@@ -74,6 +74,7 @@ builder.Services.AddScoped<StoredImageOptimizer>();
 
 // الإشعارات الداخلية: الماسح يعمل بعد دقيقة من الإقلاع ثم كل 6 ساعات
 builder.Services.AddScoped<INotificationSweeper, NotificationSweeper>();
+builder.Services.AddScoped<IApplicationTracker, ApplicationTracker>();
 builder.Services.AddHostedService<NotificationSweepHostedService>();
 
 // الواجهة العامة للقراءة (api/v1) تُستدعى من مواقع أخرى بالمتصفح: GET فقط من أي أصل

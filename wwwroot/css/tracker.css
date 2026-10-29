@@ -1,0 +1,62 @@
+/* شريط تتبّع التقديم أسفل بطاقة الفرصة المحفوظة (Views/Shared/_ApplicationTracker.cshtml) — ألوان الهوية من brand.css */
+.app-tracker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px 14px;
+    border-top: 1px dashed #e6efe6;
+    font-family: var(--fk-font-body);
+    flex-wrap: wrap;
+}
+
+.app-status label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--fk-green);
+    margin: 0;
+}
+
+.app-status select {
+    border: 1.5px solid var(--fk-leaf);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--fk-green);
+    background: #fff;
+    cursor: pointer;
+}
+
+.app-tracker.is-applied .app-status select { background: var(--fk-sky-soft); border-color: #c8ebf4; color: #1a7f9c; }
+.app-tracker.is-accepted .app-status select { background: var(--fk-leaf-soft); border-color: var(--fk-leaf); color: var(--fk-green); }
+.app-tracker.is-rejected .app-status select { background: #fff1f2; border-color: #fecdd3; color: #b91c1c; }
+
+.app-prep {
+    margin-inline-start: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--fk-green);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.app-prep:hover { color: var(--fk-green-dark); }
+
+.app-bar {
+    width: 70px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--fk-green-soft);
+    overflow: hidden;
+    display: inline-block;
+}
+
+.app-bar span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--fk-leaf), var(--fk-green));
+}

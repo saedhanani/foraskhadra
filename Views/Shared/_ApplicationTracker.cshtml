@@ -1,0 +1,43 @@
+@* شريط تتبّع التقديم أسفل بطاقة فرصة محفوظة: قائمة الحالة + تقدّم رفيق التقديم. Model: TrackerCard *@
+@using Foras_Khadra.Models
+@model Foras_Khadra.Services.TrackerCard
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+    var statusClass = Model.Status switch
+    {
+        ApplicationStatus.Accepted => "is-accepted",
+        ApplicationStatus.Rejected => "is-rejected",
+        ApplicationStatus.NotApplied => "",
+        _ => "is-applied"
+    };
+}
+<div class="app-tracker @statusClass">
+    <form method="post" asp-controller="Tracker" asp-action="SetStatus" asp-route-id="@Model.OpportunityId" class="app-status">
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+        <label>
+            <i class="bi bi-send-check"></i>
+            <select name="status" onchange="this.form.submit()" aria-label="@T("حالة التقديم", "Application status", "Statut de candidature")">
+                @foreach (ApplicationStatus s in Enum.GetValues<ApplicationStatus>())
+                {
+                    <option value="@s" selected="@(s == Model.Status)">@s.Label(lang)</option>
+                }
+            </select>
+        </label>
+    </form>
+    <a class="app-prep" href="@Url.Action("Prepare", "Tracker", new { id = Model.OpportunityId })"
+       title="@T("رفيق التقديم", "Application companion", "Compagnon de candidature")">
+        <span class="app-bar"><span style="width:@Model.Percent%"></span></span>
+        <span class="app-pct">
+            @if (Model.HasChecklist || Model.Status.HasApplied())
+            {
+                @T($"جاهز {Model.Percent}%", $"{Model.Percent}% ready", $"{Model.Percent}% prêt")
+            }
+            else
+            {
+                @T("جهّز ملفك", "Prepare your file", "Préparer le dossier")
+            }
+        </span>
+    </a>
+</div>

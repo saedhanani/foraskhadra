@@ -131,6 +131,14 @@
                     @Localizer["ApplyNow"]
                 </a>
                 @await Html.PartialAsync("_SaveButton", (Model.Id, (ViewBag.IsSaved as bool?) == true))
+                @if (!isExpired && Model.DeadlineType == DeadlineType.SpecificDate && Model.EndDate.HasValue)
+                {
+                    <a class="save-btn" href="@Url.Action("Calendar", "Opportunity", new { id = Model.Id })"
+                       title="@(lang == "en" ? "Remind me — add the deadline to my calendar" : lang == "fr" ? "Me rappeler — ajouter la date limite à mon agenda" : "ذكّرني بالموعد — أضفه إلى تقويمي")"
+                       aria-label="@(lang == "en" ? "Add deadline to calendar" : lang == "fr" ? "Ajouter la date limite à l'agenda" : "أضف الموعد إلى التقويم")">
+                        <i class="bi bi-calendar-plus"></i>
+                    </a>
+                }
             }
             else if (!User.Identity.IsAuthenticated)
             {
