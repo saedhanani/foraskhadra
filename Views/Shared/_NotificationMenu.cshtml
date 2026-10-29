@@ -1,0 +1,56 @@
+@* محتوى قائمة الجرس — يُصاغ النص بلغة الواجهة وقت العرض *@
+@using Foras_Khadra.Helpers
+@using Foras_Khadra.Models
+@model List<Foras_Khadra.Models.Notification>
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+}
+
+@if (!Model.Any())
+{
+    <div class="notif-empty">
+        <i class="bi bi-bell"></i>
+        <p>@T("لا إشعارات بعد — احفظ فرصًا أو بحثًا لنعلمك بالجديد.",
+             "No notifications yet — save opportunities or a search and we'll alert you.",
+             "Pas encore de notifications — enregistrez des opportunités ou une recherche et nous vous alerterons.")</p>
+    </div>
+}
+else
+{
+    foreach (var n in Model)
+    {
+        var unread = n.ReadAt == null ? "unread" : "";
+        if (n.Kind == NotificationKind.SavedDeadlineSoon && n.Opportunity != null)
+        {
+            var title = lang switch { "en" => n.Opportunity.TitleEn, "fr" => n.Opportunity.TitleFr, _ => n.Opportunity.TitleAr };
+            var days = n.Opportunity.EndDate.HasValue ? (n.Opportunity.EndDate.Value.Date - DateTime.Now.Date).Days : 0;
+            var when = days <= 0
+                ? T("ينتهي اليوم!", "ends today!", "se termine aujourd'hui !")
+                : days == 1
+                    ? T("يبقى يوم واحد", "1 day left", "1 jour restant")
+                    : T($"تبقى {days} أيام", $"{days} days left", $"{days} jours restants");
+            <a class="notif-item @unread" href="@Url.Action("Details", "Opportunity", new { id = n.OpportunityId, slug = SlugHelper.Make(title) })">
+                <i class="bi bi-alarm notif-ico orange"></i>
+                <span>@T("فرصتك المحفوظة ", "Your saved opportunity ", "Votre opportunité enregistrée ")<b>@title</b> — @when</span>
+            </a>
+        }
+        else if (n.Kind == NotificationKind.InterestMatches)
+        {
+            <a class="notif-item @unread" href="@Url.Action("AllOpportunities", "Home")">
+                <i class="bi bi-stars notif-ico green"></i>
+                <span>@T($"أُضيفت {n.Count} فرص جديدة تطابق اهتماماتك",
+                        $"{n.Count} new opportunities match your interests",
+                        $"{n.Count} nouvelles opportunités correspondent à vos intérêts")</span>
+            </a>
+        }
+        else if (n.Kind == NotificationKind.SavedSearchMatches)
+        {
+            var url = Url.Action("AllOpportunities", "Home") + (string.IsNullOrEmpty(n.LinkParams) ? "" : "?" + n.LinkParams);
+            <a class="notif-item @unread" href="@url">
+                <i class="bi bi-search notif-ico green"></i>
+                <span>@T($"{n.Count} فرص جديدة في بحثك المحفوظ ", $"{n.Count} new matches for your saved search ", $"{n.Count} nouveaux résultats pour votre recherche ")<b>«@n.Label»</b></span>
+            </a>
+        }
+    }
+}

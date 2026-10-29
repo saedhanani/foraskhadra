@@ -16,18 +16,6 @@ namespace Foras_Khadra.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ISavedOpportunityService _savedService;
 
-        /// <summary>مفتاح الاهتمام (كما يُخزَّن في InterestsJson عند التسجيل) → نوع الفرصة المقابل.</summary>
-        private static readonly Dictionary<string, OpportunityType> InterestTypeMap = new()
-        {
-            ["competitions"] = OpportunityType.Competitions,
-            ["conferences"] = OpportunityType.Conferences,
-            ["volunteer_opportunities"] = OpportunityType.Volunteering,
-            ["jobs"] = OpportunityType.Jobs,
-            ["grants"] = OpportunityType.Scholarships,
-            ["fellowships"] = OpportunityType.Fellowships,
-            ["training_opportunities"] = OpportunityType.Internships
-        };
-
         public UserController(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
@@ -53,11 +41,7 @@ namespace Foras_Khadra.Controllers
             var saved = await _savedService.ListAsync(user.Id);
             var savedIds = saved.Select(o => o.Id).ToHashSet();
 
-            var interestTypes = user.Interests
-                .Where(InterestTypeMap.ContainsKey)
-                .Select(k => InterestTypeMap[k])
-                .Distinct()
-                .ToList();
+            var interestTypes = InterestMap.TypesFor(user.Interests);
 
             var recommended = new List<Opportunity>();
             if (interestTypes.Count > 0)
@@ -95,8 +79,15 @@ namespace Foras_Khadra.Controllers
 
             var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
 
+            var savedSearches = await _context.SavedSearches
+                .Where(s => s.UserId == user.Id)
+                .OrderByDescending(s => s.CreatedAt)
+                .AsNoTracking()
+                .ToListAsync();
+
             var vm = new UserDashboardViewModel
             {
+                SavedSearches = savedSearches,
                 FirstName = !string.IsNullOrWhiteSpace(user.FirstName) ? user.FirstName : user.FullName,
                 InterestNames = interestTypes.Select(t => t.GetDisplayName(culture)).ToList(),
                 ExpiringSaved = saved.Where(o => o.IsDeadlineSoon).OrderBy(o => o.EndDate).ToList(),

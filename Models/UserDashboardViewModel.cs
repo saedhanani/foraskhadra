@@ -25,5 +25,8 @@ namespace Foras_Khadra.Models
 
         /// <summary>معرّفات كل محفوظات المستخدم — لحالة زر الحفظ على البطاقات.</summary>
         public HashSet<int> SavedIds { get; set; } = new();
+
+        /// <summary>بحوث المستخدم المحفوظة — تُدار من "صفحتي" ويفحصها ماسح الإشعارات.</summary>
+        public List<SavedSearch> SavedSearches { get; set; } = new();
     }
 }

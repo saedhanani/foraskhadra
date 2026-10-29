@@ -146,6 +146,9 @@ namespace Foras_Khadra.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("LastInterestNotifiedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -670,6 +673,48 @@ namespace Foras_Khadra.Migrations
                     b.ToTable("ManualOrganizations");
                 });
 
+            modelBuilder.Entity("Foras_Khadra.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Label")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LinkParams")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("OpportunityId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OpportunityId");
+
+                    b.HasIndex("UserId", "ReadAt");
+
+                    b.ToTable("Notifications");
+                });
+
             modelBuilder.Entity("Foras_Khadra.Models.Opportunity", b =>
                 {
                     b.Property<int>("Id")
@@ -932,6 +977,46 @@ namespace Foras_Khadra.Migrations
                     b.ToTable("SavedOpportunities");
                 });
 
+            modelBuilder.Entity("Foras_Khadra.Models.SavedSearch", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("LastRunAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Query")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TypesCsv")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SavedSearches");
+                });
+
             modelBuilder.Entity("Foras_Khadra.Models.TeamMember", b =>
                 {
                     b.Property<int>("Id")
@@ -1143,6 +1228,24 @@ namespace Foras_Khadra.Migrations
                     b.Navigation("Program");
                 });
 
+            modelBuilder.Entity("Foras_Khadra.Models.Notification", b =>
+                {
+                    b.HasOne("Foras_Khadra.Models.Opportunity", "Opportunity")
+                        .WithMany()
+                        .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Foras_Khadra.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .IsRequired();
+
+                    b.Navigation("Opportunity");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Foras_Khadra.Models.Opportunity", b =>
                 {
                     b.HasOne("Foras_Khadra.Models.ApplicationUser", "CreatedByUser")
@@ -1202,6 +1305,17 @@ namespace Foras_Khadra.Migrations
                         .IsRequired();
 
                     b.Navigation("Opportunity");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.SavedSearch", b =>
+                {
+                    b.HasOne("Foras_Khadra.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.ClientCascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

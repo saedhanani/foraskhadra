@@ -68,3 +68,28 @@ document.addEventListener('click', function (e) {
         .catch(function () { })
         .finally(function () { btn.disabled = false; });
 });
+
+// ===== جرس الإشعارات (زر notifMenu في _Layout): جلب القائمة عند الفتح ثم تعليم الكل مقروءًا =====
+var fkNotifLoaded = false;
+function fkLoadNotifications() {
+    var menu = document.getElementById('notifMenu');
+    if (!menu || fkNotifLoaded) return;
+    fkNotifLoaded = true;
+
+    fetch('/Notifications/Menu', { credentials: 'same-origin' })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(function (html) {
+            menu.innerHTML = html;
+
+            var badge = document.getElementById('notifBadge');
+            if (!badge) return;
+            var tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            if (!tokenInput) return;
+            fetch('/Notifications/MarkAllRead', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': tokenInput.value },
+                credentials: 'same-origin'
+            }).then(function (r) { if (r.ok) badge.remove(); }).catch(function () { });
+        })
+        .catch(function () { fkNotifLoaded = false; });
+}

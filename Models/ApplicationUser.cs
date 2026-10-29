@@ -33,6 +33,9 @@ namespace Foras_Khadra.Models
         // ===== الاهتمامات للفرد =====
         public string? InterestsJson { get; set; }
 
+        /// <summary>آخر وقت وُلِّد له إشعار "فرص جديدة في اهتماماتك" — يضبطه NotificationSweeper.</summary>
+        public DateTime? LastInterestNotifiedAt { get; set; }
+
         [NotMapped]
         public List<string> Interests
         {

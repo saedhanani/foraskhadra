@@ -469,6 +469,35 @@
         }
     </section>
 
+    @* ===== بحوثك المحفوظة ===== *@
+    @if (Model.SavedSearches.Any())
+    {
+        <section class="fk-section">
+            <div class="fk-section-head">
+                @Leaves(34)
+                <h2>@T("بحوثك المحفوظة", "Your saved searches", "Vos recherches enregistrées")</h2>
+            </div>
+            <p class="fk-section-sub">@T("نعلمك في الجرس بكل فرصة جديدة تطابق أيًّا منها.", "We alert you in the bell about every new match.", "Nous vous alertons de chaque nouvelle correspondance.")</p>
+            <div class="fk-chips">
+                @foreach (var s in Model.SavedSearches)
+                {
+                    var label = Foras_Khadra.Services.NotificationSweeper.BuildLabel(s);
+                    var linkParams = Foras_Khadra.Services.NotificationSweeper.BuildLinkParams(s);
+                    var runUrl = Url.Action("AllOpportunities", "Home") + (linkParams.Length > 0 ? "?" + linkParams : "");
+                    <span class="fk-chip" style="display:inline-flex; align-items:center; gap:8px;">
+                        <a href="@runUrl" style="color:inherit; text-decoration:none;"><i class="bi bi-search"></i> @label</a>
+                        <form method="post" asp-controller="SavedSearch" asp-action="Delete" asp-route-id="@s.Id" style="display:inline;">
+                            <button type="submit" style="border:none; background:none; color:#b06410; padding:0; cursor:pointer;"
+                                    title="@T("حذف", "Delete", "Supprimer")" aria-label="@T("حذف هذا البحث", "Delete this search", "Supprimer cette recherche")">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </form>
+                    </span>
+                }
+            </div>
+        </section>
+    }
+
     @* ===== محفوظاتك ===== *@
     <section class="fk-section">
         <div class="fk-section-head">

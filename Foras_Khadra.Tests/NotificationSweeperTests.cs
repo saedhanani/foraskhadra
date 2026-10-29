@@ -1,0 +1,200 @@
+using Foras_Khadra.Data;
+using Foras_Khadra.Models;
+using Foras_Khadra.Services;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Xunit;
+
+namespace Foras_Khadra.Tests
+{
+    /// <summary>قاعدة SQLite في الذاكرة بالمخطط الحقيقي — نفس نمط SavedOpportunityServiceTests.</summary>
+    public class NotificationSweeperTests : IDisposable
+    {
+        private readonly SqliteConnection _connection = new("DataSource=:memory:");
+        private readonly ApplicationDbContext _db;
+        private readonly NotificationSweeper _sweeper;
+
+        public NotificationSweeperTests()
+        {
+            _connection.Open();
+            var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options;
+            _db = new ApplicationDbContext(options);
+            _db.Database.EnsureCreated();
+            _sweeper = new NotificationSweeper(_db);
+
+            _db.Users.Add(new ApplicationUser { Id = "u1", UserName = "u1", Email = "u1@test.local" });
+            _db.SaveChanges();
+        }
+
+        private Opportunity AddOpportunity(int id, string title, OpportunityType? type = null,
+            DateTime? endDate = null, DeadlineType? deadlineType = null, DateTime? publishDate = null)
+        {
+            var o = new Opportunity
+            {
+                Id = id,
+                TitleAr = title, TitleEn = title, TitleFr = title,
+                DescriptionAr = "x", DescriptionEn = "x", DescriptionFr = "x",
+                DetailsAr = "x", DetailsEn = "x", DetailsFr = "x",
+                EligibilityCriteriaAr = "x", EligibilityCriteriaEn = "x", EligibilityCriteriaFr = "x",
+                BenefitsAr = "x", BenefitsEn = "x", BenefitsFr = "x",
+                ApplyLink = "https://example.test",
+                ImagePath = "x",
+                PublishedBy = "x",
+                CreatedByUserId = "u1",
+                AvailableCountries = new List<Country>(),
+                Status = OpportunityStatus.Published,
+                Type = type,
+                EndDate = endDate,
+                DeadlineType = deadlineType,
+                PublishDate = publishDate ?? DateTime.Now
+            };
+            _db.Opportunities.Add(o);
+            _db.SaveChanges(); // يملأ SearchText عبر SearchIndexer
+            return o;
+        }
+
+        // ===== إشعار الموعد النهائي للمحفوظات =====
+
+        [Fact]
+        public async Task SavedDeadlineSoon_CreatesOnce_AndDoesNotDuplicate()
+        {
+            AddOpportunity(1, "منحة قريبة", OpportunityType.Scholarships,
+                endDate: DateTime.Now.Date.AddDays(3), deadlineType: DeadlineType.SpecificDate);
+            _db.SavedOpportunities.Add(new SavedOpportunity { UserId = "u1", OpportunityId = 1 });
+            _db.SaveChanges();
+
+            var first = await _sweeper.SweepAsync();
+            var second = await _sweeper.SweepAsync();
+
+            Assert.Equal(1, first);
+            Assert.Equal(0, second);
+            var n = Assert.Single(_db.Notifications.Where(x => x.Kind == NotificationKind.SavedDeadlineSoon));
+            Assert.Equal("u1", n.UserId);
+            Assert.Equal(1, n.OpportunityId);
+        }
+
+        [Fact]
+        public async Task SavedDeadlineSoon_IgnoresFarAndPastDeadlines()
+        {
+            AddOpportunity(1, "بعيدة", OpportunityType.Jobs,
+                endDate: DateTime.Now.Date.AddDays(30), deadlineType: DeadlineType.SpecificDate);
+            AddOpportunity(2, "منتهية", OpportunityType.Jobs,
+                endDate: DateTime.Now.Date.AddDays(-1), deadlineType: DeadlineType.SpecificDate);
+            _db.SavedOpportunities.AddRange(
+                new SavedOpportunity { UserId = "u1", OpportunityId = 1 },
+                new SavedOpportunity { UserId = "u1", OpportunityId = 2 });
+            _db.SaveChanges();
+
+            Assert.Equal(0, await _sweeper.SweepAsync());
+        }
+
+        // ===== إشعار الاهتمامات =====
+
+        [Fact]
+        public async Task Interests_FirstSweepSetsBaseline_ThenNotifiesNewOnly()
+        {
+            var user = _db.Users.Single();
+            user.Interests = new List<string> { "grants" };
+            _db.SaveChanges();
+
+            // المسح الأول: خط أساس فقط حتى لو وُجدت فرص قديمة
+            AddOpportunity(1, "منحة قديمة", OpportunityType.Scholarships);
+            Assert.Equal(0, await _sweeper.SweepAsync());
+            Assert.NotNull(_db.Users.Single().LastInterestNotifiedAt);
+
+            // نرجع خط الأساس إلى ما بعد الفرصة القديمة وقبل الجديدة → إشعار مجمّع واحد بعدد 1
+            _db.Users.Single().LastInterestNotifiedAt = DateTime.Now.AddMilliseconds(-1);
+            _db.SaveChanges();
+            AddOpportunity(2, "منحة جديدة", OpportunityType.Scholarships);
+            Assert.Equal(1, await _sweeper.SweepAsync());
+
+            var n = Assert.Single(_db.Notifications.Where(x => x.Kind == NotificationKind.InterestMatches));
+            Assert.Equal(1, n.Count);
+
+            // لا تكرار لنفس الفرصة في المسح التالي
+            Assert.Equal(0, await _sweeper.SweepAsync());
+        }
+
+        [Fact]
+        public async Task Interests_IgnoresNonMatchingTypes()
+        {
+            var user = _db.Users.Single();
+            user.Interests = new List<string> { "jobs" };
+            _db.SaveChanges();
+            await _sweeper.SweepAsync(); // خط الأساس
+
+            AddOpportunity(1, "منحة", OpportunityType.Scholarships, publishDate: DateTime.Now.AddMinutes(1));
+            Assert.Equal(0, await _sweeper.SweepAsync());
+        }
+
+        // ===== إشعار البحث المحفوظ =====
+
+        [Fact]
+        public async Task SavedSearch_NotifiesOnNewMatch_AndAdvancesLastRun()
+        {
+            _db.SavedSearches.Add(new SavedSearch
+            {
+                UserId = "u1",
+                Query = "solar",
+                LastRunAt = DateTime.Now.AddHours(-1)
+            });
+            _db.SaveChanges();
+
+            AddOpportunity(1, "solar energy fellowship", OpportunityType.Fellowships);
+            Assert.Equal(1, await _sweeper.SweepAsync());
+
+            var n = Assert.Single(_db.Notifications.Where(x => x.Kind == NotificationKind.SavedSearchMatches));
+            Assert.Equal(1, n.Count);
+            Assert.Contains("search=solar", n.LinkParams);
+
+            // المسح التالي لا يكرر نفس الفرصة
+            Assert.Equal(0, await _sweeper.SweepAsync());
+        }
+
+        [Fact]
+        public async Task SavedSearch_RespectsTypeFilter()
+        {
+            _db.SavedSearches.Add(new SavedSearch
+            {
+                UserId = "u1",
+                Query = "",
+                TypesCsv = "Jobs",
+                LastRunAt = DateTime.Now.AddHours(-1)
+            });
+            _db.SaveChanges();
+
+            AddOpportunity(1, "منحة", OpportunityType.Scholarships);
+            Assert.Equal(0, await _sweeper.SweepAsync());
+
+            AddOpportunity(2, "وظيفة", OpportunityType.Jobs);
+            Assert.Equal(1, await _sweeper.SweepAsync());
+        }
+
+        // ===== الدوال المساعدة =====
+
+        [Fact]
+        public void ParseTypes_IgnoresUnknownAndDuplicates()
+        {
+            var types = NotificationSweeper.ParseTypes("Jobs, Jobs, Nope, Scholarships");
+            Assert.Equal(new[] { OpportunityType.Jobs, OpportunityType.Scholarships }, types);
+            Assert.Empty(NotificationSweeper.ParseTypes(null));
+        }
+
+        [Fact]
+        public void BuildLinkParams_EncodesQueryAndJoinsParts()
+        {
+            var s = new SavedSearch { Query = "طاقة شمسية", TypesCsv = "Jobs", Country = "مصر" };
+            var p = NotificationSweeper.BuildLinkParams(s);
+            Assert.Contains("search=", p);
+            Assert.Contains("type=Jobs", p);
+            Assert.Contains("country=", p);
+            Assert.DoesNotContain(" ", p);
+        }
+
+        public void Dispose()
+        {
+            _db.Dispose();
+            _connection.Dispose();
+        }
+    }
+}

@@ -22,6 +22,8 @@ namespace Foras_Khadra.Data
         public DbSet<ReelsRequest> ReelsRequests { get; set; }
         public DbSet<SavedOpportunity> SavedOpportunities { get; set; }
         public DbSet<Activity> Activities { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<SavedSearch> SavedSearches { get; set; }
         public DbSet<FlagshipProgram> FlagshipPrograms { get; set; }
         public DbSet<ImpactStat> ImpactStats { get; set; }
 
@@ -79,6 +81,28 @@ namespace Foras_Khadra.Data
                 .WithMany()
                 .HasForeignKey(s => s.OpportunityId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // الإشعارات والبحوث المحفوظة: جهة المستخدم بلا cascade في القاعدة لنفس سبب SavedOpportunities أعلاه.
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => new { n.UserId, n.ReadAt });
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.User)
+                .WithMany()
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.ClientCascade);
+            modelBuilder.Entity<Notification>()
+                .HasOne(n => n.Opportunity)
+                .WithMany()
+                .HasForeignKey(n => n.OpportunityId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<SavedSearch>()
+                .HasIndex(s => s.UserId);
+            modelBuilder.Entity<SavedSearch>()
+                .HasOne(s => s.User)
+                .WithMany()
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.ClientCascade);
 
             modelBuilder.Entity<Country>().HasData(
 

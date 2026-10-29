@@ -532,6 +532,44 @@
         </div>
     </header>
 
+    @{
+        // شريط "احفظ هذا البحث": يظهر للمسجّل عندما يكون ثمة بحث أو فلتر فعّال
+        var qSearch = Context.Request.Query["search"].ToString();
+        var qTypes = Context.Request.Query["type"].ToArray();
+        var qCountry = Model.SelectedCountry ?? "";
+        var hasCriteria = !string.IsNullOrWhiteSpace(qSearch) || qTypes.Any(t => !string.IsNullOrEmpty(t)) || !string.IsNullOrEmpty(qCountry);
+    }
+    @if (TempData["SavedSearchMsg"] is string savedMsg)
+    {
+        <div class="alert d-flex align-items-center gap-2" style="background:#f0f7ee; border:1px solid #ABE188; color:#1B6B23; border-radius:12px; font-weight:600;">
+            <i class="bi bi-bell-fill"></i> @savedMsg
+        </div>
+    }
+    @if (hasCriteria && User.Identity?.IsAuthenticated == true && !User.IsInRole("Organization"))
+    {
+        <form method="post" asp-controller="SavedSearch" asp-action="Save" class="d-flex align-items-center gap-2 flex-wrap mb-4"
+              style="background:#fff; border:1.5px dashed #ABE188; border-radius:14px; padding:12px 16px;">
+            <input type="hidden" name="search" value="@qSearch" />
+            @foreach (var t in qTypes.Where(t => !string.IsNullOrEmpty(t)))
+            {
+                <input type="hidden" name="type" value="@t" />
+            }
+            <input type="hidden" name="country" value="@qCountry" />
+            <span style="color:#1B6B23; font-weight:600; font-size:0.92rem;">
+                <i class="bi bi-bell"></i>
+                @(lang switch
+                {
+                    "en" => "Want to be alerted about new opportunities matching this search?",
+                    "fr" => "Être alerté des nouvelles opportunités correspondant à cette recherche ?",
+                    _ => "أتريد تنبيهًا بكل فرصة جديدة تطابق هذا البحث؟"
+                })
+            </span>
+            <button type="submit" class="btn-search-sub" style="margin-inline-start:auto;">
+                @(lang switch { "en" => "Save this search", "fr" => "Enregistrer la recherche", _ => "احفظ هذا البحث" })
+            </button>
+        </form>
+    }
+
     <div class="row g-4">
         @if (!Model.Opportunities.Any())
         {
