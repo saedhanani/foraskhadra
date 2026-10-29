@@ -17,12 +17,14 @@ namespace Foras_Khadra.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IImageUploadService _images;
         private readonly IProgramMenu _menu;
+        private readonly IApplicationTracker _tracker;
 
-        public ProgramsController(ApplicationDbContext context, IImageUploadService images, IProgramMenu menu)
+        public ProgramsController(ApplicationDbContext context, IImageUploadService images, IProgramMenu menu, IApplicationTracker tracker)
         {
             _context = context;
             _images = images;
             _menu = menu;
+            _tracker = tracker;
         }
 
         // ================= DETAILS (public) =================
@@ -52,6 +54,11 @@ namespace Foras_Khadra.Controllers
                 .OrderByDescending(a => a.StartDate)
                 .ToListAsync();
             ViewBag.Activities = activities;
+
+            // 5-5 "سجّل اهتمامك": حالة المستخدم الحالي وعدد المهتمين
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            ViewBag.IsInterested = userId != null && await _tracker.IsInterestedAsync(userId, program.Id);
+            ViewBag.InterestCount = await _tracker.ProgramInterestCountAsync(program.Id);
 
             return View(program);
         }
@@ -102,11 +109,18 @@ namespace Foras_Khadra.Controllers
             var existing = await _context.FlagshipPrograms.FindAsync(id);
             if (existing == null) return NotFound();
 
+            var wasOpen = existing.ApplicationsOpen;
             if (!await ApplyAsync(existing, program, HeroImage, GalleryImages, RemoveGallery))
             {
                 program.Gallery = existing.Gallery; // لإعادة عرض المعرض الحالي مع الأخطاء
                 return View(program);
             }
+
+            // فتح الباب من جديد = دورة جديدة: كل المهتمين يستحقون تنبيهًا جديدًا
+            if (!wasOpen && existing.ApplicationsOpen)
+                await _context.ProgramInterests
+                    .Where(p => p.ProgramId == existing.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.NotifiedAt, (DateTime?)null));
 
             await _context.SaveChangesAsync();
             _menu.Invalidate();
@@ -166,6 +180,7 @@ namespace Foras_Khadra.Controllers
             target.Slug = slug!;
             target.SortOrder = form.SortOrder;
             target.IsPublished = form.IsPublished;
+            target.ApplicationsOpen = form.ApplicationsOpen;
             target.MenuTitleAr = form.MenuTitleAr.Trim();
             target.MenuTitleEn = form.MenuTitleEn.Trim();
             target.MenuTitleFr = form.MenuTitleFr.Trim();

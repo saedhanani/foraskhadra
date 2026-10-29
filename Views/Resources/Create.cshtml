@@ -1,0 +1,26 @@
+@model Foras_Khadra.Models.Resource
+@{
+    ViewData["Title"] = "إضافة مورد — خزانة الأعضاء";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link rel="stylesheet" asp-append-version="true" href="~/css/articles-create.css" />
+}
+
+<div class="main-container">
+    <div class="create-wrapper">
+        <div class="create-page-header header-inline">
+            <h1 class="page-title">إضافة مورد إلى خزانة الأعضاء</h1>
+            <div class="header-actions">
+                <a asp-action="Index" class="btn-back-dashboard"><i class="fa-solid fa-folder-open"></i> كل الموارد</a>
+                <a asp-controller="Admin" asp-action="Dashboard" class="btn-back-dashboard"><i class="fa-solid fa-gauge"></i> لوحة التحكم</a>
+            </div>
+        </div>
+        <div class="create-article-card">
+            <div class="form-section" style="width:100%;">
+                <partial name="_ResourceForm" model="Model" />
+            </div>
+        </div>
+    </div>
+</div>

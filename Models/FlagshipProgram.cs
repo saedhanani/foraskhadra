@@ -82,6 +82,9 @@ namespace Foras_Khadra.Models
         public string? HeroImagePath { get; set; }
         public string? ExternalLink { get; set; }
 
+        /// <summary>باب التقديم مفتوح الآن — تفعيله يُنبّه كل من سجّل اهتمامه (البند 5-5).</summary>
+        public bool ApplicationsOpen { get; set; }
+
         public string StatsJson { get; set; } = "[]";
         public string TimelineJson { get; set; } = "[]";
         public string GalleryJson { get; set; } = "[]";

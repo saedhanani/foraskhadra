@@ -37,6 +37,11 @@ namespace Foras_Khadra.Services
         /// <summary>يفعّل المراقبة أو يلغيها. يعيد الحالة الجديدة (true = يراقب).</summary>
         Task<bool> ToggleCycleWatchAsync(string userId, int opportunityId);
         Task<bool> IsWatchingAsync(string userId, int opportunityId);
+
+        // ===== 5-5 الاهتمام ببرنامج رائد =====
+        Task<bool> ToggleProgramInterestAsync(string userId, int programId);
+        Task<bool> IsInterestedAsync(string userId, int programId);
+        Task<int> ProgramInterestCountAsync(int programId);
     }
 
     public class ApplicationTracker : IApplicationTracker
@@ -216,6 +221,44 @@ namespace Foras_Khadra.Services
 
         public Task<bool> IsWatchingAsync(string userId, int opportunityId) =>
             _db.CycleWatches.AnyAsync(w => w.UserId == userId && w.OpportunityId == opportunityId);
+
+        public async Task<bool> ToggleProgramInterestAsync(string userId, int programId)
+        {
+            var existing = await _db.ProgramInterests
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.ProgramId == programId);
+            if (existing != null)
+            {
+                _db.ProgramInterests.Remove(existing);
+                await _db.SaveChangesAsync();
+                return false;
+            }
+
+            var program = await _db.FlagshipPrograms.AsNoTracking().FirstOrDefaultAsync(p => p.Id == programId && p.IsPublished);
+            if (program == null) return false;
+
+            // إن كان الباب مفتوحًا الآن فلا معنى لتنبيه لاحق — نعتبره مُنبَّهًا
+            _db.ProgramInterests.Add(new ProgramInterest
+            {
+                UserId = userId,
+                ProgramId = programId,
+                NotifiedAt = program.ApplicationsOpen ? DateTime.Now : null
+            });
+            try
+            {
+                await _db.SaveChangesAsync();
+            }
+            catch (DbUpdateException)
+            {
+                _db.ChangeTracker.Clear();
+            }
+            return true;
+        }
+
+        public Task<bool> IsInterestedAsync(string userId, int programId) =>
+            _db.ProgramInterests.AnyAsync(p => p.UserId == userId && p.ProgramId == programId);
+
+        public Task<int> ProgramInterestCountAsync(int programId) =>
+            _db.ProgramInterests.CountAsync(p => p.ProgramId == programId);
 
         public async Task<List<Opportunity>> RecentAsync(string userId, int take)
         {

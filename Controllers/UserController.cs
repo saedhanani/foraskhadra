@@ -17,19 +17,45 @@ namespace Foras_Khadra.Controllers
         private readonly ISavedOpportunityService _savedService;
         private readonly IApplicationTracker _tracker;
         private readonly IMatchService _match;
+        private readonly IReferralService _referrals;
+        private readonly IWeeklySummaryService _weekly;
 
         public UserController(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
             ISavedOpportunityService savedService,
             IApplicationTracker tracker,
-            IMatchService match)
+            IMatchService match,
+            IReferralService referrals,
+            IWeeklySummaryService weekly)
         {
             _context = context;
             _userManager = userManager;
             _savedService = savedService;
             _tracker = tracker;
             _match = match;
+            _referrals = referrals;
+            _weekly = weekly;
+        }
+
+        // GET: User/Weekly — ملخص أسبوعك (5-1)، يُحسب عند الطلب من الأيام السبعة الماضية
+        public async Task<IActionResult> Weekly()
+        {
+            if (User.IsInRole("Organization"))
+                return RedirectToAction("Dashboard", "Organization");
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login", "Account");
+
+            var profile = await _match.ProfileAsync(user, isIndividual: true)
+                          ?? new MatchProfile(InterestMap.TypesFor(user.Interests), null, null);
+            var summary = await _weekly.BuildAsync(user, profile);
+
+            ViewData["MatchScores"] = _match.Scores(profile, summary.NewMatching.Concat(summary.DeadlinesSoon));
+            ViewData["SaveCounts"] = await _savedService.SaveCountsAsync(summary.NewMatching.Select(o => o.Id));
+            ViewBag.SavedIds = await _savedService.SavedIdsAsync(user.Id, summary.NewMatching.Select(o => o.Id));
+            ViewBag.FirstName = string.IsNullOrWhiteSpace(user.FirstName) ? user.FullName : user.FirstName;
+            return View(summary);
         }
 
         // GET: User/Dashboard — صفحة "صفحتي": مقترحة حسب الاهتمامات + المحفوظة مع حالة الموعد + أحدث الفرص
@@ -113,12 +139,25 @@ namespace Foras_Khadra.Controllers
             var shownAll = recommended.Concat(savedShown).Concat(latest).ToList();
             var completion = ProfileCompletion.Compute(user);
 
+            // 5-3 السفراء و 5-2 بطاقة الإنجاز
+            var referralCode = await _referrals.EnsureCodeAsync(user);
+            var referralCount = await _referrals.CountAsync(user.Id);
+            var latestAccepted = await _context.SavedOpportunities
+                .AsNoTracking()
+                .Where(s => s.UserId == user.Id && s.Status == ApplicationStatus.Accepted && s.Opportunity!.Status == OpportunityStatus.Published)
+                .OrderByDescending(s => s.StatusChangedAt)
+                .Select(s => s.Opportunity!)
+                .FirstOrDefaultAsync();
+
             var vm = new UserDashboardViewModel
             {
+                ReferralCode = referralCode,
+                ReferralCount = referralCount,
+                LatestAccepted = latestAccepted,
                 NewSince = newSince,
                 NewSinceCount = newSinceCount,
                 Profile = completion,
-                Achievements = Helpers.Achievements.Compute(stats, completion.Percent),
+                Achievements = Helpers.Achievements.Compute(stats, completion.Percent, referralCount),
                 SaveCounts = await _savedService.SaveCountsAsync(shownAll.Select(o => o.Id)),
                 MatchScores = _match.Scores(profile, shownAll),
                 MatchesNationality = profile.HasLocation,

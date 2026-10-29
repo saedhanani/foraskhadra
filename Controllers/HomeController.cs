@@ -20,16 +20,22 @@ namespace Foras_Khadra.Controllers
 
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IMatchService _match;
+        private readonly IReferralService _referrals;
 
         public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, ISavedOpportunityService saved,
-            UserManager<ApplicationUser> userManager, IMatchService match)
+            UserManager<ApplicationUser> userManager, IMatchService match, IReferralService referrals)
         {
             _logger = logger;
             _context = context;
             _saved = saved;
             _userManager = userManager;
             _match = match;
+            _referrals = referrals;
         }
+
+        /// <summary>لوحة سفراء الشهر (5-3): أعلى 10 داعين، بالاسم الأول فقط.</summary>
+        public async Task<IActionResult> Ambassadors() =>
+            View(await _referrals.MonthlyBoardAsync(10));
 
         /// <summary>نسب التطابق (المرحلة 3) للفرد المسجّل فقط؛ فارغة للزائر والمنظمات والإدارة.</summary>
         private async Task<Dictionary<int, int>> MatchScoresFor(IEnumerable<Opportunity> opportunities)

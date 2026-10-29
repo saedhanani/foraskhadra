@@ -52,5 +52,11 @@ namespace Foras_Khadra.Models
         public List<Foras_Khadra.Helpers.Achievement> Achievements { get; set; } = new();
         /// <summary>كم مستخدمًا حفظ كل فرصة معروضة (المفتاح OpportunityId).</summary>
         public Dictionary<int, int> SaveCounts { get; set; } = new();
+
+        // ===== المرحلة 5: العادة والمجتمع =====
+        public string ReferralCode { get; set; } = string.Empty;
+        public int ReferralCount { get; set; }
+        /// <summary>فرصة قُبل فيها المستخدم — لعرض زر "شارك إنجازك" (5-2).</summary>
+        public Opportunity? LatestAccepted { get; set; }
     }
 }

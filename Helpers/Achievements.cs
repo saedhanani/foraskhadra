@@ -11,13 +11,14 @@ namespace Foras_Khadra.Helpers
     public static class Achievements
     {
         /// <summary>الشارات بترتيب العرض: من الأسهل إلى الأصعب، فيرى المستخدم دائمًا الشارة القادمة في متناوله.</summary>
-        public static List<Achievement> Compute(TrackerStats stats, int profilePercent) => new()
+        public static List<Achievement> Compute(TrackerStats stats, int profilePercent, int referrals = 0) => new()
         {
             new("first_save", "bi-bookmark-heart", stats.Saved >= 1, stats.Saved, 1),
             new("profile_complete", "bi-person-check", profilePercent >= 100, profilePercent, 100),
             new("first_apply", "bi-send-check", stats.Applied >= 1, stats.Applied, 1),
             new("active_seeker", "bi-compass", stats.Saved >= 5, stats.Saved, 5),
             new("persistent", "bi-fire", stats.Applied >= 5, stats.Applied, 5),
+            new("ambassador", "bi-megaphone", referrals >= ReferralService.AmbassadorThreshold, referrals, ReferralService.AmbassadorThreshold),
             new("accepted", "bi-trophy", stats.Accepted >= 1, stats.Accepted, 1)
         };
 
@@ -29,6 +30,7 @@ namespace Foras_Khadra.Helpers
             "active_seeker" => lang == "en" ? "Active seeker" : lang == "fr" ? "Chercheur actif" : "باحث نشط",
             "persistent" => lang == "en" ? "Persistent" : lang == "fr" ? "Persévérant" : "مثابر",
             "accepted" => lang == "en" ? "Accepted!" : lang == "fr" ? "Accepté !" : "قُبلت!",
+            "ambassador" => lang == "en" ? "Ambassador" : lang == "fr" ? "Ambassadeur" : "سفير فرص خضراء",
             _ => key
         };
 
@@ -41,6 +43,7 @@ namespace Foras_Khadra.Helpers
             "active_seeker" => lang == "en" ? "Save 5 opportunities" : lang == "fr" ? "Enregistrez 5 opportunités" : "احفظ 5 فرص",
             "persistent" => lang == "en" ? "Apply to 5 opportunities" : lang == "fr" ? "Postulez à 5 opportunités" : "قدّم على 5 فرص",
             "accepted" => lang == "en" ? "Mark an application as accepted" : lang == "fr" ? "Marquez une candidature comme acceptée" : "علّم تقديمًا بـ«قُبلت»",
+            "ambassador" => lang == "en" ? "Invite 3 friends with your link" : lang == "fr" ? "Invitez 3 amis avec votre lien" : "ادعُ 3 أصدقاء برابطك",
             _ => key
         };
     }

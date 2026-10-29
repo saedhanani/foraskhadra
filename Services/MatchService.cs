@@ -43,7 +43,8 @@ namespace Foras_Khadra.Services
                 MatchScorer.ResolveCountry(user.Country, countries)?.Id);
         }
 
+        /// <summary>التفرّد بالمعرّف لا بالمرجع: الفرصة نفسها قد تُحمَّل مرتين من استعلامين مختلفين.</summary>
         public Dictionary<int, int> Scores(MatchProfile profile, IEnumerable<Opportunity> opportunities) =>
-            opportunities.Distinct().ToDictionary(o => o.Id, o => MatchScorer.Score(profile, o));
+            opportunities.DistinctBy(o => o.Id).ToDictionary(o => o.Id, o => MatchScorer.Score(profile, o));
     }
 }

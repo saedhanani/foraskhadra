@@ -27,6 +27,8 @@ namespace Foras_Khadra.Data
         public DbSet<ChecklistItem> ChecklistItems { get; set; }
         public DbSet<RecentView> RecentViews { get; set; }
         public DbSet<CycleWatch> CycleWatches { get; set; }
+        public DbSet<ProgramInterest> ProgramInterests { get; set; }
+        public DbSet<Resource> Resources { get; set; }
         public DbSet<FlagshipProgram> FlagshipPrograms { get; set; }
         public DbSet<ImpactStat> ImpactStats { get; set; }
 
@@ -137,6 +139,25 @@ namespace Foras_Khadra.Data
                 .WithMany()
                 .HasForeignKey(w => w.OpportunityId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // اهتمام ببرنامج رائد: صف واحد لكل (مستخدم، برنامج)؛ يُحذف مع حذف البرنامج
+            modelBuilder.Entity<ProgramInterest>()
+                .HasIndex(p => new { p.UserId, p.ProgramId })
+                .IsUnique();
+            modelBuilder.Entity<ProgramInterest>()
+                .HasOne(p => p.User)
+                .WithMany()
+                .HasForeignKey(p => p.UserId)
+                .OnDelete(DeleteBehavior.ClientCascade);
+            modelBuilder.Entity<ProgramInterest>()
+                .HasOne(p => p.Program)
+                .WithMany()
+                .HasForeignKey(p => p.ProgramId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // الإحالات: فهرس على الرمز (التفرّد يضمنه ReferralService عند التوليد) وعلى الداعي
+            modelBuilder.Entity<ApplicationUser>().HasIndex(u => u.ReferralCode);
+            modelBuilder.Entity<ApplicationUser>().HasIndex(u => u.ReferredByUserId);
 
             modelBuilder.Entity<SavedSearch>()
                 .HasIndex(s => s.UserId);

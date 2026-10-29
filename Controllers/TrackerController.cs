@@ -87,6 +87,32 @@ namespace Foras_Khadra.Controllers
             return Back(returnUrl);
         }
 
+        // POST: /Tracker/ToggleProgramInterest/5 — "سجّل اهتمامك" على صفحة برنامج رائد
+        [HttpPost]
+        public async Task<IActionResult> ToggleProgramInterest(int id, string? returnUrl)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Unauthorized();
+
+            await _tracker.ToggleProgramInterestAsync(userId, id);
+            return Back(returnUrl);
+        }
+
+        // GET: /Tracker/ShareCard/5 — بطاقة إنجاز للمشاركة بعد "قُبلت" (5-2)
+        [HttpGet]
+        public async Task<IActionResult> ShareCard(int id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return Unauthorized();
+
+            var saved = await _tracker.GetWithChecklistAsync(user.Id, id);
+            if (saved == null || saved.Status != ApplicationStatus.Accepted)
+                return RedirectToAction("Dashboard", "User");
+
+            ViewBag.FirstName = string.IsNullOrWhiteSpace(user.FirstName) ? user.FullName : user.FirstName;
+            return View(saved);
+        }
+
         private IActionResult Back(string? returnUrl) =>
             !string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)
                 ? LocalRedirect(returnUrl)

@@ -76,6 +76,8 @@ builder.Services.AddScoped<StoredImageOptimizer>();
 builder.Services.AddScoped<INotificationSweeper, NotificationSweeper>();
 builder.Services.AddScoped<IApplicationTracker, ApplicationTracker>();
 builder.Services.AddScoped<IMatchService, MatchService>();
+builder.Services.AddScoped<IReferralService, ReferralService>();
+builder.Services.AddScoped<IWeeklySummaryService, WeeklySummaryService>();
 builder.Services.AddHostedService<NotificationSweepHostedService>();
 
 // الواجهة العامة للقراءة (api/v1) تُستدعى من مواقع أخرى بالمتصفح: GET فقط من أي أصل

@@ -1,0 +1,61 @@
+@model List<Foras_Khadra.Services.AmbassadorRow>
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var pageTitle = T("سفراء فرص خضراء", "Foras Khadra ambassadors", "Ambassadeurs de Foras Khadra");
+    ViewData["Title"] = pageTitle;
+    ViewData["Description"] = T("أكثر من دعا أصدقاءه إلى المنصة هذا الشهر", "Who invited the most friends this month", "Qui a invité le plus d'amis ce mois-ci");
+    var monthName = DateTime.Now.ToString("MMMM yyyy", new System.Globalization.CultureInfo(lang == "ar" ? "ar-JO" : lang == "fr" ? "fr-FR" : "en-GB"));
+}
+
+<style>
+    body { background: var(--fk-bg); }
+    .amb { font-family: var(--fk-font-body); color: var(--fk-ink); max-width: 720px; }
+    .amb-head { text-align: center; margin: 36px 0 26px; }
+    .amb-head h1 { font-family: var(--fk-font-head); color: var(--fk-green); font-size: 2rem; margin: 0 0 6px; }
+    .amb-head p { color: #5c715e; margin: 0; }
+    .amb-list { background: #fff; border: 1px solid #e6efe6; border-radius: 22px; overflow: hidden; }
+    .amb-row { display: flex; align-items: center; gap: 16px; padding: 16px 22px; border-bottom: 1px solid #f0f4f0; }
+    .amb-row:last-child { border-bottom: none; }
+    .amb-rank { width: 40px; height: 40px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; background: var(--fk-green-soft); color: var(--fk-green); flex: none; }
+    .amb-row:nth-child(1) .amb-rank { background: var(--fk-orange); color: #fff; }
+    .amb-row:nth-child(2) .amb-rank { background: #ffd79a; color: #7c2d12; }
+    .amb-row:nth-child(3) .amb-rank { background: var(--fk-leaf); color: var(--fk-green-dark); }
+    .amb-name { flex: 1; font-weight: 700; font-size: 1.05rem; }
+    .amb-count { color: var(--fk-orange); font-weight: 800; }
+    .amb-empty { text-align: center; padding: 40px 16px; color: #5c715e; }
+    .amb-cta { text-align: center; margin-top: 22px; color: #5c715e; }
+    .amb-cta a { color: var(--fk-green); font-weight: 700; }
+</style>
+
+<div class="page-wrapper container amb">
+    <header class="amb-head">
+        <h1><i class="bi bi-megaphone"></i> @pageTitle</h1>
+        <p>@T($"أكثر من دعا أصدقاءه إلى المنصة في {monthName}", $"Who invited the most friends in {monthName}", $"Qui a invité le plus d'amis en {monthName}")</p>
+    </header>
+
+    <div class="amb-list">
+        @if (!Model.Any())
+        {
+            <div class="amb-empty">
+                @T("لا سفراء بعد هذا الشهر — كن أول من يدعو أصدقاءه!", "No ambassadors yet this month — be the first to invite your friends!", "Pas encore d'ambassadeurs ce mois-ci — soyez le premier à inviter vos amis !")
+            </div>
+        }
+        @{ var rank = 0; }
+        @foreach (var row in Model)
+        {
+            rank++;
+            <div class="amb-row">
+                <span class="amb-rank">@rank</span>
+                <span class="amb-name">@row.FirstName</span>
+                <span class="amb-count">@T($"{row.Referrals} دعوات", $"{row.Referrals} invites", $"{row.Referrals} invitations")</span>
+            </div>
+        }
+    </div>
+
+    <p class="amb-cta">
+        @T("رابط دعوتك الشخصي في ", "Your personal invite link is on ", "Votre lien d'invitation est sur ")
+        <a href="@Url.Action("Dashboard", "User")">@T("صفحتي", "My page", "Ma page")</a>
+        @T(" — 3 دعوات تمنحك شارة السفير.", " — 3 invites earn the Ambassador badge.", " — 3 invitations vous valent le badge Ambassadeur.")
+    </p>
+</div>

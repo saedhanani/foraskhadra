@@ -1,0 +1,110 @@
+@model Foras_Khadra.Services.WeeklySummary
+@using Foras_Khadra.Helpers
+@using Foras_Khadra.Models
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var pageTitle = T("ملخص أسبوعك", "Your weekly summary", "Votre résumé hebdomadaire");
+    ViewData["Title"] = pageTitle;
+    ViewData["Description"] = pageTitle;
+    var savedIds = ViewBag.SavedIds as HashSet<int> ?? new HashSet<int>();
+    var culture = new System.Globalization.CultureInfo(lang == "ar" ? "ar-JO" : lang == "fr" ? "fr-FR" : "en-GB");
+}
+
+<link asp-append-version="true" rel="stylesheet" href="~/css/all-opportunities.css" />
+
+<style>
+    body { background: var(--fk-bg); }
+    .wk { font-family: var(--fk-font-body); color: var(--fk-ink); }
+    .wk-head { background: #fff; border: 1px solid #e6efe6; border-radius: 24px; padding: 30px 32px; margin: 26px 0 22px; }
+    .wk-head .eyebrow { color: var(--fk-orange); font-weight: 700; font-size: 0.9rem; }
+    .wk-head h1 { font-family: var(--fk-font-head); color: var(--fk-green); font-size: 1.9rem; margin: 4px 0 6px; }
+    .wk-head p { margin: 0; color: #4a5f4c; }
+    .wk-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 18px 0 0; }
+    .wk-stat { border-radius: 14px; padding: 14px 16px; background: var(--fk-leaf-soft); border: 1px solid #d9eec4; color: var(--fk-green); }
+    .wk-stat strong { font-family: var(--fk-font-head); font-size: 1.6rem; display: block; line-height: 1; }
+    .wk-stat span { font-size: 0.86rem; font-weight: 600; }
+    .wk-stat.orange { background: var(--fk-orange-soft); border-color: #fbe0b8; color: #b06410; }
+    .wk-stat.sky { background: var(--fk-sky-soft); border-color: #c8ebf4; color: #1a7f9c; }
+    .wk-section { margin-bottom: 40px; }
+    .wk-section h2 { font-family: var(--fk-font-head); color: var(--fk-green); font-size: 1.4rem; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; }
+    .wk-empty { background: #fff; border: 1.5px dashed var(--fk-leaf); border-radius: 18px; text-align: center; padding: 36px 16px; color: #5c715e; }
+    .wk-empty a { color: var(--fk-green); font-weight: 700; }
+    .wk-deadline { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #fbe0b8; border-inline-start: 5px solid var(--fk-orange); border-radius: 14px; padding: 12px 16px; margin-bottom: 10px; }
+    .wk-deadline a { flex: 1; color: var(--fk-ink); font-weight: 700; text-decoration: none; }
+    .wk-deadline .days { color: var(--fk-orange); font-weight: 800; white-space: nowrap; }
+    .wk-deadline .prep { color: var(--fk-green); font-weight: 700; text-decoration: none; font-size: 0.85rem; white-space: nowrap; }
+    .wk .opp-card { background: #fff; border-radius: 20px; overflow: hidden; border: 1px solid #e6efe6; height: 100%; display: flex; flex-direction: column; }
+    .wk .opp-image { width: 100%; height: 180px; object-fit: cover; }
+    .wk .opp-category-row { display: flex; flex-wrap: wrap; gap: 8px; padding: 16px 18px 0; }
+    .wk .type-tag, .wk .category-tag { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 600; }
+    .wk .type-tag { background: var(--fk-green-soft); color: var(--fk-green); }
+    .wk .category-tag { background: var(--fk-sky-soft); color: #1a7f9c; }
+    .wk .opp-title { padding: 14px 18px 0; font-size: 1.05rem; font-weight: 700; margin: 0; flex: 1; line-height: 1.6; }
+    .wk .opp-status { display: inline-flex; margin: 14px 18px 0; padding: 7px 14px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; align-self: flex-start; }
+    .wk .status-available { background: var(--fk-leaf-soft); color: var(--fk-green); }
+    .wk .status-soon { background: var(--fk-orange-soft); color: #b06410; }
+    .wk .status-expired { background: #fff1f2; color: #dc2626; }
+    .wk .opp-info-row { padding: 18px; display: flex; align-items: center; gap: 10px; }
+    .wk .opp-info-row .btn-details { flex: 1; }
+    .wk-back { color: var(--fk-green); font-weight: 700; text-decoration: none; }
+</style>
+
+<div class="page-wrapper container wk">
+    <header class="wk-head">
+        <div class="eyebrow"><i class="bi bi-calendar-week"></i> @T($"{Model.From.ToString("d MMMM", culture)} – {Model.To.ToString("d MMMM", culture)}", $"{Model.From.ToString("d MMMM", culture)} – {Model.To.ToString("d MMMM", culture)}", $"{Model.From.ToString("d MMMM", culture)} – {Model.To.ToString("d MMMM", culture)}")</div>
+        <h1>@T($"أسبوعك يا {ViewBag.FirstName}", $"Your week, {ViewBag.FirstName}", $"Votre semaine, {ViewBag.FirstName}")</h1>
+        <p>@T("ما جدّ خلال الأيام السبعة الماضية، وما يحتاج انتباهك هذا الأسبوع.", "What happened in the last seven days, and what needs your attention this week.", "Ce qui s'est passé ces sept derniers jours et ce qui demande votre attention.")</p>
+        <div class="wk-stats">
+            <div class="wk-stat"><strong>@Model.NewMatchingCount</strong><span>@T("فرص جديدة تناسبك", "new picks for you", "nouvelles pour vous")</span></div>
+            <div class="wk-stat sky"><strong>@Model.NewTotal</strong><span>@T("فرص نُشرت هذا الأسبوع", "published this week", "publiées cette semaine")</span></div>
+            <div class="wk-stat orange"><strong>@Model.DeadlinesSoon.Count</strong><span>@T("محفوظات تنتهي قريبًا", "saved deadlines soon", "échéances proches")</span></div>
+            @if (Model.AppliedThisWeek > 0 || Model.SavedThisWeek > 0)
+            {
+                <div class="wk-stat"><strong>@Model.AppliedThisWeek</strong><span>@T("تقديمات هذا الأسبوع", "applications this week", "candidatures cette semaine")</span></div>
+            }
+        </div>
+    </header>
+
+    @if (!Model.HasAnything)
+    {
+        <div class="wk-empty">
+            <p>@T("أسبوع هادئ — لا جديد يطابق اهتماماتك ولا مواعيد تقترب.", "A quiet week — nothing new matches your interests and no deadlines are near.", "Semaine calme — rien de nouveau pour vos intérêts ni d'échéance proche.")</p>
+            <a href="@Url.Action("AllOpportunities", "Home")">@T("تصفّح كل الفرص", "Browse all opportunities", "Parcourir toutes les opportunités")</a>
+        </div>
+    }
+
+    @if (Model.DeadlinesSoon.Any())
+    {
+        <section class="wk-section">
+            <h2><i class="bi bi-alarm"></i> @T("مواعيد تقترب من محفوظاتك", "Deadlines approaching in your saved list", "Échéances proches dans vos favoris")</h2>
+            @foreach (var opp in Model.DeadlinesSoon)
+            {
+                var title = lang switch { "en" => opp.TitleEn, "fr" => opp.TitleFr, _ => opp.TitleAr };
+                var days = (opp.EndDate!.Value.Date - DateTime.Now.Date).Days;
+                <div class="wk-deadline">
+                    <a href="@Url.Action("Details", "Opportunity", new { id = opp.Id, slug = SlugHelper.Make(title) })">@title</a>
+                    <span class="days">@(days == 0 ? T("اليوم!", "today!", "aujourd'hui !") : days == 1 ? T("غدًا", "tomorrow", "demain") : T($"بعد {days} أيام", $"in {days} days", $"dans {days} jours"))</span>
+                    <a class="prep" href="@Url.Action("Prepare", "Tracker", new { id = opp.Id })"><i class="bi bi-clipboard-check"></i> @T("رفيق التقديم", "Companion", "Compagnon")</a>
+                </div>
+            }
+        </section>
+    }
+
+    @if (Model.NewMatching.Any())
+    {
+        <section class="wk-section">
+            <h2><i class="bi bi-stars"></i> @T("جديد يناسبك هذا الأسبوع", "New this week, picked for you", "Nouveau cette semaine, pour vous")</h2>
+            <div class="row g-4">
+                @foreach (var opp in Model.NewMatching)
+                {
+                    <div class="col-lg-4 col-md-6">
+                        @await Html.PartialAsync("_OpportunityCard", (opp, savedIds.Contains(opp.Id)))
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <p><a class="wk-back" href="@Url.Action("Dashboard", "User")"><i class="bi bi-house"></i> @T("العودة إلى صفحتي", "Back to My page", "Retour à Ma page")</a></p>
+</div>

@@ -1,0 +1,62 @@
+@using Foras_Khadra.Models
+@model List<Resource>
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var pageTitle = T("خزانة الأعضاء", "Members' vault", "Coffre des membres");
+    ViewData["Title"] = pageTitle;
+    ViewData["Description"] = T("قوالب سيرة ذاتية وخطابات دوافع وأدلة التقديم — للمسجّلين في فرص خضراء", "CV templates, motivation letters and application guides — for Foras Khadra members", "Modèles de CV, lettres de motivation et guides — pour les membres de Foras Khadra");
+    var groups = Model.GroupBy(r => r.Category).OrderBy(g => g.Key);
+}
+
+<style>
+    body { background: var(--fk-bg); }
+    .vault { font-family: var(--fk-font-body); color: var(--fk-ink); }
+    .vault-head { background: #fff; border: 1px solid #e6efe6; border-radius: 24px; padding: 30px 32px; margin: 26px 0 26px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .vault-head i.big { font-size: 2.6rem; color: var(--fk-orange); }
+    .vault-head h1 { font-family: var(--fk-font-head); color: var(--fk-green); font-size: 1.9rem; margin: 0 0 4px; }
+    .vault-head p { margin: 0; color: #4a5f4c; }
+    .vault-group { margin-bottom: 36px; }
+    .vault-group h2 { font-family: var(--fk-font-head); color: var(--fk-green); font-size: 1.35rem; margin: 0 0 14px; display: flex; align-items: center; gap: 10px; }
+    .vault-item { display: flex; align-items: center; gap: 16px; background: #fff; border: 1px solid #e6efe6; border-radius: 18px; padding: 16px 20px; margin-bottom: 12px; text-decoration: none; color: inherit; transition: border-color .2s; }
+    .vault-item:hover { border-color: var(--fk-leaf); }
+    .vault-item .ico { width: 48px; height: 48px; border-radius: 14px; background: var(--fk-green-soft); color: var(--fk-green); display: inline-flex; align-items: center; justify-content: center; font-size: 1.4rem; flex: none; }
+    .vault-item .txt { flex: 1; }
+    .vault-item .txt b { display: block; font-size: 1.02rem; }
+    .vault-item .txt small { color: #5c715e; }
+    .vault-item .kind { color: var(--fk-orange); font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
+    .vault-empty { background: #fff; border: 1.5px dashed var(--fk-leaf); border-radius: 18px; text-align: center; padding: 40px 16px; color: #5c715e; }
+</style>
+
+<div class="page-wrapper container vault">
+    <header class="vault-head">
+        <i class="bi bi-safe2 big"></i>
+        <div>
+            <h1>@pageTitle</h1>
+            <p>@T("قوالب وأدلة جاهزة من فريق فرص خضراء لتقديم أقوى — حصرية للمسجّلين.", "Ready-made templates and guides from the Foras Khadra team for stronger applications — members only.", "Modèles et guides prêts à l'emploi de l'équipe Foras Khadra — réservés aux membres.")</p>
+        </div>
+    </header>
+
+    @if (!Model.Any())
+    {
+        <div class="vault-empty">@T("الخزانة تُجهَّز الآن — عد قريبًا.", "The vault is being stocked — check back soon.", "Le coffre se remplit — revenez bientôt.")</div>
+    }
+
+    @foreach (var g in groups)
+    {
+        <section class="vault-group">
+            <h2><i class="bi @g.Key.Icon()"></i> @g.Key.Label(lang)</h2>
+            @foreach (var r in g)
+            {
+                var title = lang switch { "en" => r.TitleEn, "fr" => r.TitleFr, _ => r.TitleAr };
+                var desc = lang switch { "en" => r.DescriptionEn, "fr" => r.DescriptionFr, _ => r.DescriptionAr };
+                var href = r.FilePath ?? r.ExternalUrl ?? "#";
+                <a class="vault-item" href="@href" target="_blank" rel="noopener">
+                    <span class="ico"><i class="bi @(r.FilePath != null ? "bi-file-earmark-pdf" : "bi-link-45deg")"></i></span>
+                    <span class="txt"><b>@title</b>@if (!string.IsNullOrWhiteSpace(desc)) { <small>@desc</small> }</span>
+                    <span class="kind">@(r.FilePath != null ? T("تحميل PDF", "Download PDF", "Télécharger le PDF") : T("فتح الرابط", "Open link", "Ouvrir le lien")) <i class="bi bi-arrow-left-short"></i></span>
+                </a>
+            }
+        </section>
+    }
+</div>

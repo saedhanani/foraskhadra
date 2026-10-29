@@ -32,6 +32,8 @@ namespace Foras_Khadra.Services
             created += await SweepInterestsAsync(ct);
             created += await SweepSavedSearchesAsync(ct);
             created += await SweepCycleWatchesAsync(ct);
+            created += await SweepProgramInterestsAsync(ct);
+            created += await SweepWeeklySummariesAsync(ct);
             if (created > 0 || _db.ChangeTracker.HasChanges())
                 await _db.SaveChangesAsync(ct);
             return created;
@@ -216,6 +218,74 @@ namespace Foras_Khadra.Services
                     Label = old.TitleAr
                 });
                 watch.NotifiedAt = DateTime.Now;
+                created++;
+            }
+
+            return created;
+        }
+
+        /// <summary>اهتمام ببرنامج (5-5): حين يكون باب التقديم مفتوحًا، كل مهتم لم يُنبَّه بعد يأخذ تنبيهًا واحدًا.</summary>
+        private async Task<int> SweepProgramInterestsAsync(CancellationToken ct)
+        {
+            var due = await _db.ProgramInterests
+                .Where(p => p.NotifiedAt == null && p.Program!.IsPublished && p.Program.ApplicationsOpen)
+                .Include(p => p.Program)
+                .ToListAsync(ct);
+
+            foreach (var p in due)
+            {
+                _db.Notifications.Add(new Notification
+                {
+                    UserId = p.UserId,
+                    Kind = NotificationKind.ProgramOpened,
+                    Label = p.Program!.TitleAr,
+                    LinkParams = p.Program.Slug
+                });
+                p.NotifiedAt = DateTime.Now;
+            }
+
+            return due.Count;
+        }
+
+        /// <summary>ملخص الأسبوع (5-1): إشعار واحد كل 7 أيام لمن لديه اهتمامات أو محفوظات، ولا يُرسل إن لم يكن ثمة ما يُقال.</summary>
+        private async Task<int> SweepWeeklySummariesAsync(CancellationToken ct)
+        {
+            var now = DateTime.Now;
+            var weekAgo = now.AddDays(-WeeklySummaryService.Days);
+            var today = now.Date;
+            var created = 0;
+
+            var users = await _db.Users
+                .Where(u => (u.InterestsJson != null && u.InterestsJson != "" && u.InterestsJson != "[]")
+                            || _db.SavedOpportunities.Any(s => s.UserId == u.Id))
+                .ToListAsync(ct);
+
+            foreach (var user in users)
+            {
+                var lastSummary = await _db.Notifications
+                    .Where(n => n.UserId == user.Id && n.Kind == NotificationKind.WeeklySummary)
+                    .MaxAsync(n => (DateTime?)n.CreatedAt, ct);
+                if (lastSummary.HasValue && lastSummary.Value > weekAgo) continue;
+
+                var types = InterestMap.TypesFor(user.Interests);
+                var newMatching = types.Count == 0 ? 0 : await _db.Opportunities.CountAsync(o =>
+                    o.Status == OpportunityStatus.Published && o.PublishDate >= weekAgo
+                    && o.Type != null && types.Contains(o.Type.Value)
+                    && (o.EndDate == null || o.EndDate >= today), ct);
+
+                var deadlines = await _db.SavedOpportunities.CountAsync(s =>
+                    s.UserId == user.Id && s.Opportunity!.Status == OpportunityStatus.Published
+                    && s.Opportunity.DeadlineType == DeadlineType.SpecificDate
+                    && s.Opportunity.EndDate >= today && s.Opportunity.EndDate <= today.AddDays(WeeklySummaryService.Days), ct);
+
+                if (newMatching == 0 && deadlines == 0) continue;
+
+                _db.Notifications.Add(new Notification
+                {
+                    UserId = user.Id,
+                    Kind = NotificationKind.WeeklySummary,
+                    Count = newMatching
+                });
                 created++;
             }
 

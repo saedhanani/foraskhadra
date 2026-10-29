@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.Text.Json;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Foras_Khadra.Models
@@ -41,6 +42,15 @@ namespace Foras_Khadra.Models
         public DateTime? LastSeenAt { get; set; }
         /// <summary>بداية الزيارة السابقة (قبل فجوة تزيد على 30 دقيقة) — الفرص المنشورة بعدها "جديدة".</summary>
         public DateTime? PreviousVisitAt { get; set; }
+
+        // ===== سفراء فرص خضراء (البند 5-3) =====
+        /// <summary>رمز الإحالة الشخصي (يُولَّد عند أول فتح لصفحتي)؛ رابط الدعوة = /Account/RegisterUser?ref=CODE.</summary>
+        [MaxLength(12)]
+        public string? ReferralCode { get; set; }
+        /// <summary>من دعاه إلى الموقع (بلا قيد مرجعي حتى لا يتعقّد حذف المستخدمين).</summary>
+        [MaxLength(450)]
+        public string? ReferredByUserId { get; set; }
+        public DateTime? ReferredAt { get; set; }
 
         [NotMapped]
         public List<string> Interests

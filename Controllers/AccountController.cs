@@ -19,22 +19,33 @@ namespace Foras_Khadra.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly Microsoft.AspNetCore.Identity.UI.Services.IEmailSender _emailSender;
         private readonly IStringLocalizer<AccountController> _localizer;
+        private readonly Foras_Khadra.Services.IReferralService _referrals;
+
+        /// <summary>كعكة رمز الإحالة (5-3): تُضبط من ?ref=CODE على صفحة التسجيل وتُستهلك عند إنشاء الحساب.</summary>
+        private const string ReferralCookie = "fk_ref";
 
         public AccountController(
             Microsoft.AspNetCore.Identity.UI.Services.IEmailSender emailSender,
             SignInManager<ApplicationUser> signInManager,
-            UserManager<ApplicationUser> userManager, IStringLocalizer<AccountController> localizer)
+            UserManager<ApplicationUser> userManager, IStringLocalizer<AccountController> localizer,
+            Foras_Khadra.Services.IReferralService referrals)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _emailSender = emailSender;
             _localizer = localizer;
+            _referrals = referrals;
         }
 
         // ===== GET: RegisterUser =====
         [HttpGet]
-        public IActionResult RegisterUser()
+        public IActionResult RegisterUser(string? @ref)
         {
+            // رابط دعوة صديق: نحفظ الرمز 30 يومًا حتى لو أكمل التسجيل لاحقًا
+            if (!string.IsNullOrWhiteSpace(@ref) && @ref.Length <= 12)
+                Response.Cookies.Append(ReferralCookie, @ref.Trim().ToUpperInvariant(),
+                    new CookieOptions { Expires = DateTimeOffset.UtcNow.AddDays(30), IsEssential = true, HttpOnly = true, SameSite = SameSiteMode.Lax });
+
             var culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
             var model = new RegisterViewModel
             {
@@ -94,6 +105,13 @@ namespace Foras_Khadra.Controllers
             }
 
             await _userManager.AddToRoleAsync(user, "User");
+
+            // 5-3 ربط الحساب الجديد بمن دعاه
+            if (Request.Cookies.TryGetValue(ReferralCookie, out var refCode))
+            {
+                await _referrals.ApplyAsync(user, refCode);
+                Response.Cookies.Delete(ReferralCookie);
+            }
 
             return RedirectToAction("RegisterConfirmation");
         }

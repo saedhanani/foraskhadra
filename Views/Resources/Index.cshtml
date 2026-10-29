@@ -1,0 +1,64 @@
+@using Foras_Khadra.Models
+@model IEnumerable<Resource>
+@{
+    ViewData["Title"] = "خزانة الأعضاء — الإدارة";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link rel="stylesheet" asp-append-version="true" href="~/css/articles-index.css" />
+}
+
+<div class="container py-5" dir="rtl">
+    <div class="row align-items-center mb-4 g-3">
+        <div class="col-md-5 text-center text-md-start">
+            <h2 class="main-title mb-0">خزانة الأعضاء</h2>
+            <p class="text-muted mb-0 small">قوالب وأدلة لا يراها إلا المسجّلون</p>
+        </div>
+        <div class="col-md-7 d-flex justify-content-md-end align-items-center gap-3 d-flex-mobile">
+            <a asp-action="Create" class="btn btn-add" style="background:#f99d27; color:#fff;"><i class="fa-solid fa-plus ms-1"></i> إضافة مورد</a>
+            <a asp-action="Vault" class="btn-back-dashboard" target="_blank"><i class="fa-solid fa-eye"></i> صفحة الأعضاء</a>
+            <a asp-controller="Admin" asp-action="Dashboard" class="btn-back-dashboard"><i class="fa-solid fa-gauge"></i> لوحة التحكم</a>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <div class="table-responsive" style="overflow-x: visible;">
+            <table class="table articles-table">
+                <thead>
+                    <tr class="text-muted">
+                        <th>المورد</th>
+                        <th>التصنيف</th>
+                        <th>النوع</th>
+                        <th>الترتيب</th>
+                        <th>الحالة</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">لا موارد بعد — أضف أول قالب أو دليل.</td></tr>
+                    }
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td><strong>@r.TitleAr</strong><br /><small class="text-muted">@r.TitleEn</small></td>
+                            <td><i class="bi @r.Category.Icon()"></i> @r.Category.Label("ar")</td>
+                            <td>@(r.FilePath != null ? "ملف PDF" : "رابط خارجي")</td>
+                            <td>@r.SortOrder</td>
+                            <td>@(r.IsPublished ? "منشور" : "مخفي")</td>
+                            <td class="text-nowrap">
+                                <a asp-action="Edit" asp-route-id="@r.Id" class="btn btn-sm btn-outline-success"><i class="fa-solid fa-pen"></i></a>
+                                <form asp-action="Delete" asp-route-id="@r.Id" method="post" class="d-inline" onsubmit="return confirm('حذف هذا المورد نهائيًا؟');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

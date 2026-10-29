@@ -49,7 +49,7 @@ namespace Foras_Khadra.Tests
         public void Achievements_NewUser_HasNothingEarned_ButSeesProgress()
         {
             var list = Achievements.Compute(new TrackerStats(0, 0, 0), 40);
-            Assert.Equal(6, list.Count);
+            Assert.Equal(7, list.Count);
             Assert.All(list, a => Assert.False(a.Earned));
             Assert.Equal(40, list.Single(a => a.Key == "profile_complete").Percent);
             Assert.Equal(0, list.Single(a => a.Key == "active_seeker").Percent);
@@ -58,9 +58,9 @@ namespace Foras_Khadra.Tests
         [Fact]
         public void Achievements_EarnedByThresholds()
         {
-            var list = Achievements.Compute(new TrackerStats(Saved: 5, Applied: 2, Accepted: 1), 100);
+            var list = Achievements.Compute(new TrackerStats(Saved: 5, Applied: 2, Accepted: 1), 100, referrals: 3);
             var earned = list.Where(a => a.Earned).Select(a => a.Key).ToList();
-            Assert.Equal(new[] { "first_save", "profile_complete", "first_apply", "active_seeker", "accepted" }, earned);
+            Assert.Equal(new[] { "first_save", "profile_complete", "first_apply", "active_seeker", "ambassador", "accepted" }, earned);
             var persistent = list.Single(a => a.Key == "persistent");
             Assert.False(persistent.Earned);
             Assert.Equal(40, persistent.Percent); // 2 من 5

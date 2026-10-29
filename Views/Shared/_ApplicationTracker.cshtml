@@ -26,6 +26,13 @@
             </select>
         </label>
     </form>
+    @if (Model.Status == ApplicationStatus.Accepted)
+    {
+        <a class="app-prep" style="color:#b06410;" href="@Url.Action("ShareCard", "Tracker", new { id = Model.OpportunityId })"
+           title="@T("شارك إنجازك", "Share your achievement", "Partagez votre réussite")">
+            <i class="bi bi-stars"></i> @T("شارك إنجازك", "Share", "Partager")
+        </a>
+    }
     <a class="app-prep" href="@Url.Action("Prepare", "Tracker", new { id = Model.OpportunityId })"
        title="@T("رفيق التقديم", "Application companion", "Compagnon de candidature")">
         <span class="app-bar"><span style="width:@Model.Percent%"></span></span>

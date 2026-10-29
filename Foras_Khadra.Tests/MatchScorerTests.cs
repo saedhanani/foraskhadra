@@ -101,6 +101,16 @@ namespace Foras_Khadra.Tests
             Assert.False(MatchScorer.Eligible(p, Opp(null, 15, 8)));
         }
 
+        [Fact]
+        public void MatchService_Scores_DedupesByIdNotReference()
+        {
+            var service = new Foras_Khadra.Services.MatchService(null!, new Microsoft.Extensions.Caching.Memory.MemoryCache(new Microsoft.Extensions.Caching.Memory.MemoryCacheOptions()));
+            var p = new MatchProfile(Array.Empty<OpportunityType>(), null, null);
+            var a = Opp(OpportunityType.Jobs, 4); var b = Opp(OpportunityType.Jobs, 4); // نفس المعرّف (1) بمرجعين
+            var scores = service.Scores(p, new[] { a, b });
+            Assert.Single(scores);
+        }
+
         // ===== Score =====
 
         [Fact]

@@ -1,0 +1,89 @@
+@model Foras_Khadra.Models.SavedOpportunity
+@using Foras_Khadra.Helpers
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var opp = Model.Opportunity!;
+    var title = lang switch { "en" => opp.TitleEn, "fr" => opp.TitleFr, _ => opp.TitleAr };
+    var pageTitle = T("شارك إنجازك", "Share your achievement", "Partagez votre réussite");
+    ViewData["Title"] = pageTitle;
+    ViewData["Description"] = pageTitle;
+    var firstName = (string?)ViewBag.FirstName ?? "";
+}
+
+<style>
+    body { background: var(--fk-bg); }
+    .sc { font-family: var(--fk-font-body); color: var(--fk-ink); max-width: 760px; text-align: center; }
+    .sc h1 { font-family: var(--fk-font-head); color: var(--fk-green); font-size: 1.7rem; margin: 30px 0 6px; }
+    .sc .lead { color: #5c715e; margin-bottom: 22px; }
+
+    /* البطاقة 1080×1350 (نسبة منشور إنستغرام 4:5) تُعرض مصغّرة وتُصدَّر بحجمها الكامل */
+    /* المسرح LTR والبطاقة مثبّتة في زاويته العلوية اليسرى، وإلا تفيض البطاقة إلى اليسار في الصفحات العربية وتختفي بعد التصغير */
+    .sc-stage { display: inline-block; position: relative; direction: ltr; width: 360px; height: 450px; overflow: hidden; border-radius: 18px; box-shadow: 0 20px 50px rgba(27, 107, 35, 0.25); }
+    .sc-card {
+        position: absolute; top: 0; left: 0;
+        width: 1080px; height: 1350px; transform: scale(0.3333); transform-origin: top left;
+        background: linear-gradient(160deg, #14521b 0%, #1B6B23 55%, #2a8a33 100%);
+        color: #fff; position: relative; overflow: hidden;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+        font-family: var(--fk-font-body);
+    }
+    .sc-card::before { content: ""; position: absolute; width: 900px; height: 900px; border: 90px solid rgba(171, 225, 136, 0.18); border-radius: 50%; top: -420px; inset-inline-end: -380px; }
+    .sc-card::after { content: ""; position: absolute; width: 520px; height: 520px; border: 60px solid rgba(250, 156, 40, 0.28); border-radius: 50%; bottom: -260px; inset-inline-start: -220px; }
+    .sc-logo { width: 300px; margin-bottom: 40px; position: relative; z-index: 1; }
+    .sc-eyebrow { font-size: 40px; font-weight: 600; color: #ABE188; margin-bottom: 26px; position: relative; z-index: 1; }
+    .sc-title { font-family: var(--fk-font-head); font-size: 76px; line-height: 1.35; padding: 0 90px; margin-bottom: 36px; position: relative; z-index: 1; }
+    .sc-name { font-size: 44px; font-weight: 600; margin-bottom: 60px; position: relative; z-index: 1; }
+    .sc-name b { color: #FA9C28; }
+    .sc-divider { display: flex; align-items: center; gap: 14px; margin-bottom: 60px; position: relative; z-index: 1; }
+    .sc-divider i { display: block; height: 14px; border-radius: 999px; background: #FA9C28; }
+    .sc-tag { font-size: 36px; font-weight: 600; color: #ABE188; position: relative; z-index: 1; }
+    .sc-site { font-size: 32px; opacity: .85; margin-top: 14px; position: relative; z-index: 1; direction: ltr; }
+
+    .sc-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin: 24px 0 40px; }
+    .sc-btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 12px; padding: 12px 22px; font-weight: 700; text-decoration: none; border: none; cursor: pointer; }
+    .sc-btn-primary { background: var(--fk-orange); color: #fff; }
+    .sc-btn-outline { background: #fff; color: var(--fk-green); border: 1.5px solid var(--fk-leaf); }
+</style>
+
+<div class="page-wrapper container sc">
+    <h1>🎉 @T("مبروك القبول!", "Congratulations on your acceptance!", "Félicitations pour votre admission !")</h1>
+    <p class="lead">@T("بطاقة بهوية فرص خضراء جاهزة لستوري إنستغرام أو واتساب — حمّلها وشاركها.", "A Foras Khadra card ready for your Instagram story or WhatsApp — download and share it.", "Une carte Foras Khadra prête pour votre story Instagram ou WhatsApp — téléchargez et partagez.")</p>
+
+    <div class="sc-stage">
+        <div class="sc-card" id="shareCard" dir="@(lang == "ar" ? "rtl" : "ltr")">
+            <img class="sc-logo" src="~/images/brand/white.png" alt="فرص خضراء" />
+            <div class="sc-eyebrow">@T("حصلت على", "I got accepted to", "J'ai été admis(e) à")</div>
+            <div class="sc-title">@title</div>
+            <div class="sc-name">@T("وجدتها عبر ", "found via ", "trouvée via ")<b>@T("فرص خضراء", "Foras Khadra", "Foras Khadra")</b>@(string.IsNullOrEmpty(firstName) ? "" : " — " + firstName)</div>
+            <div class="sc-divider"><i style="width:220px"></i><i style="width:14px"></i><i style="width:14px"></i><i style="width:14px"></i><i style="width:14px"></i><i style="width:220px"></i></div>
+            <div class="sc-tag">#@T("من_وإلى_الشباب_العربي", "from_and_to_Arabian_youth", "de_et_pour_la_jeunesse_arabe")</div>
+            <div class="sc-site">www.foraskhadra.com</div>
+        </div>
+    </div>
+
+    <div class="sc-actions">
+        <button type="button" class="sc-btn sc-btn-primary" id="downloadCard"><i class="bi bi-download"></i> @T("تحميل الصورة", "Download image", "Télécharger l'image")</button>
+        <a class="sc-btn sc-btn-outline" href="@Url.Action("Dashboard", "User")"><i class="bi bi-house"></i> @T("العودة إلى صفحتي", "Back to My page", "Retour à Ma page")</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script>
+        // تصدير البطاقة بحجمها الكامل (1080×1350) كصورة PNG
+        document.getElementById('downloadCard').addEventListener('click', function () {
+            var card = document.getElementById('shareCard');
+            var btn = this; btn.disabled = true;
+            var prev = card.style.transform; card.style.transform = 'none';
+            html2canvas(card, { width: 1080, height: 1350, scale: 1, backgroundColor: null, useCORS: true })
+                .then(function (canvas) {
+                    var a = document.createElement('a');
+                    a.download = 'foras-khadra-@(opp.Id).png';
+                    a.href = canvas.toDataURL('image/png');
+                    a.click();
+                })
+                .finally(function () { card.style.transform = prev; btn.disabled = false; });
+        });
+    </script>
+}

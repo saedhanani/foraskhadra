@@ -1,0 +1,72 @@
+@* نموذج إضافة/تعديل مورد في خزانة الأعضاء (مشترك بين Create و Edit) — يعتمد على articles-create.css *@
+@using Foras_Khadra.Models
+@model Resource
+@{
+    var isEdit = Model.Id > 0;
+}
+<form asp-action="@(isEdit ? "Edit" : "Create")" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    @if (isEdit)
+    {
+        <input type="hidden" asp-for="Id" />
+    }
+    <div asp-validation-summary="ModelOnly" class="text-danger small mb-2"></div>
+
+    @if (isEdit && !string.IsNullOrEmpty(Model.FilePath))
+    {
+        <label class="form-label">الملف الحالي</label>
+        <div class="current-file-card">
+            <div class="file-middle">
+                <div class="file-name"><a href="@Model.FilePath" target="_blank"><i class="fa-solid fa-file-pdf"></i> @System.IO.Path.GetFileName(Model.FilePath)</a></div>
+                <div class="file-status"><span class="file-size">PDF</span><span class="file-check"><i class="fa-solid fa-circle-check"></i></span></div>
+            </div>
+        </div>
+    }
+
+    <label class="form-label">@(isEdit ? "استبدال الملف (اختياري)" : "ملف PDF")</label>
+    <div class="upload-area">
+        <input type="file" name="File" accept="application/pdf" class="form-control" />
+        <div class="upload-hint mt-2">PDF فقط (حد أقصى 10MB) — أو اترك الملف وضع رابطًا خارجيًا أدناه</div>
+    </div>
+    <span class="text-danger small">@Html.ValidationMessage("File")</span>
+
+    <div class="row">
+        <div class="col-12">
+            <label class="form-label">رابط خارجي (اختياري، بديل عن الملف)</label>
+            <input asp-for="ExternalUrl" class="custom-input" dir="ltr" placeholder="https://drive.google.com/..." />
+            <span asp-validation-for="ExternalUrl" class="text-danger small"></span>
+        </div>
+
+        <div class="col-md-6">
+            <label class="form-label">التصنيف</label>
+            <select asp-for="Category" class="custom-input">
+                @foreach (ResourceCategory c in Enum.GetValues<ResourceCategory>())
+                {
+                    <option value="@c" selected="@(c == Model.Category)">@c.Label("ar")</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">الترتيب</label>
+            <input asp-for="SortOrder" type="number" min="1" class="custom-input" />
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <label class="form-label" style="display:flex;align-items:center;gap:8px;">
+                <input asp-for="IsPublished" type="checkbox" style="width:18px;height:18px;accent-color:#25652C" /> منشور
+            </label>
+        </div>
+
+        <div class="col-md-4"><label class="form-label">العنوان بالعربي</label><input asp-for="TitleAr" class="custom-input" /><span asp-validation-for="TitleAr" class="text-danger small"></span></div>
+        <div class="col-md-4"><label class="form-label">العنوان بالإنجليزي</label><input asp-for="TitleEn" class="custom-input" dir="ltr" /><span asp-validation-for="TitleEn" class="text-danger small"></span></div>
+        <div class="col-md-4"><label class="form-label">العنوان بالفرنسي</label><input asp-for="TitleFr" class="custom-input" dir="ltr" /><span asp-validation-for="TitleFr" class="text-danger small"></span></div>
+
+        <div class="col-md-4"><label class="form-label">وصف قصير بالعربي</label><textarea asp-for="DescriptionAr" class="custom-input" rows="3"></textarea></div>
+        <div class="col-md-4"><label class="form-label">وصف قصير بالإنجليزي</label><textarea asp-for="DescriptionEn" class="custom-input" rows="3" dir="ltr"></textarea></div>
+        <div class="col-md-4"><label class="form-label">وصف قصير بالفرنسي</label><textarea asp-for="DescriptionFr" class="custom-input" rows="3" dir="ltr"></textarea></div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-add" style="background:#f99d27;color:#fff;">@(isEdit ? "حفظ التعديلات" : "إضافة المورد")</button>
+        <a asp-action="Index" class="btn-back-dashboard">إلغاء</a>
+    </div>
+</form>

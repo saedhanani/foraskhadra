@@ -12,7 +12,11 @@ namespace Foras_Khadra.Models
         /// <summary>فرص جديدة تطابق بحثًا محفوظًا.</summary>
         SavedSearchMatches = 3,
         /// <summary>فُتحت دورة جديدة من فرصة كان المستخدم يراقبها (OpportunityId = الفرصة المفتوحة، Label = عنوان القديمة).</summary>
-        CycleReopened = 4
+        CycleReopened = 4,
+        /// <summary>فُتح باب التقديم في برنامج سجّل المستخدم اهتمامه به (LinkParams = slug البرنامج، Label = اسمه).</summary>
+        ProgramOpened = 5,
+        /// <summary>ملخص الأسبوع جاهز (Count = الفرص الجديدة المطابقة).</summary>
+        WeeklySummary = 6
     }
 
     /// <summary>إشعار داخل الموقع — يولّده NotificationSweeper ويظهر في جرس الهيدر.</summary>

@@ -76,6 +76,35 @@
                 {
                     <a href="@Model.ExternalLink" target="_blank" rel="noopener" class="hero-btn hero-btn-primary w-100"><i class="bi bi-box-arrow-up-right"></i> @L("موقع المشروع", "Project website", "Site du projet")</a>
                 }
+                @* 5-5 سجّل اهتمامك: تنبيه عند فتح باب التقديم *@
+                @{
+                    var interested = (ViewBag.IsInterested as bool?) == true;
+                    var interestCount = ViewBag.InterestCount as int? ?? 0;
+                }
+                @if (Model.ApplicationsOpen)
+                {
+                    <div class="program-open-pill"><i class="bi bi-door-open"></i> @L("باب التقديم مفتوح الآن", "Applications are open now", "Candidatures ouvertes")</div>
+                }
+                @if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Organization"))
+                {
+                    <form method="post" asp-controller="Tracker" asp-action="ToggleProgramInterest" asp-route-id="@Model.Id">
+                        <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+                        <button type="submit" class="hero-btn @(interested ? "hero-btn-primary" : "hero-btn-outline") w-100">
+                            <i class="bi @(interested ? "bi-bell-fill" : "bi-bell")"></i>
+                            @(interested
+                                ? L("مسجّل — سنعلمك فور فتح التقديم (اضغط للإلغاء)", "Registered — we'll alert you when applications open (click to cancel)", "Inscrit — nous vous alerterons à l'ouverture (cliquer pour annuler)")
+                                : L("سجّل اهتمامك — سنعلمك فور فتح التقديم", "Register your interest — we'll alert you when applications open", "Je suis intéressé — alertez-moi à l'ouverture"))
+                        </button>
+                    </form>
+                }
+                else if (User.Identity?.IsAuthenticated != true)
+                {
+                    <a href="@Url.Action("Login", "Account")" class="hero-btn hero-btn-outline w-100"><i class="bi bi-bell"></i> @L("سجّل الدخول لنعلمك فور فتح التقديم", "Sign in to be alerted when applications open", "Connectez-vous pour être alerté à l'ouverture")</a>
+                }
+                @if (interestCount >= 2)
+                {
+                    <p class="program-interest-count"><i class="bi bi-people-fill"></i> @L($"{interestCount} مهتمًا بهذا البرنامج", $"{interestCount} people interested", $"{interestCount} personnes intéressées")</p>
+                }
                 <a href="@Url.Action("Index", "Contact")" class="hero-btn hero-btn-outline w-100"><i class="bi bi-handshake"></i> @L("كن شريكًا في النسخة القادمة", "Partner with us on the next edition", "Devenez partenaire de la prochaine édition")</a>
                 @if (User.IsInRole("Admin"))
                 {

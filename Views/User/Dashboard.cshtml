@@ -272,6 +272,55 @@
     .fk-profile-bar span { display: block; height: 100%; background: var(--fk-orange); border-radius: 999px; }
     .fk-profile-text b { color: #b06410; }
 
+    /* روابط سريعة (المرحلة 5) */
+    .fk-quick {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 12px;
+        margin-bottom: 14px;
+    }
+
+    .fk-quick-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #fff;
+        border: 1px solid #e6efe6;
+        border-radius: 16px;
+        padding: 14px 16px;
+        text-decoration: none;
+        color: var(--fk-ink);
+    }
+
+    .fk-quick-item:hover { border-color: var(--fk-leaf); }
+    .fk-quick-item > i { font-size: 1.5rem; color: var(--fk-green); }
+    .fk-quick-item span { display: flex; flex-direction: column; }
+    .fk-quick-item small { color: #6b7d6d; font-size: 0.78rem; }
+    .fk-quick-celebrate { background: var(--fk-orange-soft); border-color: #fbe0b8; }
+    .fk-quick-celebrate > i { color: var(--fk-orange); }
+
+    /* رابط الدعوة (5-3) */
+    .fk-invite {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        background: #fff;
+        border: 1px solid #e6efe6;
+        border-radius: 16px;
+        padding: 14px 16px;
+        margin-bottom: 30px;
+    }
+
+    .fk-invite-text { flex: 1 1 260px; display: flex; flex-direction: column; }
+    .fk-invite-text b { color: var(--fk-green); }
+    .fk-invite-text small { color: #6b7d6d; font-size: 0.8rem; }
+    .fk-invite-text a { color: var(--fk-orange); font-weight: 700; text-decoration: none; }
+    .fk-invite-link { display: flex; gap: 6px; flex: 1 1 320px; }
+    .fk-invite-link input { flex: 1; min-width: 0; border: 1.5px solid #d9e6d9; border-radius: 10px; padding: 8px 12px; font-size: 0.82rem; direction: ltr; color: #4a5f4c; }
+    .fk-invite-link button { background: var(--fk-green); color: #fff; border: none; border-radius: 10px; padding: 8px 14px; font-weight: 700; white-space: nowrap; }
+    .fk-invite-wa { display: inline-flex; align-items: center; justify-content: center; width: 40px; border-radius: 10px; background: #25D366; color: #fff; font-size: 1.2rem; text-decoration: none; }
+
     /* شارات الإنجاز (4-2) */
     .fk-badges {
         display: grid;
@@ -481,6 +530,59 @@
             </a>
         }
     </section>
+
+    @* ===== روابط سريعة: ملخص الأسبوع، خزانة الأعضاء، بطاقة الإنجاز (المرحلة 5) ===== *@
+    <div class="fk-quick">
+        <a class="fk-quick-item" href="@Url.Action("Weekly", "User")">
+            <i class="bi bi-calendar-week"></i>
+            <span><b>@T("ملخص أسبوعك", "Your weekly summary", "Votre résumé hebdo")</b><small>@T("ما جدّ خلال 7 أيام في اهتماماتك ومحفوظاتك", "What's new in 7 days across your interests and saves", "Les nouveautés de la semaine")</small></span>
+        </a>
+        <a class="fk-quick-item" href="@Url.Action("Vault", "Resources")">
+            <i class="bi bi-safe2"></i>
+            <span><b>@T("خزانة الأعضاء", "Members' vault", "Coffre des membres")</b><small>@T("قوالب سيرة وخطابات دوافع وأدلة — للمسجلين فقط", "CV templates, motivation letters and guides — members only", "Modèles de CV, lettres et guides — réservés aux membres")</small></span>
+        </a>
+        @if (Model.LatestAccepted != null)
+        {
+            <a class="fk-quick-item fk-quick-celebrate" href="@Url.Action("ShareCard", "Tracker", new { id = Model.LatestAccepted.Id })">
+                <i class="bi bi-stars"></i>
+                <span><b>@T("شارك إنجازك 🎉", "Share your achievement 🎉", "Partagez votre réussite 🎉")</b><small>@T("بطاقة بهوية فرص خضراء لستوري إنستغرام", "A Foras Khadra card for your Instagram story", "Une carte Foras Khadra pour votre story")</small></span>
+            </a>
+        }
+    </div>
+
+    @* ===== رابط الدعوة (5-3) ===== *@
+    @{
+        var inviteUrl = Url.Action("RegisterUser", "Account", new { @ref = Model.ReferralCode }, Context.Request.Scheme);
+    }
+    <div class="fk-invite">
+        <div class="fk-invite-text">
+            <b><i class="bi bi-megaphone"></i> @T("ادعُ أصدقاءك إلى فرص خضراء", "Invite your friends to Foras Khadra", "Invitez vos amis sur Foras Khadra")</b>
+            <small>
+                @T($"دعواتك حتى الآن: {Model.ReferralCount}", $"Your invites so far: {Model.ReferralCount}", $"Vos invitations : {Model.ReferralCount}")
+                · @T("3 دعوات = شارة السفير", "3 invites = Ambassador badge", "3 invitations = badge Ambassadeur")
+                · <a href="@Url.Action("Ambassadors", "Home")">@T("سفراء الشهر", "This month's ambassadors", "Ambassadeurs du mois")</a>
+            </small>
+        </div>
+        <div class="fk-invite-link">
+            <input type="text" readonly value="@inviteUrl" id="inviteUrl" aria-label="@T("رابط الدعوة", "Invite link", "Lien d'invitation")" />
+            <button type="button" onclick="fkCopyInvite(this)" data-copied="@T("نُسخ ✓", "Copied ✓", "Copié ✓")">
+                <i class="bi bi-clipboard"></i> @T("نسخ", "Copy", "Copier")
+            </button>
+            <a class="fk-invite-wa" target="_blank" rel="noopener"
+               href="https://wa.me/?text=@Uri.EscapeDataString(T("انضم إليّ في فرص خضراء — منصة الفرص والمنح للشباب العربي: ", "Join me on Foras Khadra — opportunities and scholarships for Arab youth: ", "Rejoins-moi sur Foras Khadra — opportunités et bourses pour la jeunesse arabe : ") + inviteUrl)">
+                <i class="bi bi-whatsapp"></i>
+            </a>
+        </div>
+    </div>
+    <script>
+        function fkCopyInvite(btn) {
+            var input = document.getElementById('inviteUrl');
+            navigator.clipboard.writeText(input.value).then(function () {
+                var old = btn.innerHTML; btn.textContent = btn.getAttribute('data-copied');
+                setTimeout(function () { btn.innerHTML = old; }, 1800);
+            });
+        }
+    </script>
 
     @* ===== شارات الإنجاز (4-2) ===== *@
     <div class="fk-badges">

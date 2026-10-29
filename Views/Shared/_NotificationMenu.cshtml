@@ -59,6 +59,22 @@ else
                 <span>@T("فُتحت دورة جديدة من الفرصة التي تراقبها: ", "A new cycle opened for the opportunity you're watching: ", "Une nouvelle session s'est ouverte pour l'opportunité suivie : ")<b>@title</b></span>
             </a>
         }
+        else if (n.Kind == NotificationKind.ProgramOpened)
+        {
+            <a class="notif-item @unread" href="@Url.Action("Details", "Programs", new { slug = n.LinkParams })">
+                <i class="bi bi-door-open notif-ico orange"></i>
+                <span>@T("فُتح باب التقديم في ", "Applications are now open for ", "Les candidatures sont ouvertes pour ")<b>@n.Label</b></span>
+            </a>
+        }
+        else if (n.Kind == NotificationKind.WeeklySummary)
+        {
+            <a class="notif-item @unread" href="@Url.Action("Weekly", "User")">
+                <i class="bi bi-calendar-week notif-ico green"></i>
+                <span>@(n.Count > 0
+                    ? T($"ملخص أسبوعك جاهز: {n.Count} فرص جديدة في اهتماماتك", $"Your weekly summary is ready: {n.Count} new opportunities in your interests", $"Votre résumé hebdomadaire est prêt : {n.Count} nouvelles opportunités")
+                    : T("ملخص أسبوعك جاهز — مواعيد تقترب من محفوظاتك", "Your weekly summary is ready — saved deadlines approaching", "Votre résumé hebdomadaire est prêt — échéances proches"))</span>
+            </a>
+        }
         else if (n.Kind == NotificationKind.SavedSearchMatches)
         {
             var url = Url.Action("AllOpportunities", "Home") + (string.IsNullOrEmpty(n.LinkParams) ? "" : "?" + n.LinkParams);
