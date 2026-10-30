@@ -44,5 +44,11 @@ namespace Foras_Khadra.Models
         public DateTime? EndDate { get; set; }
 
         public IEnumerable<SelectListItem>? CountriesSelectList { get; set; } = new List<SelectListItem>();
+
+        /// <summary>مسودة من منصة الفريق: تظهر في الصفحة أزرار «حفظ كمسودة» و«حفظ ونشر».</summary>
+        public bool IsDraft { get; set; }
+
+        /// <summary>يأتي من زر «حفظ ونشر»: يحوّل المسودة إلى منشورة بعد الحفظ.</summary>
+        public bool Publish { get; set; }
     }
 }

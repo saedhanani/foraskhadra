@@ -196,6 +196,22 @@ public async Task<IActionResult> Create()
                 ModelState.AddModelError("Image", imageError);
             }
 
+            // حالة الفرصة وصورتها الحالية: لإعادة عرض الصفحة عند الخطأ، ولشروط نشر المسودة (كما في TeamApi publish)
+            var current = await _context.Opportunities
+                .Where(o => o.Id == model.Id)
+                .Select(o => new { o.Status, o.ImagePath })
+                .FirstOrDefaultAsync();
+            model.IsDraft = current?.Status == OpportunityStatus.Draft;
+            model.ImagePath ??= current?.ImagePath;
+
+            if (model.Publish && model.IsDraft)
+            {
+                if (model.Image == null && string.IsNullOrEmpty(current?.ImagePath))
+                    ModelState.AddModelError("Image", "لا يمكن نشر الفرصة دون صورة غلاف؛ ارفع صورة ثم اضغط «حفظ ونشر».");
+                if (model.DeadlineType == DeadlineType.SpecificDate && model.EndDate != null && model.EndDate.Value.Date < DateTime.Now.Date)
+                    ModelState.AddModelError("EndDate", "موعد التقديم مضى؛ عدّل التاريخ قبل النشر.");
+            }
+
             // أولاً تحقق من صحة الموديل
             if (!ModelState.IsValid)
             {
@@ -280,6 +296,13 @@ public async Task<IActionResult> Create()
             opportunity.IsPublishedByAdmin = await _userManager.IsInRoleAsync(currentUser, "Admin");
             opportunity.IsPublishedByOrganization = await _userManager.IsInRoleAsync(currentUser, "Organization");
 
+            // اعتماد مسودة منصة الفريق: الأدمن وحده ينشر، ويصير تاريخ النشر لحظة الاعتماد
+            if (model.Publish && opportunity.Status == OpportunityStatus.Draft && opportunity.IsPublishedByAdmin)
+            {
+                opportunity.Status = OpportunityStatus.Published;
+                opportunity.PublishDate = DateTime.Now;
+            }
+
             var existingRequest = await _context.ReelsRequests
     .FirstOrDefaultAsync(r => r.OpportunityId == opportunity.Id);
 
@@ -354,7 +377,8 @@ public async Task<IActionResult> Create()
                 EligibilityCriteriaEn = opp.EligibilityCriteriaEn,
                 EligibilityCriteriaFr = opp.EligibilityCriteriaFr,
                 ApplyLink = opp.ApplyLink,
-                ImagePath = opp.ImagePath
+                ImagePath = opp.ImagePath,
+                IsDraft = opp.Status == OpportunityStatus.Draft
             };
 
             return View(model);

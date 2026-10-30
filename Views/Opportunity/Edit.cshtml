@@ -336,7 +336,16 @@
 
             <!-- Actions -->
             <div class="actions mt-3">
-                <button type="submit" class="btn-primary">@Localizer["SaveAndAdd"] </button>
+                @if (Model.IsDraft && User.IsInRole("Admin"))
+                {
+                    var editLang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+                    <button type="submit" name="Publish" value="true" class="btn-primary">@(editLang == "en" ? "Save & publish" : editLang == "fr" ? "Enregistrer et publier" : "حفظ ونشر")</button>
+                    <button type="submit" name="Publish" value="false" class="btn-outline">@(editLang == "en" ? "Save as draft" : editLang == "fr" ? "Enregistrer comme brouillon" : "حفظ كمسودة")</button>
+                }
+                else
+                {
+                    <button type="submit" class="btn-primary">@Localizer["SaveAndAdd"] </button>
+                }
                 @if (User.IsInRole("Organization"))
                 {
                     <a asp-action="OrgOpportunities" class="btn-outline">@Localizer["Cancel"]</a>
