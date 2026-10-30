@@ -1,5 +1,6 @@
 ﻿using CountryData;
 using Foras_Khadra.Data;
+using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
 using Foras_Khadra.Resources.Views.Organization;
 using Foras_Khadra.ViewModels;
@@ -186,9 +187,11 @@ namespace Foras_Khadra.Controllers
 
         // ====== LOGIN ======
         [HttpGet]
+        [RedirectSignedIn]
         public IActionResult Login() => View();
 
         [HttpPost]
+        [RedirectSignedIn]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("auth")]
         public async Task<IActionResult> Login(OrganizationLoginViewModel model)

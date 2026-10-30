@@ -264,6 +264,22 @@ var fkDevice = (function () {
         .catch(function () { render('off'); });
 })();
 
+// ===== نماذج [data-submit-once] (صفحتا الدخول): الخادم بطيء فينقر الزائر الزر مرة ثانية ويصل الطلب مرتين =====
+// النموذج الذي رفضه التحقق (jQuery validate يمنع الإرسال) لا يُقفل؛ والعودة بزر الرجوع تعيد تفعيل الزر.
+document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (e.defaultPrevented || !form.hasAttribute('data-submit-once')) return;
+    if (form.dataset.submitting) { e.preventDefault(); return; }
+    form.dataset.submitting = '1';
+    form.querySelectorAll('[type="submit"]').forEach(function (b) { b.disabled = true; });
+});
+window.addEventListener('pageshow', function () {
+    document.querySelectorAll('form[data-submit-once]').forEach(function (form) {
+        delete form.dataset.submitting;
+        form.querySelectorAll('[type="submit"]').forEach(function (b) { b.disabled = false; });
+    });
+});
+
 // ===== قائمة الهاتف: تُغلق عند النقر خارجها (الروابط تغلقها بـ data-close-menu أعلاه) =====
 document.addEventListener('click', function (e) {
     var nav = document.getElementById('navContent');

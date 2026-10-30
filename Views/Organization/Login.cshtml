@@ -16,7 +16,7 @@
         <h1 class="auth-title">@Localizer["LoginTitle"]</h1>
         <p class="auth-subtitle">@Localizer["LoginSubtitle"]</p>
 
-        <form asp-action="Login" method="post" class="mt-4">
+        <form asp-action="Login" method="post" class="mt-4" data-submit-once>
             @Html.AntiForgeryToken()
 
             <div asp-validation-summary="All" class="text-danger mb-3"></div>

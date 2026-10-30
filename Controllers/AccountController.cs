@@ -1,4 +1,5 @@
-﻿using Foras_Khadra.Models;
+﻿using Foras_Khadra.Helpers;
+using Foras_Khadra.Models;
 using Foras_Khadra.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -121,10 +122,12 @@ namespace Foras_Khadra.Controllers
 
         // ===== GET: Login =====
         [HttpGet]
+        [RedirectSignedIn]
         public IActionResult Login() => View(new LoginViewModel());
 
         // ===== POST: Login =====
         [HttpPost]
+        [RedirectSignedIn]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("auth")]
         public async Task<IActionResult> Login(LoginViewModel model)
