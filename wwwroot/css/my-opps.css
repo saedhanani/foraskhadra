@@ -281,6 +281,6 @@ details.my-group[open] > summary::after { transform: rotate(180deg); }
     .my-page { padding-top: 16px; }
     .my-head h1 { font-size: 1.45rem; }
     .my-strip { margin-top: 14px; }
-    /* الأعضاء على الهاتف: فرصي أولًا، والتعريف بالمنصة لا يلزم من يعرفها */
-    .home-hero--member { display: none; }
+    /* داخل التطبيق المثبّت: فرصي أولًا، والتعريف بالمنصة لا يلزم الأعضاء */
+    .fk-standalone .home-hero--member { display: none; }
 }

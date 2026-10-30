@@ -418,6 +418,21 @@ html[dir="ltr"] #heroBg1 {
 
 
 
+<script>
+    // الهاتف: كولاج صور الهيرو بعرضه الأصلي (640px) يُصغَّر ليملأ عرض الشاشة (Home.css: zoom: var(--hero-zoom))
+    (function () {
+        var col = document.querySelector('.hero-images-col');
+        if (!col) return;
+        function fit() {
+            if (window.innerWidth > 768) return;
+            var available = col.parentElement.clientWidth - 8;
+            document.documentElement.style.setProperty('--hero-zoom', Math.min(1, available / 640).toFixed(3));
+        }
+        fit();
+        window.addEventListener('resize', fit);
+    })();
+</script>
+
 <section class="latest-articles py-5" dir="@dir" style="background:#F6FBF7;">
     <div class="container">
 

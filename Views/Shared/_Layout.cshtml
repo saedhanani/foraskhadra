@@ -814,11 +814,6 @@ else
                             <a asp-controller="Account" asp-action="RegisterUser" class="menu-mobile-cta fk-app-only" data-close-menu>@Localizer["Register"] · @Localizer["Individual"]</a>
                             <a asp-controller="Organization" asp-action="Register" class="fk-app-only" data-close-menu>@Localizer["Register"] · @Localizer["Organization"]</a>
                         }
-                        <div class="menu-mobile-langs" aria-label="@Localizer["Languages"]">
-                            <a asp-controller="Language" asp-action="Change" asp-route-culture="ar" asp-route-returnUrl="@Context.Request.Path" class="@(culture == "ar" ? "is-current" : "")">العربية</a>
-                            <a asp-controller="Language" asp-action="Change" asp-route-culture="en" asp-route-returnUrl="@Context.Request.Path" class="@(culture == "en" ? "is-current" : "")">English</a>
-                            <a asp-controller="Language" asp-action="Change" asp-route-culture="fr" asp-route-returnUrl="@Context.Request.Path" class="@(culture == "fr" ? "is-current" : "")">Français</a>
-                        </div>
                     </div>
                 </div>
             </div>

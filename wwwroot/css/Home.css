@@ -597,24 +597,13 @@ html[dir="ltr"] .teams-section .footer-leaf {
     width: 100%;
     color: #3f4f41;
   }
-  /* كولاج الصور مصمم لعرض سطح المكتب؛ على الهاتف تبقى صورة واحدة فقط */
-  .hero-images-col > div:first-child,
-  .hero-images-col .outer-border.w-100 {
-    display: none !important;
-  }
-  .hero-images-col > div:last-child {
-    width: 100% !important;
-  }
-  #heroBg3 {
-    width: 100% !important;
-    height: 200px !important;
-    border-width: 0;
-    box-sizing: border-box;
-    background-position: center !important;
-    background-size: cover;
-  }
-  .floating-shapes {
-    display: none;
+  /* كولاج الصور: نفس تصميم سطح المكتب بعرضه الأصلي، مصغّرًا بـ zoom ليملأ عرض الهاتف */
+  .hero-images-col {
+    width: 640px !important;
+    max-width: none !important;
+    flex: none !important;
+    zoom: var(--hero-zoom, .45);
+    margin-inline: auto;
   }
 
   .section-icon svg {

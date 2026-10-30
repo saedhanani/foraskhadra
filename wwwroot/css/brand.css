@@ -232,9 +232,11 @@ html {
 html:not(.fk-standalone) .fk-app-only { display: none !important; }
 @media (max-width: 768px) {
     .fk-standalone .top-banner .auth-guest { display: none !important; }
-    /* مبدّل اللغة داخل القائمة على الهاتف دائمًا: الشريط لا يتسع بالعربية لزرّي الدخول والعلم معًا */
-    .top-banner .lang-switch { display: none !important; }
-    html .top-banner { flex-wrap: nowrap; }
+    /* شريط واحد بلا التفاف: زرّا الدخول والعلم بجانب الشعار حتى على شاشة 360px بالعربية */
+    html .top-banner { flex-wrap: nowrap; gap: 6px; padding-inline: 10px; }
+    html .top-banner .auth-section { gap: 4px !important; }
+    html .top-banner .auth-guest .nav-btn { padding: 8px 10px; font-size: 12.5px; }
+    html .top-banner .lang-switch .nav-btn--icon { min-width: 38px; width: 38px; }
     html:not(.fk-standalone) .top-banner .logo { margin: 0 !important; min-width: 0; }
     html.fk-standalone .top-banner .logo {
         position: absolute !important;
@@ -271,23 +273,5 @@ html:not(.fk-standalone) .fk-app-only { display: none !important; }
         margin: 10px 24px 4px;
         width: auto;
         border-radius: 12px;
-    }
-    .menu-mobile-langs {
-        display: flex;
-        justify-content: center;
-        gap: 8px;
-        padding: 14px 0 18px;
-    }
-    html .nav-content .menu-mobile-langs a {
-        width: auto;
-        flex: 0 0 auto;
-        border: 1px solid rgba(255, 255, 255, .55);
-        border-radius: 999px;
-        padding: 6px 16px;
-        font-size: .9rem;
-    }
-    html .nav-content .menu-mobile-langs a.is-current {
-        background: #fff;
-        color: var(--fk-green);
     }
 }
