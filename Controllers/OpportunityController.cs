@@ -334,6 +334,7 @@ public async Task<IActionResult> Create()
                 DetailsEn = opp.DetailsEn,
                 DetailsFr = opp.DetailsFr,
                 DeadlineType = opp.DeadlineType ?? DeadlineType.NotSpecified,
+                EndDate = opp.EndDate,
                 AvailableCountryIds = opp.AvailableCountries?.Select(c => c.Id).ToList() ?? new List<int>(),
                 CountriesSelectList = countries.Select(c => new SelectListItem
                 {
