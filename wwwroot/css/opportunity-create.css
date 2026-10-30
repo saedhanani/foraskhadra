@@ -213,6 +213,38 @@ html[dir="ltr"] .page-title { text-align: left; }
   color: #fff;
 }
 
+/* «حفظ كمسودة» زر <button> لا رابط: بلا خلفية المتصفح الرمادية، ونصه على سطر واحد */
+button.btn-outline {
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.actions .btn-outline {
+  white-space: nowrap;
+}
+
+.actions .btn-draft {
+  flex: 1.6;
+}
+
+/* الهاتف: الزر الرئيسي بعرض كامل، والزران الآخران تحته */
+@media (max-width: 600px) {
+  .actions {
+    height: auto;
+    flex-wrap: wrap;
+  }
+
+  .actions .btn-primary,
+  .actions .btn-outline {
+    font-size: 18px;
+  }
+
+  .actions .btn-primary {
+    flex-basis: 100%;
+  }
+}
+
 /*Quil Text editor style*/
 .ql-toolbar.ql-snow,
 .ql-container.ql-snow {
