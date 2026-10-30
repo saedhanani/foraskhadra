@@ -110,7 +110,6 @@ var fkDevice = (function () {
         standalone: window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true
     };
 })();
-if (fkDevice.standalone) document.documentElement.classList.add('fk-standalone');
 
 // ===== تثبيت الموقع كتطبيق (PWA، انظر Views/Shared/_InstallPrompt.cshtml و Views/Home/App.cshtml) =====
 // Chrome/Edge يطلقان beforeinstallprompt حين يكون التثبيت ممكنًا فيظهر زر تثبيت حقيقي ([data-install-native])؛

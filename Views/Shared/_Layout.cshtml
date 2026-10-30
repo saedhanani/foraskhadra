@@ -66,6 +66,9 @@
 
     @* PWA: قابل للتثبيت على الهاتف وسطح المكتب (wwwroot/manifest.webmanifest + sw.js) *@
     <link rel="manifest" href="~/manifest.webmanifest" />
+    @* التطبيق المثبّت (من الشاشة الرئيسية) يأخذ شكل تطبيق: شريط تبويبات سفلي وشريط علوي مبسّط؛ متصفح الهاتف يبقى بشكل الموقع.
+       الصنف يُضاف قبل رسم الصفحة حتى لا يظهر الشكل الآخر لحظة (القواعد في brand.css) *@
+    <script>if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) document.documentElement.classList.add('fk-standalone');</script>
     <meta name="theme-color" content="#25652C" />
     <meta name="application-name" content="@siteName" />
     <meta name="apple-mobile-web-app-title" content="@siteName" />
@@ -806,10 +809,10 @@ else
                         <a href="/app" class="fk-hide-standalone" data-close-menu><i class="bi bi-phone"></i> @(culture == "en" ? "Get the app" : culture == "fr" ? "Installer l'application" : "حمّل التطبيق")</a>
                         @if (!userIsAuthenticated)
                         {
-                            <a asp-controller="Account" asp-action="Login" data-close-menu>@Localizer["Login"] · @Localizer["Individual"]</a>
-                            <a asp-controller="Organization" asp-action="Login" data-close-menu>@Localizer["Login"] · @Localizer["Organization"]</a>
-                            <a asp-controller="Account" asp-action="RegisterUser" class="menu-mobile-cta" data-close-menu>@Localizer["Register"] · @Localizer["Individual"]</a>
-                            <a asp-controller="Organization" asp-action="Register" data-close-menu>@Localizer["Register"] · @Localizer["Organization"]</a>
+                            <a asp-controller="Account" asp-action="Login" class="fk-app-only" data-close-menu>@Localizer["Login"] · @Localizer["Individual"]</a>
+                            <a asp-controller="Organization" asp-action="Login" class="fk-app-only" data-close-menu>@Localizer["Login"] · @Localizer["Organization"]</a>
+                            <a asp-controller="Account" asp-action="RegisterUser" class="menu-mobile-cta fk-app-only" data-close-menu>@Localizer["Register"] · @Localizer["Individual"]</a>
+                            <a asp-controller="Organization" asp-action="Register" class="fk-app-only" data-close-menu>@Localizer["Register"] · @Localizer["Organization"]</a>
                         }
                         <div class="menu-mobile-langs" aria-label="@Localizer["Languages"]">
                             <a asp-controller="Language" asp-action="Change" asp-route-culture="ar" asp-route-returnUrl="@Context.Request.Path" class="@(culture == "ar" ? "is-current" : "")">العربية</a>

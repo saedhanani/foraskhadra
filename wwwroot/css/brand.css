@@ -176,7 +176,8 @@ html {
     }
 }
 
-/* ===== نسخة الهاتف كتطبيق (≤768px): شريط علوي ثابت + شريط تبويبات سفلي (Views/Shared/_MobileTabBar.cshtml) ===== */
+/* ===== الهاتف (≤768px): شريط علوي ثابت في الحالتين؛ شريط التبويبات السفلي (Views/Shared/_MobileTabBar.cshtml) في التطبيق المثبّت فقط
+   (html.fk-standalone من _Layout) — في متصفح الهاتف شريط المتصفح نفسه أسفل الشاشة فيتكرر الشريطان ===== */
 .fk-tabbar { display: none; }
 @media (max-width: 768px) {
     body { -webkit-tap-highlight-color: transparent; }
@@ -187,9 +188,9 @@ html {
         z-index: 1030;
     }
     /* مساحة أسفل الصفحة حتى لا يغطي الشريط آخر المحتوى (على آخر صف في التذييل، لأن _Layout يفرض padding-bottom:0 !important على body والتذييل) */
-    html .custom-footer .footer-bottom { padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
+    .fk-standalone .custom-footer .footer-bottom { padding-bottom: calc(72px + env(safe-area-inset-bottom)) !important; }
 
-    .fk-tabbar {
+    .fk-standalone .fk-tabbar {
         position: fixed;
         inset-inline: 0;
         bottom: 0;
@@ -223,18 +224,19 @@ html {
     .fk-tab.is-active .fk-tab__ic { display: none; }
     .fk-tab.is-active .fk-tab__ic--on { display: inline; }
     .fk-tab:hover, .fk-tab:focus-visible { color: var(--fk-green); }
-
-    /* شريط "ثبّت التطبيق" يظهر فوق التبويبات */
-    .fk-install { bottom: calc(74px + env(safe-area-inset-bottom)); }
 }
 
-/* ===== الشريط العلوي على الهاتف: زر القائمة + الشعار في المنتصف + (الجرس والحساب للمسجّلين فقط).
-   أزرار الدخول/إنشاء حساب ومبدّل اللغة تنتقل إلى داخل القائمة (.menu-mobile-extra في _Layout) حتى لا تتكرر مع شريط التبويبات السفلي ===== */
+/* ===== الشريط العلوي على الهاتف. في التطبيق المثبّت: زر القائمة + الشعار في المنتصف + (الجرس والحساب للمسجّلين)،
+   وأزرار الدخول ومبدّل اللغة داخل القائمة (.fk-app-only). في متصفح الهاتف تبقى في الشريط العلوي كالموقع ===== */
 .menu-mobile-extra { display: none; }
+html:not(.fk-standalone) .fk-app-only { display: none !important; }
 @media (max-width: 768px) {
-    .top-banner .auth-guest,
+    .fk-standalone .top-banner .auth-guest { display: none !important; }
+    /* مبدّل اللغة داخل القائمة على الهاتف دائمًا: الشريط لا يتسع بالعربية لزرّي الدخول والعلم معًا */
     .top-banner .lang-switch { display: none !important; }
-    html .top-banner .logo {
+    html .top-banner { flex-wrap: nowrap; }
+    html:not(.fk-standalone) .top-banner .logo { margin: 0 !important; min-width: 0; }
+    html.fk-standalone .top-banner .logo {
         position: absolute !important;
         left: 50% !important;
         transform: translateX(-50%) !important;
@@ -256,6 +258,11 @@ html {
         border: 0;
         border-bottom: 1px solid rgba(255, 255, 255, .15);
         border-radius: 0;
+    }
+    /* "نشاطاتنا" و"الفرص" أزرار قوائم منسدلة لا روابط: نفس الحجم */
+    html .nav-content .menu-items > .custom-dropdown > .nav-btn {
+        font-size: 15px;
+        font-weight: 700;
     }
     html .nav-content .menu-mobile-extra > .menu-mobile-cta {
         background: var(--fk-orange);
