@@ -1,0 +1,148 @@
+@model Foras_Khadra.Models.FacetFormVM
+@using Foras_Khadra.Models
+@{
+    // حقول الأهلية المهيكلة — تُستعمل في إنشاء/تعديل الفرصة (بالبادئة Facets) وفي صفحة التعبئة السريعة.
+    // تُمرَّر قائمة المجالات في ViewData["FieldOptions"] (List<Field>).
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var fields = ViewData["FieldOptions"] as List<Field> ?? new List<Field>();
+    var prefix = ViewData.TemplateInfo.HtmlFieldPrefix;
+    string Name(string n) => string.IsNullOrEmpty(prefix) ? n : prefix + "." + n;
+    string Id(string n) => Name(n).Replace('.', '_') + "_" + (ViewData["FacetRowId"] ?? "");
+    var degreeOptions = new (DegreeLevels v, string ar, string en, string fr)[]
+    {
+        (DegreeLevels.HighSchool, "ثانوي", "High school", "Lycée"),
+        (DegreeLevels.Bachelor, "بكالوريوس", "Bachelor", "Licence"),
+        (DegreeLevels.Master, "ماجستير", "Master", "Master"),
+        (DegreeLevels.PhD, "دكتوراه", "PhD", "Doctorat"),
+        (DegreeLevels.Postdoc, "ما بعد الدكتوراه", "Postdoc", "Post-doctorat"),
+        (DegreeLevels.Professional, "مهني", "Professional", "Professionnel"),
+    };
+    var themeOptions = new (GreenThemes v, string ar, string en, string fr)[]
+    {
+        (GreenThemes.Climate, "المناخ", "Climate", "Climat"),
+        (GreenThemes.Energy, "الطاقة", "Energy", "Énergie"),
+        (GreenThemes.Water, "المياه", "Water", "Eau"),
+        (GreenThemes.Biodiversity, "التنوع الحيوي", "Biodiversity", "Biodiversité"),
+        (GreenThemes.CircularEconomy, "الاقتصاد الدائري", "Circular economy", "Économie circulaire"),
+        (GreenThemes.Agriculture, "الزراعة", "Agriculture", "Agriculture"),
+        (GreenThemes.SustainableCities, "المدن المستدامة", "Sustainable cities", "Villes durables"),
+        (GreenThemes.Policy, "السياسات", "Policy", "Politiques"),
+    };
+}
+
+<div class="facet-fields" style="display:grid; gap:14px; border:1px solid #e3e8e3; border-radius:14px; padding:16px; margin-top:16px; background:#fafdfa;">
+    <h3 class="discription" style="margin:0">@T("بيانات الأهلية (للمطابقة والفلاتر)", "Eligibility data (matching & filters)", "Données d'admissibilité (matching et filtres)")</h3>
+
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+        <div class="field">
+            <label for="@Id("FundingType")">@T("نوع التمويل", "Funding", "Financement")</label>
+            <select name="@Name("FundingType")" id="@Id("FundingType")" class="form-select">
+                <option value="Unknown" selected="@(Model.FundingType == FundingType.Unknown)">@T("غير محدد", "Unknown", "Non précisé")</option>
+                <option value="FullyFunded" selected="@(Model.FundingType == FundingType.FullyFunded)">@T("ممولة بالكامل", "Fully funded", "Entièrement financée")</option>
+                <option value="PartiallyFunded" selected="@(Model.FundingType == FundingType.PartiallyFunded)">@T("ممولة جزئيًا", "Partially funded", "Partiellement financée")</option>
+                <option value="SelfFunded" selected="@(Model.FundingType == FundingType.SelfFunded)">@T("على نفقة المتقدم", "Self-funded", "Autofinancée")</option>
+                <option value="Paid" selected="@(Model.FundingType == FundingType.Paid)">@T("براتب (وظيفة/تدريب)", "Paid (job/internship)", "Rémunérée")</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="@Id("LanguageRequirement")">@T("شهادة اللغة", "Language test", "Test de langue")</label>
+            <select name="@Name("LanguageRequirement")" id="@Id("LanguageRequirement")" class="form-select">
+                <option value="Unknown" selected="@(Model.LanguageRequirement == LanguageRequirement.Unknown)">@T("غير محدد", "Unknown", "Non précisé")</option>
+                <option value="None" selected="@(Model.LanguageRequirement == LanguageRequirement.None)">@T("غير مطلوبة", "Not required", "Non requis")</option>
+                <option value="IELTS" selected="@(Model.LanguageRequirement == LanguageRequirement.IELTS)">IELTS</option>
+                <option value="TOEFL" selected="@(Model.LanguageRequirement == LanguageRequirement.TOEFL)">TOEFL</option>
+                <option value="Either" selected="@(Model.LanguageRequirement == LanguageRequirement.Either)">IELTS / TOEFL</option>
+                <option value="French" selected="@(Model.LanguageRequirement == LanguageRequirement.French)">@T("فرنسية (DELF/TCF)", "French (DELF/TCF)", "Français (DELF/TCF)")</option>
+                <option value="Other" selected="@(Model.LanguageRequirement == LanguageRequirement.Other)">@T("أخرى", "Other", "Autre")</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="@Id("LanguageScore")">@T("الدرجة المطلوبة", "Required score", "Score requis")</label>
+            <input name="@Name("LanguageScore")" id="@Id("LanguageScore")" value="@Model.LanguageScore" maxlength="100" placeholder="IELTS 6.5" />
+        </div>
+        <div class="field">
+            <label for="@Id("EmploymentType")">@T("نوع التوظيف (للوظائف)", "Employment type (jobs)", "Type d'emploi")</label>
+            <select name="@Name("EmploymentType")" id="@Id("EmploymentType")" class="form-select">
+                <option value="None" selected="@(Model.EmploymentType == EmploymentType.None)">—</option>
+                <option value="FullTime" selected="@(Model.EmploymentType == EmploymentType.FullTime)">@T("دوام كامل", "Full-time", "Temps plein")</option>
+                <option value="PartTime" selected="@(Model.EmploymentType == EmploymentType.PartTime)">@T("دوام جزئي", "Part-time", "Temps partiel")</option>
+                <option value="Contractor" selected="@(Model.EmploymentType == EmploymentType.Contractor)">@T("عقد", "Contractor", "Contrat")</option>
+                <option value="Temporary" selected="@(Model.EmploymentType == EmploymentType.Temporary)">@T("مؤقت", "Temporary", "Temporaire")</option>
+                <option value="Intern" selected="@(Model.EmploymentType == EmploymentType.Intern)">@T("تدريب", "Internship", "Stage")</option>
+                <option value="Volunteer" selected="@(Model.EmploymentType == EmploymentType.Volunteer)">@T("تطوع", "Volunteer", "Bénévolat")</option>
+            </select>
+        </div>
+        <div class="field">
+            <label for="@Id("HostCountryIso")">@T("بلد الاستضافة (رمز ISO)", "Host country (ISO code)", "Pays d'accueil (code ISO)")</label>
+            <input name="@Name("HostCountryIso")" id="@Id("HostCountryIso")" value="@Model.HostCountryIso" maxlength="2" placeholder="DE" style="text-transform:uppercase" />
+        </div>
+        <div class="field">
+            <label for="@Id("MinAge")">@T("العمر من / إلى", "Age from / to", "Âge de / à")</label>
+            <div style="display:flex; gap:8px;">
+                <input type="number" name="@Name("MinAge")" id="@Id("MinAge")" value="@Model.MinAge" min="10" max="99" placeholder="18" />
+                <input type="number" name="@Name("MaxAge")" id="@Id("MaxAge")" value="@Model.MaxAge" min="10" max="99" placeholder="35" />
+            </div>
+        </div>
+        <div class="field">
+            <label for="@Id("StartDate")">@T("بدء الحدث (مؤتمر/مسابقة)", "Event start (conference/competition)", "Début de l'événement")</label>
+            <input type="date" name="@Name("StartDate")" id="@Id("StartDate")" value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
+        </div>
+        <div class="field">
+            <label for="@Id("Venue")">@T("المكان", "Venue", "Lieu")</label>
+            <input name="@Name("Venue")" id="@Id("Venue")" value="@Model.Venue" maxlength="200" />
+        </div>
+        <div class="field">
+            <label for="@Id("HostOrganizationName")">@T("الجهة المقدِّمة فعلًا", "Hosting organization", "Organisme d'accueil")</label>
+            <input name="@Name("HostOrganizationName")" id="@Id("HostOrganizationName")" value="@Model.HostOrganizationName" maxlength="200" placeholder="DAAD" />
+        </div>
+        <div class="field">
+            <label for="@Id("HostOrganizationUrl")">@T("موقع الجهة", "Organization website", "Site de l'organisme")</label>
+            <input name="@Name("HostOrganizationUrl")" id="@Id("HostOrganizationUrl")" value="@Model.HostOrganizationUrl" placeholder="https://" />
+        </div>
+        <div class="field">
+            <label for="@Id("ProgramKey")">@T("مفتاح البرنامج المتكرر", "Recurring program key", "Clé du programme récurrent")</label>
+            <input name="@Name("ProgramKey")" id="@Id("ProgramKey")" value="@Model.ProgramKey" maxlength="60" placeholder="daad-epos" dir="ltr" />
+        </div>
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:14px;">
+        <label><input type="checkbox" name="@Name("IsRemote")" value="true" checked="@Model.IsRemote" /> @T("عن بُعد", "Remote", "À distance")</label>
+        <label><input type="checkbox" name="@Name("IsOnline")" value="true" checked="@Model.IsOnline" /> @T("إلكتروني (أونلاين)", "Online", "En ligne")</label>
+        <label><input type="checkbox" name="@Name("ForWomenOnly")" value="true" checked="@Model.ForWomenOnly" /> @T("للنساء فقط", "Women only", "Femmes uniquement")</label>
+        <label><input type="checkbox" name="@Name("HasApplicationFee")" value="true" checked="@Model.HasApplicationFee" /> @T("فيها رسوم تقديم", "Has application fee", "Frais de candidature")</label>
+    </div>
+
+    <div>
+        <div style="font-weight:600; margin-bottom:6px;">@T("المراحل الدراسية المقبولة", "Accepted degree levels", "Niveaux acceptés")</div>
+        <div style="display:flex; flex-wrap:wrap; gap:12px;">
+            @foreach (var d in degreeOptions)
+            {
+                <label><input type="checkbox" name="@Name("DegreeLevels")" value="@d.v" checked="@Model.DegreeLevels.Contains(d.v)" /> @T(d.ar, d.en, d.fr)</label>
+            }
+        </div>
+    </div>
+
+    <div>
+        <div style="font-weight:600; margin-bottom:6px;">@T("المحاور الخضراء", "Green themes", "Thèmes verts")</div>
+        <div style="display:flex; flex-wrap:wrap; gap:12px;">
+            @foreach (var th in themeOptions)
+            {
+                <label><input type="checkbox" name="@Name("GreenThemes")" value="@th.v" checked="@Model.GreenThemes.Contains(th.v)" /> @T(th.ar, th.en, th.fr)</label>
+            }
+        </div>
+    </div>
+
+    @if (fields.Count > 0)
+    {
+        <div>
+            <div style="font-weight:600; margin-bottom:6px;">@T("المجالات", "Fields", "Domaines")</div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:6px 12px;">
+                @foreach (var f in fields.OrderBy(x => x.SortOrder))
+                {
+                    <label><input type="checkbox" name="@Name("FieldIds")" value="@f.Id" checked="@Model.FieldIds.Contains(f.Id)" /> @(lang == "en" ? f.NameEn : lang == "fr" ? f.NameFr : f.NameAr)</label>
+                }
+            </div>
+        </div>
+    }
+</div>

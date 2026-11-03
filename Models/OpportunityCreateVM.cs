@@ -64,6 +64,9 @@ namespace Foras_Khadra.Models
 
         public List<SelectListItem> CountriesSelectList { get; set; } = new List<SelectListItem>();
 
+        /// <summary>حقول الأهلية المهيكلة (Views/Shared/_FacetFields.cshtml بالبادئة Facets).</summary>
+        public FacetFormVM Facets { get; set; } = new();
+
 
     }
 }

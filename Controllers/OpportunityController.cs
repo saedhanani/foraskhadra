@@ -96,6 +96,7 @@ public async Task<IActionResult> Create()
                 model.PublishedBy = "Admin";
             }
 
+            ViewBag.FieldOptions = await _context.Fields.OrderBy(f => f.SortOrder).ToListAsync();
             return View(model);
         }
 
@@ -108,6 +109,7 @@ public async Task<IActionResult> Create()
             {
                 ModelState.AddModelError("EndDate", "End date is required when selecting specific date.");
             }
+            if (model.Facets.Validate() is string facetError) ModelState.AddModelError("Facets", facetError);
             if (model.Image != null && _images.Validate(model.Image) is string imageError)
             {
                 ModelState.AddModelError("Image", imageError);
@@ -130,6 +132,7 @@ public async Task<IActionResult> Create()
                     Selected = model.AvailableCountryIds?.Contains(c.Id) ?? false
                 }).ToList();
 
+                ViewBag.FieldOptions = await _context.Fields.OrderBy(f => f.SortOrder).ToListAsync();
                 return View(model);
             }
 
@@ -182,6 +185,8 @@ public async Task<IActionResult> Create()
                 IsPublishedByOrganization = await _userManager.IsInRoleAsync(currentUser, "Organization")
             };
 
+            model.Facets.ApplyTo(opportunity, await _context.Fields.ToListAsync());
+
             var isAdminCreate = await _userManager.IsInRoleAsync(currentUser, "Admin");
             if (!isAdminCreate && org != null)
             {
@@ -204,6 +209,7 @@ public async Task<IActionResult> Create()
         [Authorize(Roles = "Admin,Organization")]
         public async Task<IActionResult> Edit(OpportunityEditVM model, [FromServices] IOpportunityReviewService review)
         {
+            if (model.Facets.Validate() is string facetError) ModelState.AddModelError("Facets", facetError);
             if (model.Image != null && _images.Validate(model.Image) is string imageError)
             {
                 ModelState.AddModelError("Image", imageError);
@@ -244,6 +250,7 @@ public async Task<IActionResult> Create()
                     Selected = model.AvailableCountryIds?.Contains(c.Id) ?? false
                 }).ToList();
 
+                ViewBag.FieldOptions = await _context.Fields.OrderBy(f => f.SortOrder).ToListAsync();
                 return View(model);
             }
 
@@ -256,6 +263,7 @@ public async Task<IActionResult> Create()
             // جلب الفرصة الحالية بدل إنشاء واحدة جديدة
             var opportunity = await _context.Opportunities
                 .Include(o => o.AvailableCountries)
+                .Include(o => o.Fields)
                 .FirstOrDefaultAsync(o => o.Id == model.Id);
 
             if (opportunity == null) return NotFound();
@@ -310,6 +318,8 @@ public async Task<IActionResult> Create()
             opportunity.IsPublishedByAdmin = await _userManager.IsInRoleAsync(currentUser, "Admin");
             opportunity.IsPublishedByOrganization = await _userManager.IsInRoleAsync(currentUser, "Organization");
 
+            model.Facets.ApplyTo(opportunity, await _context.Fields.ToListAsync());
+
             if (opportunity.IsPublishedByAdmin)
             {
                 // اعتماد مسودة المنصة أو فرصة معلّقة/مرفوضة: الأدمن وحده ينشر، ويصير تاريخ النشر لحظة الاعتماد
@@ -363,6 +373,7 @@ public async Task<IActionResult> Create()
         {
             var opp = await _context.Opportunities
                 .Include(o => o.AvailableCountries)
+                .Include(o => o.Fields)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
             if (opp == null) return NotFound();
@@ -412,8 +423,10 @@ public async Task<IActionResult> Create()
                 EligibilityCriteriaFr = opp.EligibilityCriteriaFr,
                 ApplyLink = opp.ApplyLink,
                 ImagePath = opp.ImagePath,
-                IsDraft = opp.Status != OpportunityStatus.Published && User.IsInRole("Admin")
+                IsDraft = opp.Status != OpportunityStatus.Published && User.IsInRole("Admin"),
+                Facets = FacetFormVM.From(opp)
             };
+            ViewBag.FieldOptions = await _context.Fields.OrderBy(f => f.SortOrder).ToListAsync();
 
             return View(model);
         }
@@ -474,6 +487,7 @@ public async Task<IActionResult> Create()
         {
             var opp = await _context.Opportunities
                 .Include(o => o.AvailableCountries)
+                .Include(o => o.Fields)
                 .FirstOrDefaultAsync(o => o.Id == id);
 
             if (opp == null) return NotFound();

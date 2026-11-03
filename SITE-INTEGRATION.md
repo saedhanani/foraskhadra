@@ -37,6 +37,11 @@
 | POST | `opportunities/{id}/image` | صورة غلاف المسودة (انظر أدناه) |
 | POST | `opportunities/{id}/publish` | نشر المسودة؛ يرد `no_image` إن لم تُرفع الصورة، و`expired` إن مضى الموعد |
 | POST | `opportunities/{id}/discard` | حذف مسودة لم تُنشر |
+| GET | `fields` | المجالات الثابتة `{key, nameAr, nameEn, nameFr}` التي يقبلها حقل `fields` |
+| POST | `opportunities/{id}/facets` | تحديث الحقول المهيكلة لفرصة موجودة (كل حقل اختياري) — انظر `docs/PIPELINE-PROMPT-v2.md` |
+
+### الحقول المهيكلة (منذ 4 نوفمبر 2026)
+جسم `POST opportunities` يقبل إضافةً إلى الحقول القديمة: `fundingType`, `degreeLevels[]`, `fields[]`, `greenThemes[]`, `eligibleCountries[]` (ISO-2 أو `XA`/`XW`؛ يستبدل `countryIds`)، `hostCountry`, `isRemote`, `isOnline`, `minAge`, `maxAge`, `languageRequirement`, `languageScore`, `hasApplicationFee`, `forWomenOnly`, `startDate`, `venue`, `hostOrganization{name,url,logoUrl}`, `employmentType`, `programKey`, `benefitsSummary{ar[],en[],fr[]}`. القيم المسموحة وقواعد الاستخراج في `docs/PIPELINE-PROMPT-v2.md`. قيمة غير معروفة → `400 {"error":"bad_<field>","allowed":[...]}`. الروابط (`applyLink`, `sourceUrl`, `hostOrganization.url`) يجب أن تكون http/https (`bad_link` / `bad_source` / `bad_host_url`).
 
 المسودات لا تظهر للزوار، ولا في الصفحة الرئيسية ولا في صفحات الأنواع ولا البحث؛ تظهر في `Opportunity/Index`
 لحساب Admin بوسم، وتُعدَّل من `Opportunity/Edit/{id}` كأي فرصة (هناك يرفع المدقق الصورة).

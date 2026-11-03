@@ -1,0 +1,81 @@
+@model Foras_Khadra.Models.Opportunity
+@using Foras_Khadra.Models
+@{
+    // بطاقة الحقائق السريعة من حقول الأهلية المهيكلة — تُعرض فقط ما هو معروف (الصفوف القديمة بلا حقول لا تُظهر شيئًا).
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var facts = new List<(string icon, string text, string css)>();
+
+    switch (Model.FundingType)
+    {
+        case FundingType.FullyFunded: facts.Add(("bi-cash-coin", T("ممولة بالكامل", "Fully funded", "Entièrement financée"), "fact-good")); break;
+        case FundingType.PartiallyFunded: facts.Add(("bi-cash", T("ممولة جزئيًا", "Partially funded", "Partiellement financée"), "")); break;
+        case FundingType.SelfFunded: facts.Add(("bi-wallet2", T("على نفقة المتقدم", "Self-funded", "Autofinancée"), "")); break;
+        case FundingType.Paid: facts.Add(("bi-cash-coin", T("براتب", "Paid", "Rémunérée"), "fact-good")); break;
+    }
+    if (Model.DegreeLevels != DegreeLevels.None)
+    {
+        var names = new List<string>();
+        if (Model.DegreeLevels == DegreeLevels.Any) names.Add(T("كل المراحل", "All levels", "Tous niveaux"));
+        else
+        {
+            if (Model.DegreeLevels.HasFlag(DegreeLevels.HighSchool)) names.Add(T("ثانوي", "High school", "Lycée"));
+            if (Model.DegreeLevels.HasFlag(DegreeLevels.Bachelor)) names.Add(T("بكالوريوس", "Bachelor", "Licence"));
+            if (Model.DegreeLevels.HasFlag(DegreeLevels.Master)) names.Add(T("ماجستير", "Master", "Master"));
+            if (Model.DegreeLevels.HasFlag(DegreeLevels.PhD)) names.Add(T("دكتوراه", "PhD", "Doctorat"));
+            if (Model.DegreeLevels.HasFlag(DegreeLevels.Postdoc)) names.Add(T("ما بعد الدكتوراه", "Postdoc", "Post-doc"));
+            if (Model.DegreeLevels.HasFlag(DegreeLevels.Professional)) names.Add(T("مهني", "Professional", "Professionnel"));
+        }
+        facts.Add(("bi-mortarboard", string.Join(" · ", names), ""));
+    }
+    if (Model.MinAge.HasValue || Model.MaxAge.HasValue)
+    {
+        var age = Model.MinAge.HasValue && Model.MaxAge.HasValue ? $"{Model.MinAge}–{Model.MaxAge}"
+            : Model.MinAge.HasValue ? T($"من {Model.MinAge} سنة", $"{Model.MinAge}+", $"{Model.MinAge}+")
+            : T($"حتى {Model.MaxAge} سنة", $"up to {Model.MaxAge}", $"jusqu'à {Model.MaxAge} ans");
+        facts.Add(("bi-person", T("العمر: ", "Age: ", "Âge : ") + age, ""));
+    }
+    switch (Model.LanguageRequirement)
+    {
+        case LanguageRequirement.None: facts.Add(("bi-translate", T("بدون شهادة لغة", "No language test", "Sans test de langue"), "fact-good")); break;
+        case LanguageRequirement.IELTS: facts.Add(("bi-translate", "IELTS" + (Model.LanguageScore != null ? " · " + Model.LanguageScore : ""), "")); break;
+        case LanguageRequirement.TOEFL: facts.Add(("bi-translate", "TOEFL" + (Model.LanguageScore != null ? " · " + Model.LanguageScore : ""), "")); break;
+        case LanguageRequirement.Either: facts.Add(("bi-translate", "IELTS / TOEFL" + (Model.LanguageScore != null ? " · " + Model.LanguageScore : ""), "")); break;
+        case LanguageRequirement.French: facts.Add(("bi-translate", T("شهادة فرنسية", "French certificate", "Certificat de français") + (Model.LanguageScore != null ? " · " + Model.LanguageScore : ""), "")); break;
+        case LanguageRequirement.Other: facts.Add(("bi-translate", T("شهادة لغة مطلوبة", "Language test required", "Test de langue requis") + (Model.LanguageScore != null ? " · " + Model.LanguageScore : ""), "")); break;
+    }
+    if (Model.IsRemote) facts.Add(("bi-laptop", T("عن بُعد", "Remote", "À distance"), ""));
+    if (Model.IsOnline) facts.Add(("bi-globe2", T("إلكتروني", "Online", "En ligne"), ""));
+    if (!string.IsNullOrEmpty(Model.HostCountryIso) && !Model.IsRemote)
+    {
+        var countryName = Foras_Khadra.Helpers.CountryHelper.NameForIso(Model.HostCountryIso, lang);
+        if (countryName != null) facts.Add(("bi-geo-alt", countryName, ""));
+    }
+    if (Model.ForWomenOnly) facts.Add(("bi-gender-female", T("للنساء فقط", "Women only", "Femmes uniquement"), ""));
+    if (Model.StartDate.HasValue) facts.Add(("bi-calendar-event", T("يبدأ ", "Starts ", "Début ") + Model.StartDate.Value.ToString("yyyy-MM-dd") + (string.IsNullOrEmpty(Model.Venue) ? "" : " · " + Model.Venue), ""));
+    if (Model.HasApplicationFee) facts.Add(("bi-exclamation-triangle", T("فيها رسوم تقديم", "Has an application fee", "Frais de candidature"), "fact-warn"));
+}
+
+@if (facts.Count > 0 || !string.IsNullOrEmpty(Model.HostOrganizationName))
+{
+    <span class="info-label">@T("الأهلية", "Eligibility", "Admissibilité")</span>
+    <span class="info-value">
+    <div class="eligibility-facts" style="display:flex; flex-wrap:wrap; gap:8px; margin:4px 0;">
+        @foreach (var (icon, text, css) in facts)
+        {
+            <span class="fact-chip @css" style="display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; background:#eef5ee; font-size:.88rem; @(css == "fact-good" ? "background:#dff3e3; color:#1B6B23;" : css == "fact-warn" ? "background:#fdecec; color:#b42318;" : "")">
+                <i class="bi @icon"></i> @text
+            </span>
+        }
+        @if (!string.IsNullOrEmpty(Model.HostOrganizationName))
+        {
+            var hostUrl = Foras_Khadra.Helpers.HttpUrl.Normalize(Model.HostOrganizationUrl);
+            <span class="fact-chip" style="display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; background:#eef5ee; font-size:.88rem;">
+                <i class="bi bi-building"></i>
+                @if (hostUrl != null) { <a href="@hostUrl" target="_blank" rel="noopener nofollow" style="color:inherit;">@Model.HostOrganizationName</a> }
+                else { @Model.HostOrganizationName }
+            </span>
+        }
+    </div>
+    </span>
+}

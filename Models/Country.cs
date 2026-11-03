@@ -16,6 +16,10 @@ namespace Foras_Khadra.Models
         [Required]
         public string NameFr { get; set; }
 
+        /// <summary>ISO 3166-1 alpha-2؛ XA = الوطن العربي، XW = كل دول العالم (قيم خاصة تُفكّ عند التصدير).</summary>
+        [StringLength(2)]
+        public string? IsoCode { get; set; }
+
         public virtual ICollection<Opportunity> Opportunities { get; set; }
     }
 }

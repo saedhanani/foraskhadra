@@ -1,0 +1,77 @@
+@model List<Foras_Khadra.Models.Opportunity>
+@using Foras_Khadra.Models
+@using Foras_Khadra.Helpers
+@{
+    ViewData["Title"] = "تعبئة بيانات الأهلية";
+    var pageNo = (int)(ViewData["Page"] ?? 1);
+    var total = (int)(ViewData["Remaining"] ?? 0);
+    var fields = ViewData["FieldOptions"] as List<Field> ?? new List<Field>();
+}
+
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="m-0">تعبئة بيانات الأهلية <span class="badge bg-secondary">@total فرصة بلا بيانات</span></h2>
+        <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-secondary">لوحة التحكم</a>
+    </div>
+    <p class="text-muted">
+        الفرص المنشورة التي ما زال نوع تمويلها «غير محدد». الحقول مقترحة آليًا من كلمات العنوان والنص — راجعها ثم اضغط «حفظ».
+        الفرص الجديدة من منصة الكتابة تصل بهذه البيانات جاهزة (docs/PIPELINE-PROMPT-v2.md).
+    </p>
+    @if (TempData["FacetMessage"] is string msg)
+    {
+        <div class="alert alert-success">@msg</div>
+    }
+    @if (!Model.Any())
+    {
+        <div class="alert alert-light border text-center py-5">كل الفرص المنشورة لها بيانات أهلية. 🎉</div>
+    }
+
+    @foreach (var opp in Model)
+    {
+        var s = FacetGuesser.Suggest(opp);
+        var vm = FacetFormVM.From(opp);
+        if (vm.FundingType == FundingType.Unknown && s.Funding.HasValue) vm.FundingType = s.Funding.Value;
+        if (vm.DegreeLevels.Count == 0) vm.DegreeLevels = Enum.GetValues<DegreeLevels>().Where(v => v != DegreeLevels.None && v != DegreeLevels.Any && s.Degrees.HasFlag(v)).ToList();
+        if (vm.GreenThemes.Count == 0) vm.GreenThemes = Enum.GetValues<GreenThemes>().Where(v => v != GreenThemes.None && s.Themes.HasFlag(v)).ToList();
+        if (vm.LanguageRequirement == LanguageRequirement.Unknown && s.Language.HasValue) vm.LanguageRequirement = s.Language.Value;
+        vm.IsRemote = vm.IsRemote || s.Remote;
+        vm.IsOnline = vm.IsOnline || s.Online;
+        vm.ForWomenOnly = vm.ForWomenOnly || s.WomenOnly;
+        vm.HasApplicationFee = vm.HasApplicationFee || s.Fee;
+        if (vm.FieldIds.Count == 0 && s.Themes != GreenThemes.None)
+        {
+            var env = fields.FirstOrDefault(f => f.Key == "environment");
+            if (env != null) vm.FieldIds.Add(env.Id);
+        }
+
+        <form asp-controller="Admin" asp-action="SaveFacets" method="post" class="card mb-3 shadow-sm">
+            <input type="hidden" name="id" value="@opp.Id" />
+            <input type="hidden" name="page" value="@pageNo" />
+            <div class="card-body">
+                <div class="d-flex gap-3 flex-wrap align-items-start">
+                    <img src="@(string.IsNullOrEmpty(opp.ImagePath) ? "/images/default.jpg" : opp.ImagePath)" alt="" style="width:110px;height:74px;object-fit:cover;border-radius:8px" />
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1"><a asp-controller="Opportunity" asp-action="Details" asp-route-id="@opp.Id" target="_blank">@opp.TitleAr</a></h5>
+                        <div class="text-muted small">@(opp.Type?.ToString() ?? "") · @opp.PublishedBy · @opp.PublishDate.ToString("yyyy-MM-dd")</div>
+                    </div>
+                    <button type="submit" class="btn btn-success">حفظ</button>
+                </div>
+                @{
+                    ViewData["FacetRowId"] = opp.Id;
+                }
+                @await Html.PartialAsync("_FacetFields", vm, new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "facets" } })
+            </div>
+        </form>
+    }
+
+    @if (total > Model.Count)
+    {
+        <div class="d-flex gap-2 justify-content-center mt-3">
+            @if (pageNo > 1)
+            {
+                <a class="btn btn-outline-primary" asp-controller="Admin" asp-action="Facets" asp-route-page="@(pageNo - 1)">السابق</a>
+            }
+            <a class="btn btn-outline-primary" asp-controller="Admin" asp-action="Facets" asp-route-page="@(pageNo + 1)">التالي</a>
+        </div>
+    }
+</div>

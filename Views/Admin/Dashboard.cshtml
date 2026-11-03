@@ -676,6 +676,10 @@
                             <i class="bi bi-shield-check"></i>
                             <span>@(isArabic ? "بانتظار المراجعة" : "Pending review")@(Model.PendingReviewCount > 0 ? $" ({Model.PendingReviewCount})" : "")</span>
                         </a>
+                        <a asp-controller="Admin" asp-action="Facets" class="nav-link-item">
+                            <i class="bi bi-ui-checks"></i>
+                            <span>@(isArabic ? "تعبئة بيانات الأهلية" : "Fill eligibility data")</span>
+                        </a>
                     }
                     
                 </div>

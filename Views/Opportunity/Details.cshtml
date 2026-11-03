@@ -283,6 +283,7 @@
                         }))
                 </span>
 
+                @await Html.PartialAsync("_EligibilityFacts", Model)
                 <span class="info-label">@Localizer["Description"]</span>
                 @{
                     string description = lang switch

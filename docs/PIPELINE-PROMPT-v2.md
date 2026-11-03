@@ -58,7 +58,7 @@
 > |---|---|
 > | `fundingType` | `FullyFunded` إذا غطّى المصدر الدراسة/المشاركة **والمعيشة أو السفر**. `PartiallyFunded` إذا غطّى جزءاً. `SelfFunded` إذا كان على المتقدّم الدفع. `Paid` للوظائف والتدريب المدفوع (راتب). `Unknown` إن لم يُذكر. **لا تكتب "ممولة بالكامل" في العنوان إلا إذا كانت `FullyFunded`.** |
 > | `degreeLevels` | المراحل التي يُقبل منها المتقدّم (قائمة). منحة ماستر تقبل حَمَلة البكالوريوس → `["Bachelor"]`. إن لم تُذكر مرحلة → `["Any"]`. |
-> | `fields` | من القائمة التي يرجعها `GET /api/team/fields` (نحو 25 مجالاً بثلاث لغات). اختر كل ما ينطبق؛ إن كانت مفتوحة لكل المجالات → `["Any"]`. |
+> | `fields` | من القائمة التي يرجعها `GET /api/team/fields` (25 مجالًا بثلاث لغات). المفاتيح: `environment`, `energy`, `water`, `agriculture`, `engineering`, `architecture`, `it`, `data-ai`, `natural-sciences`, `health`, `business`, `economics`, `entrepreneurship`, `law`, `political-science`, `development`, `leadership`, `education`, `social-sciences`, `languages`, `arts`, `media`, `tourism`, `vocational`, `any`. اختر كل ما ينطبق؛ إن كانت مفتوحة لكل المجالات → `["any"]`. |
 > | `greenThemes` | المحاور البيئية التي تخدمها الفرصة. فرصة عامة بلا محور بيئي → `["None"]`. |
 > | `eligibleCountries` | رموز ISO 3166-1 alpha-2 للدول التي يُقبل منها المتقدّم. **`"XA"`** = كل دول الوطن العربي الـ22. **`"XW"`** = كل العالم. إن قال المصدر "الدول النامية" أو "أفريقيا والشرق الأوسط" فاذكر الدول العربية المشمولة صراحةً، وأضف غيرها إن ذُكرت. هذا الحقل يستبدل `CountryIds` القديم، وأرسلهما معاً خلال فترة التوافق. |
 > | `hostCountry` | بلد الدراسة أو العمل أو الحدث (ISO-2). للفرص عن بُعد → `null` مع `isRemote: true`. |
@@ -78,6 +78,7 @@
 > - `EndDate` بصيغة `YYYY-MM-DD` دائماً (تقويم ميلادي)، وكذلك `startDate`.
 > - إن كانت الفرصة منتهية في المصدر، لا ترسلها.
 > - قبل الكتابة استدعِ `GET /api/team/opportunities/search?url=...` لتجنّب التكرار (موجود).
+> - **إعادة معالجة الفرص القديمة:** لتحديث الحقول المهيكلة لفرصة موجودة (من `SourceUrl`) دون إعادة كتابة نصوصها، أرسل الحقول وحدها إلى `POST /api/team/opportunities/{id}/facets` بالجسم نفسه (كل حقل اختياري؛ ما لا تُرسله لا يتغير). الرد `200` بالفرصة، أو `400` باسم الحقل الخاطئ وقائمة القيم المسموحة (`bad_funding`, `bad_degree`, `bad_field`, `bad_theme`, `bad_country`, `bad_host_country`, `bad_language`, `bad_employment`, `bad_start_date`, `bad_program_key`, `bad_host_url`, `bad_age`).
 > - **طلبات المنظمات:** استدعِ `GET /api/team/requests` دورياً؛ كل طلب فيه `id`, `organizationName`, `contactEmail`, `sourceUrl`, `notes`. اكتب الفرصة من `sourceUrl` وأرسلها مع `"requestId": <id>` في الجسم ليربطها الموقع بالطلب ويُبلغ المنظمة. *(هذه النقطة تُفعَّل في المرحلة 1؛ حتى حينها ترد 404.)*
 >
 > #### 5. مثال كامل (منحة)

@@ -33,6 +33,7 @@ namespace Foras_Khadra.Data
         public DbSet<ImpactStat> ImpactStats { get; set; }
         public DbSet<PushSubscription> PushSubscriptions { get; set; }
         public DbSet<OpportunityDailyStat> OpportunityDailyStats { get; set; }
+        public DbSet<Field> Fields { get; set; }
 
         // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -53,6 +54,7 @@ namespace Foras_Khadra.Data
             {
                 if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
                     entry.Entity.SearchText = Helpers.SearchIndexer.Build(entry.Entity);
+                    entry.Entity.UpdatedAt = DateTime.Now;
             }
         }
 
@@ -183,35 +185,44 @@ namespace Foras_Khadra.Data
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.ClientCascade);
 
+            // المجالات: قائمة ثابتة (FieldSeed) وجدول ربط OpportunityFields؛ وفهرس على مفتاح البرنامج المتكرر
+            modelBuilder.Entity<Field>().HasIndex(f => f.Key).IsUnique();
+            modelBuilder.Entity<Opportunity>()
+                .HasMany(o => o.Fields)
+                .WithMany(f => f.Opportunities)
+                .UsingEntity(j => j.ToTable("OpportunityFields"));
+            modelBuilder.Entity<Field>().HasData(FieldSeed.All.Select(f => new { f.Id, f.Key, f.NameAr, f.NameEn, f.NameFr, f.SortOrder }));
+            modelBuilder.Entity<Opportunity>().HasIndex(o => o.ProgramKey);
+
             modelBuilder.Entity<Country>().HasData(
 
     // Asia
-    new Country { Id = 1, NameAr = "كل دول العالم", NameEn = "All World", NameFr = "Tous les pays du monde" },
-    new Country { Id = 2, NameAr = "الوطن العربي ", NameEn = "The Arab World", NameFr = "Le Monde arabe" },
-    new Country { Id = 3, NameAr = "فلسطين", NameEn = "Palestine", NameFr = "Palestine" },
-    new Country { Id = 4, NameAr = "الأردن", NameEn = "Jordan", NameFr = "Jordanie" },
-    new Country { Id = 5, NameAr = "سوريا", NameEn = "Syria", NameFr = "Syrie" },
-    new Country { Id = 6, NameAr = "لبنان", NameEn = "Lebanon", NameFr = "Liban" },
-    new Country { Id = 7, NameAr = "العراق", NameEn = "Iraq", NameFr = "Irak" },
-    new Country { Id = 8, NameAr = "السعودية", NameEn = "Saudi Arabia", NameFr = "Arabie saoudite" },
-    new Country { Id = 9, NameAr = "الكويت", NameEn = "Kuwait", NameFr = "Koweït" },
-    new Country { Id = 10, NameAr = "قطر", NameEn = "Qatar", NameFr = "Qatar" },
-    new Country { Id = 11, NameAr = "البحرين", NameEn = "Bahrain", NameFr = "Bahreïn" },
-    new Country { Id = 12, NameAr = "الإمارات العربية المتحدة", NameEn = "United Arab Emirates", NameFr = "Émirats arabes unis" },
-    new Country { Id = 13, NameAr = "عُمان", NameEn = "Oman", NameFr = "Oman" },
-    new Country { Id = 14, NameAr = "اليمن", NameEn = "Yemen", NameFr = "Yémen" },
+    new Country { Id = 1, IsoCode = "XW", NameAr = "كل دول العالم", NameEn = "All World", NameFr = "Tous les pays du monde" },
+    new Country { Id = 2, IsoCode = "XA", NameAr = "الوطن العربي ", NameEn = "The Arab World", NameFr = "Le Monde arabe" },
+    new Country { Id = 3, IsoCode = "PS", NameAr = "فلسطين", NameEn = "Palestine", NameFr = "Palestine" },
+    new Country { Id = 4, IsoCode = "JO", NameAr = "الأردن", NameEn = "Jordan", NameFr = "Jordanie" },
+    new Country { Id = 5, IsoCode = "SY", NameAr = "سوريا", NameEn = "Syria", NameFr = "Syrie" },
+    new Country { Id = 6, IsoCode = "LB", NameAr = "لبنان", NameEn = "Lebanon", NameFr = "Liban" },
+    new Country { Id = 7, IsoCode = "IQ", NameAr = "العراق", NameEn = "Iraq", NameFr = "Irak" },
+    new Country { Id = 8, IsoCode = "SA", NameAr = "السعودية", NameEn = "Saudi Arabia", NameFr = "Arabie saoudite" },
+    new Country { Id = 9, IsoCode = "KW", NameAr = "الكويت", NameEn = "Kuwait", NameFr = "Koweït" },
+    new Country { Id = 10, IsoCode = "QA", NameAr = "قطر", NameEn = "Qatar", NameFr = "Qatar" },
+    new Country { Id = 11, IsoCode = "BH", NameAr = "البحرين", NameEn = "Bahrain", NameFr = "Bahreïn" },
+    new Country { Id = 12, IsoCode = "AE", NameAr = "الإمارات العربية المتحدة", NameEn = "United Arab Emirates", NameFr = "Émirats arabes unis" },
+    new Country { Id = 13, IsoCode = "OM", NameAr = "عُمان", NameEn = "Oman", NameFr = "Oman" },
+    new Country { Id = 14, IsoCode = "YE", NameAr = "اليمن", NameEn = "Yemen", NameFr = "Yémen" },
 
     // Africa
-    new Country { Id = 15, NameAr = "مصر", NameEn = "Egypt", NameFr = "Égypte" },
-    new Country { Id = 16, NameAr = "السودان", NameEn = "Sudan", NameFr = "Soudan" },
-    new Country { Id = 17, NameAr = "ليبيا", NameEn = "Libya", NameFr = "Libye" },
-    new Country { Id = 18, NameAr = "تونس", NameEn = "Tunisia", NameFr = "Tunisie" },
-    new Country { Id = 19, NameAr = "الجزائر", NameEn = "Algeria", NameFr = "Algérie" },
-    new Country { Id = 20, NameAr = "المغرب", NameEn = "Morocco", NameFr = "Maroc" },
-    new Country { Id = 21, NameAr = "موريتانيا", NameEn = "Mauritania", NameFr = "Mauritanie" },
-    new Country { Id = 22, NameAr = "جيبوتي", NameEn = "Djibouti", NameFr = "Djibouti" },
-    new Country { Id = 23, NameAr = "الصومال", NameEn = "Somalia", NameFr = "Somalie" },
-    new Country { Id = 24, NameAr = "جزر القمر", NameEn = "Comoros", NameFr = "Comores" }
+    new Country { Id = 15, IsoCode = "EG", NameAr = "مصر", NameEn = "Egypt", NameFr = "Égypte" },
+    new Country { Id = 16, IsoCode = "SD", NameAr = "السودان", NameEn = "Sudan", NameFr = "Soudan" },
+    new Country { Id = 17, IsoCode = "LY", NameAr = "ليبيا", NameEn = "Libya", NameFr = "Libye" },
+    new Country { Id = 18, IsoCode = "TN", NameAr = "تونس", NameEn = "Tunisia", NameFr = "Tunisie" },
+    new Country { Id = 19, IsoCode = "DZ", NameAr = "الجزائر", NameEn = "Algeria", NameFr = "Algérie" },
+    new Country { Id = 20, IsoCode = "MA", NameAr = "المغرب", NameEn = "Morocco", NameFr = "Maroc" },
+    new Country { Id = 21, IsoCode = "MR", NameAr = "موريتانيا", NameEn = "Mauritania", NameFr = "Mauritanie" },
+    new Country { Id = 22, IsoCode = "DJ", NameAr = "جيبوتي", NameEn = "Djibouti", NameFr = "Djibouti" },
+    new Country { Id = 23, IsoCode = "SO", NameAr = "الصومال", NameEn = "Somalia", NameFr = "Somalie" },
+    new Country { Id = 24, IsoCode = "KM", NameAr = "جزر القمر", NameEn = "Comoros", NameFr = "Comores" }
     
 
 

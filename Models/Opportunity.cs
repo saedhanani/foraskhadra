@@ -108,6 +108,40 @@ namespace Foras_Khadra.Models
         /// <summary>نص البحث المطبّع (كل الحقول بالثلاث لغات) — يملؤه ApplicationDbContext عند الحفظ؛ انظر Helpers/SearchIndexer.</summary>
         public string? SearchText { get; set; }
 
+        // ===== حقول الأهلية المهيكلة (المرحلة 0.5 من خطة 2026؛ العقد مع منصة الكتابة في docs/PIPELINE-PROMPT-v2.md) =====
+        public FundingType FundingType { get; set; }
+        public DegreeLevels DegreeLevels { get; set; }
+        public GreenThemes GreenThemes { get; set; }
+        public virtual ICollection<Field> Fields { get; set; } = new List<Field>();
+        /// <summary>رموز ISO-2 لدول مؤهَّلة ليست في جدول الدول (غير عربية)، مفصولة بفاصلة. الدول العربية وXA/XW في AvailableCountries.</summary>
+        [StringLength(400)] public string? EligibleCountriesIso { get; set; }
+        /// <summary>بلد الدراسة/العمل/الحدث (ISO-2) — غير دول الأهلية.</summary>
+        [StringLength(2)] public string? HostCountryIso { get; set; }
+        public bool IsRemote { get; set; }
+        public bool IsOnline { get; set; }
+        public int? MinAge { get; set; }
+        public int? MaxAge { get; set; }
+        public LanguageRequirement LanguageRequirement { get; set; }
+        [StringLength(100)] public string? LanguageScore { get; set; }
+        public bool HasApplicationFee { get; set; }
+        public bool ForWomenOnly { get; set; }
+        /// <summary>بدء الحدث (مؤتمر/مسابقة) — غير الموعد النهائي للتقديم (EndDate).</summary>
+        public DateTime? StartDate { get; set; }
+        [StringLength(200)] public string? Venue { get; set; }
+        /// <summary>الجهة التي تقدّم الفرصة فعلًا (لـ JobPosting.hiringOrganization) — لا الموقع الناشر.</summary>
+        [StringLength(200)] public string? HostOrganizationName { get; set; }
+        public string? HostOrganizationUrl { get; set; }
+        public string? HostOrganizationLogoUrl { get; set; }
+        public EmploymentType EmploymentType { get; set; }
+        /// <summary>مفتاح ثابت للبرنامج المتكرر سنويًا (daad-epos) — يربط الدورات ويغذّي «يفتح عادةً في…».</summary>
+        [StringLength(60)] public string? ProgramKey { get; set; }
+        /// <summary>{"ar":[...],"en":[...],"fr":[...]} عبارات قصيرة للبطاقة.</summary>
+        public string? BenefitsSummaryJson { get; set; }
+        /// <summary>آخر تحقّق من المصدر (منصة الكتابة أو المدقق) — شارة «تم التحقق بتاريخ».</summary>
+        public DateTime? LastCheckedAt { get; set; }
+        /// <summary>آخر تعديل (يملؤه ApplicationDbContext عند الحفظ) — lastmod في خريطة الموقع.</summary>
+        public DateTime? UpdatedAt { get; set; }
+
         [NotMapped]
         public string AvailableCountriesNames
         {

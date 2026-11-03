@@ -37,6 +37,21 @@ namespace Foras_Khadra.Migrations
                     b.ToTable("CountryOpportunity");
                 });
 
+            modelBuilder.Entity("FieldOpportunity", b =>
+                {
+                    b.Property<int>("FieldsId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OpportunitiesId")
+                        .HasColumnType("int");
+
+                    b.HasKey("FieldsId", "OpportunitiesId");
+
+                    b.HasIndex("OpportunitiesId");
+
+                    b.ToTable("OpportunityFields", (string)null);
+                });
+
             modelBuilder.Entity("Foras_Khadra.Models.Activity", b =>
                 {
                     b.Property<int>("Id")
@@ -323,6 +338,10 @@ namespace Foras_Khadra.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("IsoCode")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
                     b.Property<string>("NameAr")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -343,6 +362,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 1,
+                            IsoCode = "XW",
                             NameAr = "كل دول العالم",
                             NameEn = "All World",
                             NameFr = "Tous les pays du monde"
@@ -350,6 +370,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 2,
+                            IsoCode = "XA",
                             NameAr = "الوطن العربي ",
                             NameEn = "The Arab World",
                             NameFr = "Le Monde arabe"
@@ -357,6 +378,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 3,
+                            IsoCode = "PS",
                             NameAr = "فلسطين",
                             NameEn = "Palestine",
                             NameFr = "Palestine"
@@ -364,6 +386,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 4,
+                            IsoCode = "JO",
                             NameAr = "الأردن",
                             NameEn = "Jordan",
                             NameFr = "Jordanie"
@@ -371,6 +394,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 5,
+                            IsoCode = "SY",
                             NameAr = "سوريا",
                             NameEn = "Syria",
                             NameFr = "Syrie"
@@ -378,6 +402,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 6,
+                            IsoCode = "LB",
                             NameAr = "لبنان",
                             NameEn = "Lebanon",
                             NameFr = "Liban"
@@ -385,6 +410,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 7,
+                            IsoCode = "IQ",
                             NameAr = "العراق",
                             NameEn = "Iraq",
                             NameFr = "Irak"
@@ -392,6 +418,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 8,
+                            IsoCode = "SA",
                             NameAr = "السعودية",
                             NameEn = "Saudi Arabia",
                             NameFr = "Arabie saoudite"
@@ -399,6 +426,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 9,
+                            IsoCode = "KW",
                             NameAr = "الكويت",
                             NameEn = "Kuwait",
                             NameFr = "Koweït"
@@ -406,6 +434,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 10,
+                            IsoCode = "QA",
                             NameAr = "قطر",
                             NameEn = "Qatar",
                             NameFr = "Qatar"
@@ -413,6 +442,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 11,
+                            IsoCode = "BH",
                             NameAr = "البحرين",
                             NameEn = "Bahrain",
                             NameFr = "Bahreïn"
@@ -420,6 +450,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 12,
+                            IsoCode = "AE",
                             NameAr = "الإمارات العربية المتحدة",
                             NameEn = "United Arab Emirates",
                             NameFr = "Émirats arabes unis"
@@ -427,6 +458,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 13,
+                            IsoCode = "OM",
                             NameAr = "عُمان",
                             NameEn = "Oman",
                             NameFr = "Oman"
@@ -434,6 +466,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 14,
+                            IsoCode = "YE",
                             NameAr = "اليمن",
                             NameEn = "Yemen",
                             NameFr = "Yémen"
@@ -441,6 +474,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 15,
+                            IsoCode = "EG",
                             NameAr = "مصر",
                             NameEn = "Egypt",
                             NameFr = "Égypte"
@@ -448,6 +482,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 16,
+                            IsoCode = "SD",
                             NameAr = "السودان",
                             NameEn = "Sudan",
                             NameFr = "Soudan"
@@ -455,6 +490,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 17,
+                            IsoCode = "LY",
                             NameAr = "ليبيا",
                             NameEn = "Libya",
                             NameFr = "Libye"
@@ -462,6 +498,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 18,
+                            IsoCode = "TN",
                             NameAr = "تونس",
                             NameEn = "Tunisia",
                             NameFr = "Tunisie"
@@ -469,6 +506,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 19,
+                            IsoCode = "DZ",
                             NameAr = "الجزائر",
                             NameEn = "Algeria",
                             NameFr = "Algérie"
@@ -476,6 +514,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 20,
+                            IsoCode = "MA",
                             NameAr = "المغرب",
                             NameEn = "Morocco",
                             NameFr = "Maroc"
@@ -483,6 +522,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 21,
+                            IsoCode = "MR",
                             NameAr = "موريتانيا",
                             NameEn = "Mauritania",
                             NameFr = "Mauritanie"
@@ -490,6 +530,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 22,
+                            IsoCode = "DJ",
                             NameAr = "جيبوتي",
                             NameEn = "Djibouti",
                             NameFr = "Djibouti"
@@ -497,6 +538,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 23,
+                            IsoCode = "SO",
                             NameAr = "الصومال",
                             NameEn = "Somalia",
                             NameFr = "Somalie"
@@ -504,6 +546,7 @@ namespace Foras_Khadra.Migrations
                         new
                         {
                             Id = 24,
+                            IsoCode = "KM",
                             NameAr = "جزر القمر",
                             NameEn = "Comoros",
                             NameFr = "Comores"
@@ -539,6 +582,269 @@ namespace Foras_Khadra.Migrations
                         .IsUnique();
 
                     b.ToTable("CycleWatches");
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.Field", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("NameAr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NameFr")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key")
+                        .IsUnique();
+
+                    b.ToTable("Fields");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Key = "environment",
+                            NameAr = "البيئة والمناخ",
+                            NameEn = "Environment & Climate",
+                            NameFr = "Environnement et climat",
+                            SortOrder = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Key = "energy",
+                            NameAr = "الطاقة",
+                            NameEn = "Energy",
+                            NameFr = "Énergie",
+                            SortOrder = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Key = "water",
+                            NameAr = "المياه",
+                            NameEn = "Water",
+                            NameFr = "Eau",
+                            SortOrder = 3
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Key = "agriculture",
+                            NameAr = "الزراعة والغذاء",
+                            NameEn = "Agriculture & Food",
+                            NameFr = "Agriculture et alimentation",
+                            SortOrder = 4
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Key = "engineering",
+                            NameAr = "الهندسة",
+                            NameEn = "Engineering",
+                            NameFr = "Ingénierie",
+                            SortOrder = 5
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Key = "architecture",
+                            NameAr = "العمارة والتخطيط العمراني",
+                            NameEn = "Architecture & Urban Planning",
+                            NameFr = "Architecture et urbanisme",
+                            SortOrder = 6
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Key = "it",
+                            NameAr = "تقنية المعلومات والبرمجة",
+                            NameEn = "Computing & IT",
+                            NameFr = "Informatique",
+                            SortOrder = 7
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Key = "data-ai",
+                            NameAr = "البيانات والذكاء الاصطناعي",
+                            NameEn = "Data & AI",
+                            NameFr = "Données et IA",
+                            SortOrder = 8
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Key = "natural-sciences",
+                            NameAr = "العلوم الطبيعية",
+                            NameEn = "Natural Sciences",
+                            NameFr = "Sciences naturelles",
+                            SortOrder = 9
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Key = "health",
+                            NameAr = "الصحة والطب",
+                            NameEn = "Health & Medicine",
+                            NameFr = "Santé et médecine",
+                            SortOrder = 10
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Key = "business",
+                            NameAr = "الأعمال والإدارة",
+                            NameEn = "Business & Management",
+                            NameFr = "Commerce et gestion",
+                            SortOrder = 11
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Key = "economics",
+                            NameAr = "الاقتصاد والتمويل",
+                            NameEn = "Economics & Finance",
+                            NameFr = "Économie et finance",
+                            SortOrder = 12
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Key = "entrepreneurship",
+                            NameAr = "ريادة الأعمال والابتكار",
+                            NameEn = "Entrepreneurship & Innovation",
+                            NameFr = "Entrepreneuriat et innovation",
+                            SortOrder = 13
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Key = "law",
+                            NameAr = "القانون",
+                            NameEn = "Law",
+                            NameFr = "Droit",
+                            SortOrder = 14
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Key = "political-science",
+                            NameAr = "العلوم السياسية والعلاقات الدولية",
+                            NameEn = "Political Science & International Relations",
+                            NameFr = "Sciences politiques et relations internationales",
+                            SortOrder = 15
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Key = "development",
+                            NameAr = "التنمية والعمل الإنساني",
+                            NameEn = "Development & Humanitarian Work",
+                            NameFr = "Développement et action humanitaire",
+                            SortOrder = 16
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Key = "leadership",
+                            NameAr = "القيادة والمجتمع المدني",
+                            NameEn = "Leadership & Civil Society",
+                            NameFr = "Leadership et société civile",
+                            SortOrder = 17
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Key = "education",
+                            NameAr = "التعليم",
+                            NameEn = "Education",
+                            NameFr = "Éducation",
+                            SortOrder = 18
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Key = "social-sciences",
+                            NameAr = "العلوم الاجتماعية",
+                            NameEn = "Social Sciences",
+                            NameFr = "Sciences sociales",
+                            SortOrder = 19
+                        },
+                        new
+                        {
+                            Id = 20,
+                            Key = "languages",
+                            NameAr = "اللغات والأدب",
+                            NameEn = "Languages & Literature",
+                            NameFr = "Langues et littérature",
+                            SortOrder = 20
+                        },
+                        new
+                        {
+                            Id = 21,
+                            Key = "arts",
+                            NameAr = "الفنون والتصميم",
+                            NameEn = "Arts & Design",
+                            NameFr = "Arts et design",
+                            SortOrder = 21
+                        },
+                        new
+                        {
+                            Id = 22,
+                            Key = "media",
+                            NameAr = "الإعلام والاتصال",
+                            NameEn = "Media & Communication",
+                            NameFr = "Médias et communication",
+                            SortOrder = 22
+                        },
+                        new
+                        {
+                            Id = 23,
+                            Key = "tourism",
+                            NameAr = "السياحة والضيافة",
+                            NameEn = "Tourism & Hospitality",
+                            NameFr = "Tourisme et hôtellerie",
+                            SortOrder = 23
+                        },
+                        new
+                        {
+                            Id = 24,
+                            Key = "vocational",
+                            NameAr = "المهن والحرف",
+                            NameEn = "Vocational & Trades",
+                            NameFr = "Métiers et formation professionnelle",
+                            SortOrder = 24
+                        },
+                        new
+                        {
+                            Id = 25,
+                            Key = "any",
+                            NameAr = "كل المجالات",
+                            NameEn = "All fields",
+                            NameFr = "Tous les domaines",
+                            SortOrder = 25
+                        });
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.FlagshipProgram", b =>
@@ -834,11 +1140,17 @@ namespace Foras_Khadra.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("BenefitsSummaryJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("CreatedByUserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<int?>("DeadlineType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DegreeLevels")
                         .HasColumnType("int");
 
                     b.Property<string>("DescriptionAr")
@@ -877,15 +1189,74 @@ namespace Foras_Khadra.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("EligibleCountriesIso")
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<int>("EmploymentType")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("ForWomenOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("FundingType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GreenThemes")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("HasApplicationFee")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("HostCountryIso")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("HostOrganizationLogoUrl")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("HostOrganizationName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("HostOrganizationUrl")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ImagePath")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("IsOnline")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsRemote")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LanguageRequirement")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LanguageScore")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime?>("LastCheckedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("MaxAge")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MinAge")
+                        .HasColumnType("int");
+
                     b.Property<int?>("PipeId")
                         .HasColumnType("int");
+
+                    b.Property<string>("ProgramKey")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
 
                     b.Property<DateTime>("PublishDate")
                         .HasColumnType("datetime2");
@@ -906,6 +1277,9 @@ namespace Foras_Khadra.Migrations
                     b.Property<string>("SourceUrl")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -924,11 +1298,20 @@ namespace Foras_Khadra.Migrations
                     b.Property<int?>("Type")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Venue")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
 
                     b.HasIndex("PipeId");
+
+                    b.HasIndex("ProgramKey");
 
                     b.HasIndex("Status");
 
@@ -1498,6 +1881,21 @@ namespace Foras_Khadra.Migrations
                     b.HasOne("Foras_Khadra.Models.Country", null)
                         .WithMany()
                         .HasForeignKey("AvailableCountriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Foras_Khadra.Models.Opportunity", null)
+                        .WithMany()
+                        .HasForeignKey("OpportunitiesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("FieldOpportunity", b =>
+                {
+                    b.HasOne("Foras_Khadra.Models.Field", null)
+                        .WithMany()
+                        .HasForeignKey("FieldsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

@@ -85,7 +85,18 @@ namespace Foras_Khadra.Controllers.Api
             publishDate = o.PublishDate.ToString("yyyy-MM-dd"),
             detailsUrl = $"{BaseUrl}/Opportunity/Details/{o.Id}",
             editUrl = $"{BaseUrl}/Opportunity/Edit/{o.Id}",
+            fundingType = o.FundingType.ToString(),
+            degreeLevels = DegreeNames(o.DegreeLevels),
+            fields = o.Fields?.Select(f => f.Key).ToArray(),
+            eligibleCountries = FacetParser.EligibleCodes(o).ToArray(),
+            hostCountry = o.HostCountryIso,
+            programKey = o.ProgramKey,
+            lastCheckedAt = o.LastCheckedAt?.ToString("yyyy-MM-dd"),
         };
+
+        private static string[] DegreeNames(DegreeLevels levels) =>
+            levels == DegreeLevels.Any ? new[] { "Any" }
+            : Enum.GetValues<DegreeLevels>().Where(v => v != DegreeLevels.None && v != DegreeLevels.Any && levels.HasFlag(v)).Select(v => v.ToString()).ToArray();
 
         // ------------------------------------------------------------------ endpoints
 
@@ -159,7 +170,7 @@ namespace Foras_Khadra.Controllers.Api
             return o == null ? NotFound(new { error = "not_found" }) : Ok(Shape(o));
         }
 
-        public class CreateDto
+        public class CreateDto : FacetDto
         {
             public string TitleAr { get; set; } = "";
             public string TitleEn { get; set; } = "";
@@ -257,6 +268,11 @@ namespace Foras_Khadra.Controllers.Api
                 PipeId = d.PipeId,
                 AiGenerated = d.AiGenerated,
             };
+            // الحقول المهيكلة (اختيارية حتى 2026-12-05 ثم إلزامية): قيمة غير معروفة = 400 باسم الحقل، لا تخمين
+            var facetError = FacetParser.Apply(o, d, await _db.Countries.ToListAsync(), await _db.Fields.ToListAsync());
+            if (facetError != null) return BadRequest(new { error = facetError.Code, allowed = facetError.Allowed });
+            o.LastCheckedAt = DateTime.Now;
+
             if (d.Publish)
             {
                 return BadRequest(new { error = "no_image", hint = "النشر المباشر يتطلب صورة؛ أنشئ مسودة ثم ارفع الصورة وانشر." });
@@ -267,6 +283,28 @@ namespace Foras_Khadra.Controllers.Api
         }
 
         /// <summary>اعتماد مسودة ونشرها. يتطلب صورة (ImagePath) مرفوعة من صفحة التعديل أو من opportunities/{id}/image.</summary>
+        /// <summary>المجالات الثابتة التي يقبلها حقل fields (docs/PIPELINE-PROMPT-v2.md).</summary>
+        [HttpGet("fields")]
+        public async Task<IActionResult> Fields()
+        {
+            var list = await _db.Fields.OrderBy(f => f.SortOrder)
+                .Select(f => new { key = f.Key, nameAr = f.NameAr, nameEn = f.NameEn, nameFr = f.NameFr }).ToListAsync();
+            return Ok(list);
+        }
+
+        /// <summary>تحديث الحقول المهيكلة لفرصة موجودة (إعادة معالجة القديمة من SourceUrl) دون لمس نصوصها أو حالتها.</summary>
+        [HttpPost("opportunities/{id:int}/facets")]
+        public async Task<IActionResult> Facets(int id, [FromBody] FacetDto f)
+        {
+            var o = await _db.Opportunities.Include(x => x.AvailableCountries).Include(x => x.Fields).FirstOrDefaultAsync(x => x.Id == id);
+            if (o == null) return NotFound(new { error = "not_found" });
+            var err = FacetParser.Apply(o, f, await _db.Countries.ToListAsync(), await _db.Fields.ToListAsync());
+            if (err != null) return BadRequest(new { error = err.Code, allowed = err.Allowed });
+            o.LastCheckedAt = DateTime.Now;
+            await _db.SaveChangesAsync();
+            return Ok(Shape(o));
+        }
+
         [HttpPost("opportunities/{id:int}/publish")]
         public async Task<IActionResult> Publish(int id)
         {

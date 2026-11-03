@@ -315,6 +315,7 @@
 
 
 
+            @await Html.PartialAsync("_FacetFields", Model.Facets, new Microsoft.AspNetCore.Mvc.ViewFeatures.ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "Facets" } })
             <!-- Apply Link -->
             <div class="field">
                 <label>@Localizer["ApplyLinkLabel"] <span style="color:red">*</span></label>

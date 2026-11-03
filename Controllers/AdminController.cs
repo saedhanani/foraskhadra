@@ -96,6 +96,37 @@ namespace Foras_Khadra.Controllers
             return RedirectToAction(nameof(OrganizationDetails), new { id });
         }
 
+        // ===== تعبئة بيانات الأهلية للفرص القديمة (Helpers/FacetGuesser يقترح، المدير يؤكد) =====
+        private const int FacetsPageSize = 10;
+
+        [HttpGet]
+        public async Task<IActionResult> Facets(int page = 1)
+        {
+            page = Math.Clamp(page, 1, 10000);
+            var q = _context.Opportunities.AsNoTracking()
+                .Where(o => o.Status == OpportunityStatus.Published && o.FundingType == FundingType.Unknown
+                            && (o.EndDate == null || o.EndDate >= DateTime.Now.Date));
+            ViewData["Remaining"] = await q.CountAsync();
+            ViewData["Page"] = page;
+            ViewBag.FieldOptions = await _context.Fields.OrderBy(f => f.SortOrder).ToListAsync();
+            var list = await q.Include(o => o.Fields).OrderByDescending(o => o.PublishDate)
+                .Skip((page - 1) * FacetsPageSize).Take(FacetsPageSize).ToListAsync();
+            return View(list);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveFacets(int id, FacetFormVM facets, int page = 1)
+        {
+            var opp = await _context.Opportunities.Include(o => o.Fields).FirstOrDefaultAsync(o => o.Id == id);
+            if (opp == null) return NotFound();
+            var error = facets.ApplyTo(opp, await _context.Fields.ToListAsync());
+            if (error != null) { TempData["FacetMessage"] = "لم يُحفظ: " + error; return RedirectToAction(nameof(Facets), new { page }); }
+            opp.LastCheckedAt = DateTime.Now;
+            await _context.SaveChangesAsync();
+            TempData["FacetMessage"] = $"حُفظت بيانات «{opp.TitleAr}».";
+            return RedirectToAction(nameof(Facets), new { page });
+        }
+
         // ===== تحسين الصور المخزّنة (تصغير وإعادة ترميز الصور المرفوعة سابقًا) =====
         [HttpGet]
         public IActionResult OptimizeImages()
