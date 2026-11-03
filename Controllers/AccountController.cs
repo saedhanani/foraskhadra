@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Localization;
-using NETCore.MailKit.Core;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
