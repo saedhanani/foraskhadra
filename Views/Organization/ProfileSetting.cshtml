@@ -492,7 +492,7 @@
                     <div class="org-id-row">
                  <div class="org-id-label">@Localizer["org_website_label"] </div>
                         <div class="org-id-value">
-                            <a class="org-id-link" href="@Model.Website" target="_blank">@Model.Website</a>
+                            <a class="org-id-link" href="@(Foras_Khadra.Helpers.HttpUrl.Normalize(Model.Website) ?? "#")" target="_blank" rel="noopener">@Model.Website</a>
                         </div>
                     </div>
                 }

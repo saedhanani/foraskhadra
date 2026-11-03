@@ -1,4 +1,5 @@
-﻿using Foras_Khadra.Data;
+﻿using Foras_Khadra.Helpers;
+using Foras_Khadra.Data;
 using Foras_Khadra.Models;
 using Foras_Khadra.Services;
 using Foras_Khadra.ViewModels;
@@ -226,7 +227,7 @@ namespace Foras_Khadra.Controllers
             org.ContactEmail = formModel.ContactEmail ?? org.ContactEmail;
             org.PhoneNumber = formModel.PhoneNumber ?? org.PhoneNumber;
             org.Location = formModel.Location ?? org.Location;
-            org.Website = formModel.Website ?? org.Website;
+            org.Website = HttpUrl.Normalize(formModel.Website) ?? org.Website;
 
             await _context.SaveChangesAsync();
 
@@ -309,7 +310,7 @@ namespace Foras_Khadra.Controllers
             org.Details = model.Details;
             org.PhoneNumber = model.PhoneNumber;
             org.Email = model.Email;
-            org.Website = model.Website;
+            org.Website = HttpUrl.Normalize(model.Website);
             org.Location = model.Location;
             org.Country = model.Country;
             org.Sector = model.Sector;

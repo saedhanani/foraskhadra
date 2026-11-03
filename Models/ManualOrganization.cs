@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Foras_Khadra.Helpers;
+using System.ComponentModel.DataAnnotations;
 
 namespace Foras_Khadra.Models
 {
@@ -17,6 +18,7 @@ namespace Foras_Khadra.Models
         [EmailAddress]
         public string? Email { get; set; }
 
+        [HttpUrl]
         public string? Website { get; set; }
 
         public string? Location { get; set; }

@@ -38,7 +38,7 @@
         <td>
             @if (!string.IsNullOrEmpty(Model.Website))
             {
-                <a href="@Model.Website" target="_blank">@Model.Website</a>
+                <a href="@(Foras_Khadra.Helpers.HttpUrl.Normalize(Model.Website) ?? "#")" target="_blank" rel="noopener">@Model.Website</a>
             }
         </td>
     </tr>

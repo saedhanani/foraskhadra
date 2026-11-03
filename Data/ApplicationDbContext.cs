@@ -32,6 +32,7 @@ namespace Foras_Khadra.Data
         public DbSet<FlagshipProgram> FlagshipPrograms { get; set; }
         public DbSet<ImpactStat> ImpactStats { get; set; }
         public DbSet<PushSubscription> PushSubscriptions { get; set; }
+        public DbSet<OpportunityDailyStat> OpportunityDailyStats { get; set; }
 
         // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -168,6 +169,9 @@ namespace Foras_Khadra.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             // الإحالات: فهرس على الرمز (التفرّد يضمنه ReferralService عند التوليد) وعلى الداعي
+            // إحصاء يومي لكل فرصة (نقرات التقديم عبر /go/): صف واحد لكل (فرصة، يوم)
+            modelBuilder.Entity<OpportunityDailyStat>().HasKey(s => new { s.OpportunityId, s.Day });
+
             modelBuilder.Entity<ApplicationUser>().HasIndex(u => u.ReferralCode);
             modelBuilder.Entity<ApplicationUser>().HasIndex(u => u.ReferredByUserId);
 

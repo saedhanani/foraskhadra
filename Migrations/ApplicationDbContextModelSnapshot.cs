@@ -935,6 +935,25 @@ namespace Foras_Khadra.Migrations
                     b.ToTable("Opportunities");
                 });
 
+            modelBuilder.Entity("Foras_Khadra.Models.OpportunityDailyStat", b =>
+                {
+                    b.Property<int>("OpportunityId")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<int>("ApplyClicks")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Views")
+                        .HasColumnType("int");
+
+                    b.HasKey("OpportunityId", "Day");
+
+                    b.ToTable("OpportunityDailyStats");
+                });
+
             modelBuilder.Entity("Foras_Khadra.Models.Organization", b =>
                 {
                     b.Property<int>("Id")
@@ -1556,6 +1575,17 @@ namespace Foras_Khadra.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedByUser");
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.OpportunityDailyStat", b =>
+                {
+                    b.HasOne("Foras_Khadra.Models.Opportunity", "Opportunity")
+                        .WithMany()
+                        .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Opportunity");
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.Organization", b =>

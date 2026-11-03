@@ -200,7 +200,11 @@ namespace Foras_Khadra.Controllers.Api
             if (missing.Count > 0) return BadRequest(new { error = "missing", fields = missing });
             var type = ParseType(d.Type);
             if (type == null) return BadRequest(new { error = "bad_type", allowed = Enum.GetNames(typeof(OpportunityType)) });
-            if (!Uri.TryCreate(d.ApplyLink, UriKind.Absolute, out _)) return BadRequest(new { error = "bad_link" });
+            // http/https فقط: javascript: أو data: يصيران زر «قدّم الآن» عند النشر
+            var applyLink = HttpUrl.Normalize(d.ApplyLink);
+            if (applyLink == null) return BadRequest(new { error = "bad_link" });
+            var sourceUrl = string.IsNullOrWhiteSpace(d.SourceUrl) ? null : HttpUrl.Normalize(d.SourceUrl);
+            if (!string.IsNullOrWhiteSpace(d.SourceUrl) && sourceUrl == null) return BadRequest(new { error = "bad_source" });
 
             if (d.PipeId != null)
             {
@@ -242,14 +246,14 @@ namespace Foras_Khadra.Controllers.Api
                 DetailsAr = d.DetailsAr, DetailsEn = Or(d.DetailsEn, d.DetailsAr), DetailsFr = Or(d.DetailsFr, Or(d.DetailsEn, d.DetailsAr)),
                 EligibilityCriteriaAr = d.EligibilityCriteriaAr, EligibilityCriteriaEn = Or(d.EligibilityCriteriaEn, d.EligibilityCriteriaAr), EligibilityCriteriaFr = Or(d.EligibilityCriteriaFr, Or(d.EligibilityCriteriaEn, d.EligibilityCriteriaAr)),
                 BenefitsAr = d.BenefitsAr, BenefitsEn = Or(d.BenefitsEn, d.BenefitsAr), BenefitsFr = Or(d.BenefitsFr, Or(d.BenefitsEn, d.BenefitsAr)),
-                Type = type, DeadlineType = dt, EndDate = end, ApplyLink = d.ApplyLink.Trim(),
+                Type = type, DeadlineType = dt, EndDate = end, ApplyLink = applyLink,
                 AvailableCountries = countries,
                 ImagePath = "",
                 PublishedBy = "Admin",
                 CreatedByUserId = user.Id,
                 PublishDate = DateTime.Now,
                 Status = OpportunityStatus.Draft,
-                SourceUrl = d.SourceUrl,
+                SourceUrl = sourceUrl,
                 PipeId = d.PipeId,
                 AiGenerated = d.AiGenerated,
             };

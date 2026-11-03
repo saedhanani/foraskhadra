@@ -1,4 +1,5 @@
-﻿using Foras_Khadra.Resources.Views.Organization;
+﻿using Foras_Khadra.Helpers;
+using Foras_Khadra.Resources.Views.Organization;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -87,6 +88,7 @@ namespace Foras_Khadra.ViewModels
         public string ConfirmPassword { get; set; }
 
         // ===== Optional =====
+        [HttpUrl]
         public string? Website { get; set; }
 
         // ===== Lists =====

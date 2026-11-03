@@ -124,7 +124,7 @@
             @if (User.IsInRole("Admin") || User.IsInRole("User") || User.IsInRole("Organization"))
             {
                 <a id="applyBtn"
-                   href="@(isExpired ? "javascript:void(0);" : Model.ApplyLink)"
+                   href="@(isExpired ? "javascript:void(0);" : Url.Action("Go", "Opportunity", new { id = Model.Id }))"
                    target="@(isExpired ? "_self" : "_blank")"
                    class="@applyButtonClass"
                    @(isExpired ? "title='الفرصة منتهية'" : "")>

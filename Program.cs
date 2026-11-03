@@ -79,6 +79,7 @@ builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<IReferralService, ReferralService>();
 builder.Services.AddScoped<IWeeklySummaryService, WeeklySummaryService>();
 builder.Services.AddScoped<IOpportunityReviewService, OpportunityReviewService>();
+builder.Services.AddScoped<IApplyClickCounter, ApplyClickCounter>();
 // إشعارات الدفع (Web Push): مفاتيح VAPID في App_Data/push-vapid.json، والإرسال من NotificationSweepHostedService
 builder.Services.AddSingleton<IVapidKeyStore, VapidKeyStore>();
 builder.Services.AddHttpClient(WebPushSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(15));
@@ -345,6 +346,12 @@ app.MapControllerRoute(
     name: "program-details",
     pattern: "Programs/{slug:regex(^(?!(Index|Create|Edit|Delete|Details)$)[a-z0-9-]+$)}",
     defaults: new { controller = "Programs", action = "Details" });
+
+// بوابة روابط التقديم: /go/12 تتحقق من الرابط وتعدّ النقرة ثم تحوّل (OpportunityController.Go)
+app.MapControllerRoute(
+    name: "go",
+    pattern: "go/{id:int}",
+    defaults: new { controller = "Opportunity", action = "Go" });
 
 app.MapControllerRoute(
     name: "default",

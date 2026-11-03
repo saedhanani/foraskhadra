@@ -169,7 +169,7 @@ namespace Foras_Khadra.Controllers
                 ContactName = model.ContactName,
                 ContactEmail = model.ContactEmail,
                 PhoneNumber = model.PhoneNumber,
-                Website = string.IsNullOrEmpty(model.Website) ? null : model.Website,
+                Website = HttpUrl.Normalize(model.Website),
                 CreatedAt = DateTime.Now,
                 UserId = identityUser.Id,
                 Password = new PasswordHasher<Organization>().HashPassword(null, model.Password) // ← مهم
@@ -333,7 +333,7 @@ namespace Foras_Khadra.Controllers
             organization.Location = model.Location ?? organization.Location;
             organization.ContactName = model.ContactName ?? organization.ContactName;
             organization.PhoneNumber = model.PhoneNumber ?? organization.PhoneNumber;
-            organization.Website = string.IsNullOrWhiteSpace(model.Website) ? organization.Website : model.Website;
+            organization.Website = HttpUrl.Normalize(model.Website) ?? organization.Website;
 
             await _context.SaveChangesAsync();
 

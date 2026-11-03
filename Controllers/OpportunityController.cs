@@ -167,7 +167,7 @@ public async Task<IActionResult> Create()
                 BenefitsAr = SafeHtml.Clean(model.BenefitsAr),
                 BenefitsEn = SafeHtml.Clean(model.BenefitsEn),
                 BenefitsFr = SafeHtml.Clean(model.BenefitsFr),
-                ApplyLink = model.ApplyLink,
+                ApplyLink = HttpUrl.Normalize(model.ApplyLink)!,
                 ImagePath = imagePath,
                 DeadlineType = model.DeadlineType,
 
@@ -280,7 +280,7 @@ public async Task<IActionResult> Create()
             opportunity.BenefitsAr = SafeHtml.Clean(model.BenefitsAr);
             opportunity.BenefitsEn = SafeHtml.Clean(model.BenefitsEn);
             opportunity.BenefitsFr = SafeHtml.Clean(model.BenefitsFr);
-            opportunity.ApplyLink = model.ApplyLink;
+            opportunity.ApplyLink = HttpUrl.Normalize(model.ApplyLink) ?? opportunity.ApplyLink;
             opportunity.Type = model.Type ?? opportunity.Type;
             opportunity.DeadlineType = model.DeadlineType;
 
@@ -440,6 +440,31 @@ public async Task<IActionResult> Create()
             await _context.SaveChangesAsync();
 
             return RedirectToAction(await _userManager.IsInRoleAsync(currentUser, "Admin") ? "Index" : "OrgOpportunities");
+        }
+
+        // ================= GO (بوابة روابط التقديم) =================
+        /// <summary>
+        /// كل أزرار «قدّم الآن» تمر من هنا: يتحقق أن الرابط http/https (لا javascript:)، يعدّ النقرة في الإحصاء اليومي
+        /// (OpportunityDailyStats — أساس تقرير الوصول للمنظمات) ثم يحوّل إلى موقع الجهة. غير المسجَّل يُرسل للدخول.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> Go(int id, [FromServices] IApplyClickCounter clicks)
+        {
+            if (User.Identity?.IsAuthenticated != true)
+                return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Details", "Opportunity", new { id }) });
+
+            var opp = await _context.Opportunities.AsNoTracking()
+                .Where(o => o.Id == id)
+                .Select(o => new { o.Status, o.ApplyLink })
+                .FirstOrDefaultAsync();
+            if (opp == null || opp.Status != OpportunityStatus.Published) return NotFound();
+
+            var target = HttpUrl.Normalize(opp.ApplyLink);
+            if (target == null) return NotFound();
+
+            await clicks.CountAsync(id);
+            return Redirect(target);
         }
 
         // ================= DETAILS =================

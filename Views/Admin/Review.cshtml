@@ -49,10 +49,10 @@
                             }
                         </div>
                         <div class="small mt-1">
-                            <a href="@opp.ApplyLink" target="_blank" rel="noopener nofollow">رابط التقديم</a>
+                            <a href="@(Foras_Khadra.Helpers.HttpUrl.Normalize(opp.ApplyLink) ?? "#")" target="_blank" rel="noopener nofollow">رابط التقديم</a>
                             @if (!string.IsNullOrEmpty(opp.SourceUrl))
                             {
-                                <span> · </span><a href="@opp.SourceUrl" target="_blank" rel="noopener nofollow">المصدر</a>
+                                <span> · </span><a href="@(Foras_Khadra.Helpers.HttpUrl.Normalize(opp.SourceUrl) ?? "#")" target="_blank" rel="noopener nofollow">المصدر</a>
                             }
                         </div>
                         @if (!string.IsNullOrEmpty(opp.ReviewNote))

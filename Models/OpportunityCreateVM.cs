@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Foras_Khadra.Helpers;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using System.ComponentModel.DataAnnotations;
 
@@ -58,6 +59,7 @@ namespace Foras_Khadra.Models
         public DateTime? EndDate { get; set; }
 
         [Required]
+        [HttpUrl]
         public string ApplyLink { get; set; }
 
         public List<SelectListItem> CountriesSelectList { get; set; } = new List<SelectListItem>();

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Foras_Khadra.Helpers;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -25,6 +26,7 @@ namespace Foras_Khadra.Models
         [EmailAddress(ErrorMessage = "البريد الإلكتروني غير صالح")]
         public string ContactEmail { get; set; }
 
+        [HttpUrl]
         public string? Website { get; set; } // ← اختياري
 
         [Required(ErrorMessage = "ادخل رقم الهاتف")]
