@@ -28,9 +28,9 @@ namespace Foras_Khadra.Data
                 },
                 new()
                 {
-                    TitleAr = "أحدث المناح الدراسية للشباب العربي",
-                    TitleEn = "Latest Scholarships for Arab Youth",
-                    TitleFr = "Dernières Bourses pour les Jeunes Arabes",
+                    TitleAr = "أحدث المنح الدراسية لشباب الوطن العربي",
+                    TitleEn = "Latest Scholarships for Youth in the Arab World",
+                    TitleFr = "Dernières bourses pour les jeunes du monde arabe",
                     ContentAr = "ما تحتاج معرفته عن المنح الدراسية المفتوحة الآن وكيفية التحضير لطلبك بنجاح.",
                     ContentEn = "What you need to know about scholarships currently open and how to prepare a successful application.",
                     ContentFr = "Ce que vous devez savoir sur les bourses actuellement ouvertes et comment préparer une candidature réussie.",

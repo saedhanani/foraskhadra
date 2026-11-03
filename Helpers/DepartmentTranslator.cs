@@ -57,7 +57,7 @@ namespace Foras_Khadra.Helpers
                     "Honorary Members|Former administrative members whose contributions were fundamental in building and shaping Foras Khadra.",
 
                     Department.Opportunities =>
-                    "Opportunities Department|Tracks and verifies valuable opportunities for Arab youth, transforming scattered links into clear and applicable pathways.",
+                    "Opportunities Department|Tracks and verifies valuable opportunities for youth in the Arab world, transforming scattered links into clear and applicable pathways.",
 
                     Department.PublicRelations =>
                     "Public Relations|Builds partnerships, opens collaboration doors, and connects the platform with institutions and communities.",
@@ -87,7 +87,7 @@ namespace Foras_Khadra.Helpers
                     "Membres Honoraires|Anciens membres administratifs dont la contribution a été essentielle au développement de Foras Khadra.",
 
                     Department.Opportunities =>
-                    "Département des Opportunités|Identifie, vérifie et structure les opportunités pertinentes pour la jeunesse arabe.",
+                    "Département des Opportunités|Identifie, vérifie et structure les opportunités pertinentes pour les jeunes du monde arabe.",
 
                     Department.PublicRelations =>
                     "Relations Publiques|Établit des partenariats et transforme la communication en opportunités concrètes.",
