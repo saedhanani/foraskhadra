@@ -67,6 +67,13 @@ namespace Foras_Khadra.Helpers
                         T("فُتحت دورة جديدة", "A new cycle is open", "Nouvelle session ouverte"),
                         oppTitle!, oppUrl!, tag, lang);
 
+                case NotificationKind.ReviewPending when opp != null:
+                    return new PushMessage(
+                        T("فرصة بانتظار المراجعة", "Opportunity awaiting review", "Opportunité en attente de validation"),
+                        T($"«{opp.TitleAr}» من {opp.PublishedBy} — اعتمدها أو ارفضها.",
+                          $"“{opp.TitleEn}” from {opp.PublishedBy} — approve or reject it.",
+                          $"« {opp.TitleFr} » de {opp.PublishedBy} — à valider ou refuser."),
+                        "/Admin/Review", $"review{opp.Id}", lang);
                 case NotificationKind.InterestMatches:
                     return new PushMessage(
                         T("فرص جديدة لك", "New opportunities for you", "Nouvelles opportunités pour vous"),

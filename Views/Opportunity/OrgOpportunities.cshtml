@@ -367,6 +367,7 @@ else
                     <th>@Localizer["thType"]</th>
                     <th>@Localizer["thDate"]</th>
                     <th>@Localizer["thStatus"]</th>
+                    <th>@(lang == "en" ? "Publication" : lang == "fr" ? "Publication" : "النشر")</th>
 <th></th>
 </tr>
 </thead>
@@ -503,6 +504,13 @@ else
 {
                                 <span class="text-muted"> @Localizer["notRequested"] </span>
 }
+</td>
+<td>
+@if (opp.ReviewStatus == Foras_Khadra.Models.OpportunityStatus.Published) { <span class="badge bg-success">@(lang == "en" ? "Published" : lang == "fr" ? "Publiée" : "منشورة")</span> }
+else if (opp.ReviewStatus == Foras_Khadra.Models.OpportunityStatus.PendingReview) { <span class="badge bg-warning">@(lang == "en" ? "Under review" : lang == "fr" ? "En cours d'examen" : "قيد المراجعة")</span> }
+else if (opp.ReviewStatus == Foras_Khadra.Models.OpportunityStatus.Rejected) { <div class="reels-rejected-tooltip"><span class="badge bg-danger rejected-badge">@(lang == "en" ? "Needs changes" : lang == "fr" ? "À corriger" : "تحتاج تعديلًا")</span>@if (!string.IsNullOrWhiteSpace(opp.ReviewNote)) { <div class="rejected-tooltip-box">@opp.ReviewNote</div> }</div> }
+else if (opp.ReviewStatus == Foras_Khadra.Models.OpportunityStatus.Suspended) { <span class="badge bg-danger">@(lang == "en" ? "Suspended" : lang == "fr" ? "Suspendue" : "موقوفة")</span> }
+else { <span class="badge bg-secondary">@(lang == "en" ? "Draft" : lang == "fr" ? "Brouillon" : "مسودة")</span> }
 </td>
 
 <td class="org-actions">

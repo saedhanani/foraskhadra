@@ -18,6 +18,8 @@ namespace Foras_Khadra.Models
         public bool IsReelsRejected { get; set; }           
         public string RejectionReason { get; set; }
         public bool IsReelsInProgress { get; set; }
+        public OpportunityStatus ReviewStatus { get; set; }
+        public string? ReviewNote { get; set; }
 
     }
 }

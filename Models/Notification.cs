@@ -18,7 +18,9 @@ namespace Foras_Khadra.Models
         /// <summary>ملخص الأسبوع جاهز (Count = الفرص الجديدة المطابقة).</summary>
         WeeklySummary = 6,
         /// <summary>فرصة محفوظة ينتهي موعدها اليوم أو غدًا — التذكير الأخير بعد تذكير الأيام السبعة.</summary>
-        SavedDeadlineLastDay = 7
+        SavedDeadlineLastDay = 7,
+        /// <summary>للمدير: فرصة من منظمة بانتظار المراجعة (OpportunityId = الفرصة).</summary>
+        ReviewPending = 8
     }
 
     /// <summary>إشعار داخل الموقع — يولّده NotificationSweeper ويظهر في جرس الهيدر.</summary>

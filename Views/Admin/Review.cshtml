@@ -1,0 +1,91 @@
+@model List<Foras_Khadra.Models.Opportunity>
+@using Foras_Khadra.Models
+@{
+    ViewData["Title"] = "فرص بانتظار المراجعة";
+    var status = ViewContext.HttpContext.Request.Query["status"].ToString().ToLower();
+    var showingRejected = status == "rejected";
+}
+
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h2 class="m-0">@(showingRejected ? "الفرص المرفوضة" : "فرص بانتظار المراجعة") <span class="badge bg-secondary">@Model.Count</span></h2>
+        <div class="d-flex gap-2">
+            <a asp-controller="Admin" asp-action="Review" class="btn @(showingRejected ? "btn-outline-primary" : "btn-primary")">بانتظار المراجعة</a>
+            <a asp-controller="Admin" asp-action="Review" asp-route-status="rejected" class="btn @(showingRejected ? "btn-primary" : "btn-outline-primary")">المرفوضة</a>
+            <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-secondary">لوحة التحكم</a>
+        </div>
+    </div>
+
+    @if (TempData["ReviewMessage"] is string msg)
+    {
+        <div class="alert alert-success">@msg</div>
+    }
+
+    <p class="text-muted">
+        فرص المنظمات غير الموثَّقة لا تظهر للزوار ولا في الإشعارات ولا في واجهة البرمجة حتى تُعتمد هنا.
+        «اعتماد وتوثيق» ينشر الفرصة ويجعل المنظمة تنشر مباشرة في المرات القادمة.
+    </p>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-light border text-center py-5">لا توجد فرص @(showingRejected ? "مرفوضة" : "بانتظار المراجعة") حاليًا.</div>
+    }
+
+    @foreach (var opp in Model)
+    {
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex gap-3 flex-wrap">
+                    <img src="@(string.IsNullOrEmpty(opp.ImagePath) ? "/images/default.jpg" : opp.ImagePath)" alt="" style="width:120px;height:80px;object-fit:cover;border-radius:8px" />
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">@opp.TitleAr</h5>
+                        <div class="text-muted small">
+                            <span class="me-3"><i class="bi bi-building"></i> @opp.PublishedBy</span>
+                            <span class="me-3"><i class="bi bi-tag"></i> @(opp.Type?.ToString() ?? "")</span>
+                            <span class="me-3"><i class="bi bi-calendar"></i> @opp.PublishDate.ToString("yyyy-MM-dd")</span>
+                            @if (opp.EndDate.HasValue)
+                            {
+                                <span class="me-3"><i class="bi bi-hourglass"></i> ينتهي @opp.EndDate.Value.ToString("yyyy-MM-dd")</span>
+                            }
+                        </div>
+                        <div class="small mt-1">
+                            <a href="@opp.ApplyLink" target="_blank" rel="noopener nofollow">رابط التقديم</a>
+                            @if (!string.IsNullOrEmpty(opp.SourceUrl))
+                            {
+                                <span> · </span><a href="@opp.SourceUrl" target="_blank" rel="noopener nofollow">المصدر</a>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(opp.ReviewNote))
+                        {
+                            <div class="alert alert-warning py-1 px-2 mt-2 mb-0 small">سبب الرفض: @opp.ReviewNote</div>
+                        }
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap mt-3 align-items-start">
+                    <a asp-controller="Opportunity" asp-action="Details" asp-route-id="@opp.Id" class="btn btn-outline-secondary btn-sm" target="_blank">معاينة</a>
+                    <a asp-controller="Opportunity" asp-action="Edit" asp-route-id="@opp.Id" class="btn btn-outline-secondary btn-sm">تعديل</a>
+
+                    <form asp-controller="Admin" asp-action="ApproveOpportunity" method="post" class="d-inline">
+                        <input type="hidden" name="id" value="@opp.Id" />
+                        <button type="submit" class="btn btn-success btn-sm">اعتماد ونشر</button>
+                    </form>
+                    <form asp-controller="Admin" asp-action="ApproveOpportunity" method="post" class="d-inline">
+                        <input type="hidden" name="id" value="@opp.Id" />
+                        <input type="hidden" name="verifyOrganization" value="true" />
+                        <button type="submit" class="btn btn-outline-success btn-sm">اعتماد وتوثيق المنظمة</button>
+                    </form>
+
+                    @if (!showingRejected)
+                    {
+                        <form asp-controller="Admin" asp-action="RejectOpportunity" method="post" class="d-flex gap-2 flex-grow-1">
+                            <input type="hidden" name="id" value="@opp.Id" />
+                            <input type="text" name="note" class="form-control form-control-sm" maxlength="1000" placeholder="سبب الرفض (يظهر للمنظمة)" style="max-width:420px" />
+                            <button type="submit" class="btn btn-outline-danger btn-sm">رفض</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

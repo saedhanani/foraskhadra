@@ -670,6 +670,13 @@
                         <i class="bi bi-plus-circle"></i>
                         <span>@(isArabic ? "إضافة فرصة" : "Add opportunity")</span>
                     </a>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-controller="Admin" asp-action="Review" class="nav-link-item">
+                            <i class="bi bi-shield-check"></i>
+                            <span>@(isArabic ? "بانتظار المراجعة" : "Pending review")@(Model.PendingReviewCount > 0 ? $" ({Model.PendingReviewCount})" : "")</span>
+                        </a>
+                    }
                     
                 </div>
             </div>
@@ -833,6 +840,16 @@
                         </div>
                     </div>
 
+                    <div class="stats-card orange-soft"
+                         onclick="location.href='@Url.Action("Review", "Admin")'">
+                        <div class="icon-wrap orange">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <div>
+                            <div class="stats-number">@Model.PendingReviewCount</div>
+                            <div class="stats-label">@(isArabic ? "فرص بانتظار المراجعة" : "Pending review")</div>
+                        </div>
+                    </div>
                     @* <div class="stats-card cyan-soft"
                          onclick="location.href='@Url.Action("ReelsRequestsDashboard", "Admin")'">
                         <div class="icon-wrap cyan">

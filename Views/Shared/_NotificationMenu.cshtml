@@ -42,6 +42,13 @@ else
                 <span>@T("فرصتك المحفوظة ", "Your saved opportunity ", "Votre opportunité enregistrée ")<b>@title</b> — @when@prepHint</span>
             </a>
         }
+        else if (n.Kind == NotificationKind.ReviewPending && n.Opportunity != null)
+        {
+            <a class="notif-item @unread" href="@Url.Action("Review", "Admin")">
+                <i class="bi bi-shield-check notif-ico orange"></i>
+                <span>@T("فرصة بانتظار المراجعة: ", "Opportunity awaiting review: ", "Opportunité en attente de validation : ")<b>@n.Opportunity.TitleAr</b> — @n.Opportunity.PublishedBy</span>
+            </a>
+        }
         else if (n.Kind == NotificationKind.InterestMatches)
         {
             <a class="notif-item @unread" href="@Url.Action("AllOpportunities", "Home")">

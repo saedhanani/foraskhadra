@@ -48,5 +48,10 @@ namespace Foras_Khadra.Models
 
         public string? LogoPath { get; set; }
         public bool IsManual { get; set; } = true;
+
+        /// <summary>موثَّقة: تنشر فرصها مباشرة بلا مراجعة (Admin/Review «اعتماد وتوثيق»).</summary>
+        public bool IsVerified { get; set; }
+        /// <summary>موقوفة: كل فرصها المنشورة تُخفى (Suspended) حتى يُرفع الإيقاف.</summary>
+        public bool IsSuspended { get; set; }
     }
 }

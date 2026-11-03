@@ -101,7 +101,7 @@ public async Task<IActionResult> Create()
 
         [HttpPost]
         [Authorize(Roles = "Admin,Organization")]
-        public async Task<IActionResult> Create(OpportunityCreateVM model)
+        public async Task<IActionResult> Create(OpportunityCreateVM model, [FromServices] IOpportunityReviewService review)
         {
            
             if (model.DeadlineType == DeadlineType.SpecificDate && model.EndDate == null)
@@ -182,14 +182,27 @@ public async Task<IActionResult> Create()
                 IsPublishedByOrganization = await _userManager.IsInRoleAsync(currentUser, "Organization")
             };
 
+            var isAdminCreate = await _userManager.IsInRoleAsync(currentUser, "Admin");
+            if (!isAdminCreate && org != null)
+            {
+                // فرص المنظمات غير الموثَّقة تنتظر اعتماد المدير؛ المنظمة الموقوفة لا تنشر
+                if (org.IsSuspended) return Forbid();
+                opportunity.Status = review.StatusFor(org);
+            }
+
             _context.Opportunities.Add(opportunity);
             await _context.SaveChangesAsync();
+            if (opportunity.Status == OpportunityStatus.PendingReview)
+            {
+                await review.NotifyAdminsAsync(opportunity.Id);
+                TempData["OrgMessage"] = "pending";
+            }
 
-            return RedirectToAction(await _userManager.IsInRoleAsync(currentUser, "Admin") ? "Index" : "OrgOpportunities");
+            return RedirectToAction(isAdminCreate ? "Index" : "OrgOpportunities");
         }
         [HttpPost]
         [Authorize(Roles = "Admin,Organization")]
-        public async Task<IActionResult> Edit(OpportunityEditVM model)
+        public async Task<IActionResult> Edit(OpportunityEditVM model, [FromServices] IOpportunityReviewService review)
         {
             if (model.Image != null && _images.Validate(model.Image) is string imageError)
             {
@@ -201,7 +214,8 @@ public async Task<IActionResult> Create()
                 .Where(o => o.Id == model.Id)
                 .Select(o => new { o.Status, o.ImagePath })
                 .FirstOrDefaultAsync();
-            model.IsDraft = current?.Status == OpportunityStatus.Draft;
+            // زر «حفظ ونشر» للمدير على كل ما ليس منشورًا (مسودة المنصة، بانتظار المراجعة، مرفوضة)
+            model.IsDraft = current != null && current.Status != OpportunityStatus.Published && User.IsInRole("Admin");
             model.ImagePath ??= current?.ImagePath;
 
             if (model.Publish && model.IsDraft)
@@ -292,15 +306,30 @@ public async Task<IActionResult> Create()
             }
 
             // تحديث من نشر
-            opportunity.PublishedBy = org != null ? org.Name : "Admin";
+            if (org != null) opportunity.PublishedBy = org.Name; // تعديل المدير لا يسرق اسم المنظمة الناشرة
             opportunity.IsPublishedByAdmin = await _userManager.IsInRoleAsync(currentUser, "Admin");
             opportunity.IsPublishedByOrganization = await _userManager.IsInRoleAsync(currentUser, "Organization");
 
-            // اعتماد مسودة منصة الفريق: الأدمن وحده ينشر، ويصير تاريخ النشر لحظة الاعتماد
-            if (model.Publish && opportunity.Status == OpportunityStatus.Draft && opportunity.IsPublishedByAdmin)
+            if (opportunity.IsPublishedByAdmin)
             {
-                opportunity.Status = OpportunityStatus.Published;
-                opportunity.PublishDate = DateTime.Now;
+                // اعتماد مسودة المنصة أو فرصة معلّقة/مرفوضة: الأدمن وحده ينشر، ويصير تاريخ النشر لحظة الاعتماد
+                if (model.Publish && opportunity.Status != OpportunityStatus.Published && opportunity.Status != OpportunityStatus.Suspended)
+                {
+                    opportunity.Status = OpportunityStatus.Published;
+                    opportunity.PublishDate = DateTime.Now;
+                    opportunity.ReviewedAt = DateTime.Now;
+                    opportunity.ReviewNote = null;
+                }
+            }
+            else if (org != null)
+            {
+                // تعديل المنظمة يعيد الفرصة إلى المراجعة ما لم تكن موثَّقة؛ الموقوفة لا تعدّل
+                if (org.IsSuspended) return Forbid();
+                if (opportunity.Status != OpportunityStatus.Draft)
+                {
+                    opportunity.Status = review.StatusFor(org);
+                    opportunity.ReviewNote = null;
+                }
             }
 
             var existingRequest = await _context.ReelsRequests
@@ -315,6 +344,11 @@ public async Task<IActionResult> Create()
             // حفظ التغييرات
             _context.Opportunities.Update(opportunity);
             await _context.SaveChangesAsync();
+            if (opportunity.Status == OpportunityStatus.PendingReview)
+            {
+                await review.NotifyAdminsAsync(opportunity.Id);
+                TempData["OrgMessage"] = "pending";
+            }
 
             // إعادة التوجيه حسب الدور
             bool isAdmin = await _userManager.IsInRoleAsync(currentUser, "Admin");
@@ -378,7 +412,7 @@ public async Task<IActionResult> Create()
                 EligibilityCriteriaFr = opp.EligibilityCriteriaFr,
                 ApplyLink = opp.ApplyLink,
                 ImagePath = opp.ImagePath,
-                IsDraft = opp.Status == OpportunityStatus.Draft
+                IsDraft = opp.Status != OpportunityStatus.Published && User.IsInRole("Admin")
             };
 
             return View(model);
@@ -418,9 +452,14 @@ public async Task<IActionResult> Create()
                 .FirstOrDefaultAsync(o => o.Id == id);
 
             if (opp == null) return NotFound();
-            // المسودات القادمة من منصة الفريق لا تظهر للزوار قبل اعتمادها
-            if (opp.Status == OpportunityStatus.Draft && !(User.Identity?.IsAuthenticated == true && User.IsInRole("Admin")))
-                return NotFound();
+            // غير المنشور (مسودة المنصة، بانتظار المراجعة، مرفوضة، موقوفة) يراه المدير وصاحبه فقط
+            if (opp.Status != OpportunityStatus.Published)
+            {
+                var viewerId = _userManager.GetUserId(User);
+                var canPreview = User.Identity?.IsAuthenticated == true
+                    && (User.IsInRole("Admin") || (viewerId != null && viewerId == opp.CreatedByUserId));
+                if (!canPreview) return NotFound();
+            }
 
             var creator = await _userManager.FindByIdAsync(opp.CreatedByUserId);
             opp.IsPublishedByAdmin = creator != null && await _userManager.IsInRoleAsync(creator, "Admin");
@@ -527,6 +566,8 @@ public async Task<IActionResult> Create()
                     return new OrgOpportunityVM
                     {
                         Id = o.Id,
+                        ReviewStatus = o.Status,
+                        ReviewNote = o.ReviewNote,
                         TitleAr = o.TitleAr,
                         TitleEn = o.TitleEn,
                         TitleFr = o.TitleFr,

@@ -43,11 +43,31 @@
         </td>
     </tr>
     <tr>
+        <th>الحالة</th>
+        <td>
+            @if (Model.IsSuspended) { <span class="badge bg-danger">موقوفة — فرصها مخفية</span> }
+            else if (Model.IsVerified) { <span class="badge bg-success">موثَّقة — تنشر بلا مراجعة</span> }
+            else { <span class="badge bg-warning text-dark">غير موثَّقة — كل فرصة تُراجع قبل النشر</span> }
+        </td>
+    </tr>
+    <tr>
         <th>تاريخ التسجيل</th>
         <td>@Model.CreatedAt.ToString("yyyy-MM-dd")</td>
     </tr>
 </table>
 
+<div class="d-flex gap-2 flex-wrap mt-3">
+    <form asp-controller="Admin" asp-action="SetOrganizationVerified" method="post">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <input type="hidden" name="verified" value="@(Model.IsVerified ? "false" : "true")" />
+        <button type="submit" class="btn @(Model.IsVerified ? "btn-outline-success" : "btn-success")">@(Model.IsVerified ? "إلغاء التوثيق" : "توثيق المنظمة (تنشر بلا مراجعة)")</button>
+    </form>
+    <form asp-controller="Admin" asp-action="SetOrganizationSuspended" method="post">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <input type="hidden" name="suspended" value="@(Model.IsSuspended ? "false" : "true")" />
+        <button type="submit" class="btn @(Model.IsSuspended ? "btn-outline-danger" : "btn-danger")">@(Model.IsSuspended ? "رفع الإيقاف (إعادة نشر فرصها)" : "إيقاف المنظمة (إخفاء كل فرصها)")</button>
+    </form>
+</div>
 <a asp-controller="Admin" asp-action="OrganizationsList" class="btn btn-secondary mt-3">
     العودة للقائمة
 </a>

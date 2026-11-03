@@ -94,6 +94,10 @@ namespace Foras_Khadra.Models
         // ===== منصة الفريق (team.foraskhadra.com) =====
         /// <summary>Published للفرص العادية؛ Draft لما تنشئه منصة الفريق بانتظار التدقيق.</summary>
         public OpportunityStatus Status { get; set; } = OpportunityStatus.Published;
+        /// <summary>سبب الرفض من المدير (Admin/Review) — يظهر للمنظمة؛ يُمسح عند الاعتماد أو إعادة التقديم.</summary>
+        public string? ReviewNote { get; set; }
+        /// <summary>وقت آخر اعتماد أو رفض.</summary>
+        public DateTime? ReviewedAt { get; set; }
         /// <summary>الرابط الذي رُصدت منه الفرصة (قد يختلف عن رابط التقديم).</summary>
         public string? SourceUrl { get; set; }
         /// <summary>رقم الفرصة في مسار الفرص على منصة الفريق.</summary>

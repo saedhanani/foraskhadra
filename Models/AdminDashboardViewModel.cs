@@ -16,6 +16,7 @@
         public int TotalRegisteredUsers { get; set; }
 
         public int TotalManualOrganizations { get; set; }
+        public int PendingReviewCount { get; set; }
 
 
     }

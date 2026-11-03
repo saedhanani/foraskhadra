@@ -17,11 +17,13 @@ namespace Foras_Khadra.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly IImageUploadService _images;
+        private readonly IOpportunityReviewService _review;
 
-        public AdminController(ApplicationDbContext context, IImageUploadService images)
+        public AdminController(ApplicationDbContext context, IImageUploadService images, IOpportunityReviewService review)
         {
             _context = context;
             _images = images;
+            _review = review;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -42,10 +44,55 @@ namespace Foras_Khadra.Controllers
                 PendingReelsRequests = pendingReelsRequests,
                 CompletedReelsRequests = completedReelsRequests,
                 RejectReelsRequests = rejectedReelsRequests,
-                TotalManualOrganizations = await _context.ManualOrganizations.CountAsync()
+                TotalManualOrganizations = await _context.ManualOrganizations.CountAsync(),
+                PendingReviewCount = await _review.PendingCountAsync()
             };
 
             return View(model);
+        }
+
+        // ===== مراجعة فرص المنظمات قبل النشر (Services/OpportunityReviewService) =====
+        [HttpGet]
+        public async Task<IActionResult> Review(string? status = null)
+        {
+            var wanted = status == "rejected" ? OpportunityStatus.Rejected : OpportunityStatus.PendingReview;
+            var list = await _context.Opportunities.AsNoTracking()
+                .Where(o => o.Status == wanted)
+                .OrderBy(o => o.PublishDate)
+                .ToListAsync();
+            return View(list);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ApproveOpportunity(int id, bool verifyOrganization = false)
+        {
+            TempData["ReviewMessage"] = await _review.ApproveAsync(id, verifyOrganization)
+                ? (verifyOrganization ? "نُشرت الفرصة ووُثِّقت المنظمة؛ فرصها القادمة تُنشر مباشرة." : "نُشرت الفرصة.")
+                : "تعذّر اعتماد هذه الفرصة.";
+            return RedirectToAction(nameof(Review));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RejectOpportunity(int id, string? note)
+        {
+            TempData["ReviewMessage"] = await _review.RejectAsync(id, note)
+                ? "رُفضت الفرصة؛ السبب يظهر للمنظمة في قائمة فرصها."
+                : "تعذّر رفض هذه الفرصة.";
+            return RedirectToAction(nameof(Review));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SetOrganizationVerified(int id, bool verified)
+        {
+            await _review.SetOrganizationVerifiedAsync(id, verified);
+            return RedirectToAction(nameof(OrganizationDetails), new { id });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SetOrganizationSuspended(int id, bool suspended)
+        {
+            await _review.SetOrganizationSuspendedAsync(id, suspended);
+            return RedirectToAction(nameof(OrganizationDetails), new { id });
         }
 
         // ===== تحسين الصور المخزّنة (تصغير وإعادة ترميز الصور المرفوعة سابقًا) =====
