@@ -1,5 +1,12 @@
 # نشر المرحلة 1 (الدفعة الأولى: 1.2 + 1.3 + 1.4 + 1.5) — قائمة التحقق
 
+## ✅ نُشر على الإنتاج — 4 نوفمبر 2026 (مساءً)
+
+الإصدار الحي الآن `d1e19bc` (المرحلة 1 كاملة: 1.1–1.6). ما جرى: نسخة احتياطية من اللوحة → السكربتات الثلاثة في SQL Studio دفعة واحدة (جداول جديدة فقط؛ `__EFMigrationsHistory` فيه الهجرات السبع من `20261103233245_Review` إلى `20261104145146_EligibilityProfiles`) → رفع `app_offline.htm` + `update-part1.zip` (6 ملفات، 2.6 MB: DLL وpdb وstaticwebassets وcompass.css) معًا → فك الضغط إلى `/site1/` (النجاح) → إعادة تسمية `app_offline` إلى `app_offline-used-2026-11-04-b.txt`. التوقف نحو 3 دقائق. التحقق: `/health` Healthy؛ `/en` و`/fr/Home/AboutUs` 200 مع hreflang؛ `/?culture=en` → 301 `/en`؛ `/User/Dashboard` → `/Account/Login?returnUrl=…`؛ `/Opportunity/Create` → `/Organization/Login`؛ `/for-organizations` و`/compass` بثلاث لغات؛ `/compass/me` و`/Admin/Analytics` يطلبان الدخول؛ `/api/team/requests` بلا مفتاح 401؛ sitemap 1,137 رابطًا بالبدائل؛ تقدير `Scholarships/XA` = 1,967 عضوًا؛ البوصلة لزائر أردني بكالوريوس: منح 12، تدريب 9، تطوع 7، وظائف 4 فرصة مؤهَّل لها الآن (ستزيد مع تعبئة بيانات الأهلية).
+
+**بقي على المالك:** جولة `/Admin/Analytics` بعد يوم، `/Admin/PublishRequests`، إرسال طلب تجريبي من `/for-organizations` ببريدك، رموز Search Console/Bing في `Seo:` على الخادم، إبلاغ منصة الكتابة بتفعيل `requests` و`Unknown`، تعبئة `/Admin/Facets`، وتدوير كلمتي المرور. ملفات قديمة في `/site1` للحذف: `update-*.zip` و`app_offline-used-*.txt` ومكتبتا `TanvirArjel` و`NETCore.MailKit`.
+
+
 **الإصدار الحي قبل النشر:** `e612ebd` (المرحلة 0، .NET 10) · **هذا الإصدار:** آخر commit على `main` · لا تغيير في الإطار.
 
 ## ما في هذه الدفعة
