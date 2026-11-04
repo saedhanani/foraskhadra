@@ -42,8 +42,9 @@ namespace Foras_Khadra.Controllers
 
         // ===== GET: RegisterUser =====
         [HttpGet]
-        public IActionResult RegisterUser(string? @ref)
+        public IActionResult RegisterUser(string? @ref, string? returnUrl)
         {
+            ViewData["ReturnUrl"] = SafeReturnUrl(returnUrl);
             // رابط دعوة صديق: نحفظ الرمز 30 يومًا حتى لو أكمل التسجيل لاحقًا
             if (!string.IsNullOrWhiteSpace(@ref) && @ref.Length <= 12)
                 Response.Cookies.Append(ReferralCookie, @ref.Trim().ToUpperInvariant(),
@@ -63,8 +64,10 @@ namespace Foras_Khadra.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("auth")]
-        public async Task<IActionResult> RegisterUser(RegisterViewModel model)
+        public async Task<IActionResult> RegisterUser(RegisterViewModel model, string? returnUrl)
         {
+            returnUrl = SafeReturnUrl(returnUrl);
+            ViewData["ReturnUrl"] = returnUrl;
             var culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
             model.Countries = GetCountries(culture);
             model.Nationalities = GetCountries(culture);
@@ -86,7 +89,7 @@ namespace Foras_Khadra.Controllers
                     Url.Action("Login", "Account", null, Request.Scheme)!, Url.Action("ForgotPassword", "Account", null, Request.Scheme)!);
                 _emails.Enqueue(model.Email, exists.Subject, exists.Html);
                 TempData["RegisteredEmail"] = model.Email;
-                return RedirectToAction("RegisterConfirmation");
+                return RedirectToAction("RegisterConfirmation", new { returnUrl });
             }
 
             var user = new ApplicationUser
@@ -120,15 +123,16 @@ namespace Foras_Khadra.Controllers
                 Response.Cookies.Delete(ReferralCookie);
             }
 
-            await SendConfirmationEmailAsync(user);
+            await SendConfirmationEmailAsync(user, returnUrl);
             // دخول فوري: يتصفح ويحفظ قبل التأكيد؛ التأكيد يلزم عند «قدّم الآن» فقط
             await _signInManager.SignInAsync(user, isPersistent: true);
-            return RedirectToAction("RegisterConfirmation");
+            return RedirectToAction("RegisterConfirmation", new { returnUrl });
         }
 
         [HttpGet]
-        public async Task<IActionResult> RegisterConfirmation()
+        public async Task<IActionResult> RegisterConfirmation(string? returnUrl)
         {
+            ViewData["ReturnUrl"] = SafeReturnUrl(returnUrl);
             var user = await _userManager.GetUserAsync(User);
             ViewData["Email"] = user?.Email ?? TempData["RegisteredEmail"] as string;
             return View();
@@ -136,8 +140,9 @@ namespace Foras_Khadra.Controllers
 
         // ===== تأكيد البريد (المرحلة 0.4): التسجيل يرسل الرابط ويُدخل المستخدم؛ رابط «قدّم الآن» (/go/) يتطلب التأكيد =====
         [HttpGet]
-        public async Task<IActionResult> ConfirmEmail(string? userId, string? code)
+        public async Task<IActionResult> ConfirmEmail(string? userId, string? code, string? returnUrl)
         {
+            ViewData["ReturnUrl"] = SafeReturnUrl(returnUrl);
             var token = TokenCodec.Decode(code);
             var user = string.IsNullOrEmpty(userId) ? null : await _userManager.FindByIdAsync(userId);
             if (user == null || token == null)
@@ -149,7 +154,11 @@ namespace Foras_Khadra.Controllers
                 return ConfirmView(false, T("انتهت صلاحية الرابط أو استُعمل من قبل. أعد الإرسال من حسابك.",
                     "The link expired or was already used. Resend it from your account.",
                     "Le lien a expiré ou a déjà été utilisé. Renvoyez-le depuis votre compte."));
-            if (_userManager.GetUserId(User) == user.Id) await _signInManager.RefreshSignInAsync(user);
+            // دخول تلقائي على الجهاز الذي فُتح فيه الرابط: الرابط يثبت ملكية البريد ولا يعمل إلا مرة (الحساب المؤكَّد يُرفض أعلاه).
+            // حساب آخر مفتوح في المتصفح لا يُستبدل.
+            var currentUserId = _userManager.GetUserId(User);
+            if (currentUserId == user.Id) await _signInManager.RefreshSignInAsync(user);
+            else if (currentUserId == null) await _signInManager.SignInAsync(user, isPersistent: true);
             return ConfirmView(true, T("شكرًا! بريدك مؤكَّد وروابط التقديم مفتوحة لك الآن.",
                 "Thank you! Your email is confirmed and apply links are now open to you.",
                 "Merci ! Votre e-mail est confirmé et les liens de candidature vous sont ouverts."));
@@ -194,15 +203,16 @@ namespace Foras_Khadra.Controllers
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login");
-            if (!user.EmailConfirmed) await SendConfirmationEmailAsync(user);
+            if (!user.EmailConfirmed) await SendConfirmationEmailAsync(user, returnUrl);
             TempData["ConfirmationSent"] = T("أُعيد إرسال رابط التأكيد إلى " + user.Email, "Confirmation link resent to " + user.Email, "Lien de confirmation renvoyé à " + user.Email);
             return RedirectToAction("ConfirmRequired", new { returnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null });
         }
 
-        private async Task SendConfirmationEmailAsync(ApplicationUser user)
+        private async Task SendConfirmationEmailAsync(ApplicationUser user, string? returnUrl = null)
         {
             var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var link = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = TokenCodec.Encode(code) }, Request.Scheme)!;
+            // returnUrl في رابط البريد: بعد التأكيد يعود إلى الفرصة التي كان يحاول التقديم عليها
+            var link = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = TokenCodec.Encode(code), returnUrl = SafeReturnUrl(returnUrl) }, Request.Scheme)!;
             var mail = Foras_Khadra.Services.AccountEmails.ConfirmEmail(Lang, link, user.FirstName);
             _emails.Enqueue(user.Email!, mail.Subject, mail.Html);
         }
@@ -217,19 +227,31 @@ namespace Foras_Khadra.Controllers
         private static string Lang => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
         private static string T(string ar, string en, string fr) => Lang == "en" ? en : Lang == "fr" ? fr : ar;
 
+        /// <summary>returnUrl محلي فقط؛ غير ذلك يُهمل (لا تحويل خارج الموقع).</summary>
+        private string? SafeReturnUrl(string? returnUrl) => Url.IsLocalUrl(returnUrl) ? returnUrl : null;
+
+        /// <summary>التطبيق المثبّت (كوكي fk_app يضعه _Layout في وضع standalone): الدخول دائم حتى لا يُطلب عند كل فتح.</summary>
+        private bool IsInstalledApp => Request.Cookies.ContainsKey("fk_app");
+
 
         // ===== GET: Login =====
         [HttpGet]
         [RedirectSignedIn]
-        public IActionResult Login() => View(new LoginViewModel());
+        public IActionResult Login(string? returnUrl)
+        {
+            ViewData["ReturnUrl"] = SafeReturnUrl(returnUrl);
+            return View(new LoginViewModel { RememberMe = true });
+        }
 
         // ===== POST: Login =====
         [HttpPost]
         [RedirectSignedIn]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("auth")]
-        public async Task<IActionResult> Login(LoginViewModel model)
+        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl)
         {
+            returnUrl = SafeReturnUrl(returnUrl);
+            ViewData["ReturnUrl"] = returnUrl;
             if (!ModelState.IsValid) return View(model);
 
             var user = await _userManager.FindByEmailAsync(model.Email);
@@ -259,10 +281,12 @@ namespace Foras_Khadra.Controllers
             {
                 TempData["OrgLoginAlert"] = _localizer["OrgLoginAlert"].Value;
                 TempData["OrgLoginRedirectText"] = _localizer["OrgLoginRedirectText"].Value;
-                TempData["OrgLoginRedirect"] = Url.Action("Login", "Organization");
-                return RedirectToAction("Login");
+                TempData["OrgLoginRedirect"] = Url.Action("Login", "Organization", new { returnUrl });
+                return RedirectToAction("Login", new { returnUrl });
             }
-            await _signInManager.SignInAsync(user, isPersistent: model.RememberMe);
+            await _signInManager.SignInAsync(user, isPersistent: model.RememberMe || IsInstalledApp);
+            // جاء من /go أو من نافذة "الدخول مطلوب": نعيده إلى ما كان يفعله بدل لوحة البداية
+            if (returnUrl != null) return LocalRedirect(returnUrl);
             if (await _userManager.IsInRoleAsync(user, "Admin"))
             {
                 return RedirectToAction("Dashboard", "Admin");

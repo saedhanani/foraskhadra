@@ -85,7 +85,8 @@
     <link rel="manifest" href="~/manifest.webmanifest" />
     @* التطبيق المثبّت (من الشاشة الرئيسية) يأخذ شكل تطبيق: شريط تبويبات سفلي وشريط علوي مبسّط؛ متصفح الهاتف يبقى بشكل الموقع.
        الصنف يُضاف قبل رسم الصفحة حتى لا يظهر الشكل الآخر لحظة (القواعد في brand.css) *@
-    <script>if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) document.documentElement.classList.add('fk-standalone');</script>
+    @* التطبيق المثبّت: صنف للشكل + كوكي fk_app يجعل الدخول دائمًا (30 يومًا) حتى لا يُطلب عند كل فتح *@
+    <script>if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) { document.documentElement.classList.add('fk-standalone'); document.cookie = 'fk_app=1; path=/; max-age=31536000; SameSite=Lax'; }</script>
     <meta name="theme-color" content="#25652C" />
     <meta name="application-name" content="@siteName" />
     <meta name="apple-mobile-web-app-title" content="@siteName" />

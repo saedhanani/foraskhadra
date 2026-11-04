@@ -69,7 +69,6 @@
             @foreach (var a in latestList.Skip(1).Take(4))
             {
                 var cover = CoverFor(a);
-                var href = canRead ? ArticleLink(a) : "javascript:void(0);";
 
                 <a class="latest-card small"
    href="@ArticleLink(a)"
@@ -101,7 +100,6 @@
         {
             var f = latestList.First();
             var fcover = CoverFor(f);
-            var fhref = canRead ? ArticleLink(f) : "javascript:void(0);";
 
             <a class="latest-card big latest-big-area"
    href="@ArticleLink(f)"
@@ -162,9 +160,7 @@
             plain = System.Text.RegularExpressions.Regex.Replace(plain, "<.*?>", string.Empty);
             if (plain.Length > 220) plain = plain.Substring(0, 220) + "...";
 
-            var href = canRead
-            ? Url.Action("Details", "Articles", new { id = article.Id, slug = SlugHelper.Make(article.TitleAr) })
-            : "javascript:void(0);";
+            var href = Url.Action("Details", "Articles", new { id = article.Id, slug = SlugHelper.Make(article.TitleAr) });
 
             <div class="readalso-item">
 
@@ -195,7 +191,7 @@
                 </h3>
                     <p class="ra-excerpt">@plain</p>
 
-                    <a class="ra-more" href="@(canRead? href : "#")"
+                    <a class="ra-more" href="@href"
                         onclick="return swalNotLoggedIn(event, @(canRead.ToString().ToLower()));">
 <span class="ra-more-text">@Localizer["ReadMore"]</span>
 
@@ -239,13 +235,22 @@
             htmlText = "You cannot read this article before logging in. If you have an account, log in; otherwise, create a new account.";
           }
 
+          // الرابط حقيقي؛ بعد التسجيل أو الدخول يعود إلى المقالة نفسها
+          const target = e && e.currentTarget && e.currentTarget.getAttribute("href");
+          const returnUrl = target && target !== "#" ? "?returnUrl=" + encodeURIComponent(target) : "";
           Swal.fire({
             icon: 'warning',
+            showDenyButton: true,
             confirmButtonColor: '#F99D27',
+            denyButtonColor: '#25652C',
             title: `<div style="direction: ${culture === 'ar' ? 'rtl' : 'ltr'}; text-align: center;">${title}</div>`,
             html: `<div style="direction: ${culture === 'ar' ? 'rtl' : 'ltr'}; text-align: center;">${htmlText}</div>`,
-        confirmButtonText: culture === "ar" ? "حسنًا" : culture === "fr" ? "D'accord" : "OK"
-              });
+            confirmButtonText: culture === "ar" ? "إنشاء حساب" : culture === "fr" ? "Créer un compte" : "Create account",
+            denyButtonText: culture === "ar" ? "تسجيل الدخول" : culture === "fr" ? "Se connecter" : "Log in"
+          }).then((result) => {
+            if (result.isConfirmed) window.location.href = '@Url.Action("RegisterUser", "Account")' + returnUrl;
+            else if (result.isDenied) window.location.href = '@Url.Action("Login", "Account")' + returnUrl;
+          });
 
           return false;
         }

@@ -128,7 +128,8 @@
             @if (User.IsInRole("Admin") || User.IsInRole("User") || User.IsInRole("Organization"))
             {
                 <a id="applyBtn"
-                   href="@(isExpired ? "javascript:void(0);" : Url.Action("Go", "Opportunity", new { id = Model.Id }))"
+                   href="@(isExpired ? "#" : Url.Action("Go", "Opportunity", new { id = Model.Id }))"
+                   @(isExpired ? Html.Raw("onclick=\"return false\" aria-disabled=\"true\"") : null)
                    target="@(isExpired ? "_self" : "_blank")"
                    class="@applyButtonClass"
                    @(isExpired ? "title='الفرصة منتهية'" : "")>
@@ -161,7 +162,7 @@
             else if (!User.Identity.IsAuthenticated)
             {
                 <a id="applyBtn"
-                   href="javascript:void(0);"
+                   href="@Url.Action("Login", "Account", new { returnUrl = Context.Request.Path.Value })"
                    class="@applyButtonClass"
                    data-guest="1">
                     @Localizer["ApplyNow"]
@@ -369,8 +370,9 @@
     </script>
     <script>
         const currentLang = '@CultureInfo.CurrentUICulture.TwoLetterISOLanguageName';
-        const registerUrl = '@Url.Action("RegisterUser", "Account")';
-        const loginUrl = '@Url.Action("Login", "Account")';
+        // بعد التسجيل أو الدخول يعود إلى هذه الفرصة
+        const registerUrl = '@Url.Action("RegisterUser", "Account", new { returnUrl = Context.Request.Path.Value })';
+        const loginUrl = '@Url.Action("Login", "Account", new { returnUrl = Context.Request.Path.Value })';
 
         const swalTexts = {
             title: 'تسجيل الدخول مطلوب !',
@@ -399,7 +401,8 @@
             document.querySelector('#applyBtn[data-guest="1"]')?.click();
         });
 
-        document.querySelector('#applyBtn[data-guest="1"]')?.addEventListener("click", function () {
+        document.querySelector('#applyBtn[data-guest="1"]')?.addEventListener("click", function (e) {
+            e.preventDefault();
             Swal.fire({
                 imageUrl: '/images/login-required.svg',
                 imageWidth: 165,

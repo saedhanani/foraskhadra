@@ -60,8 +60,30 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 // ===== إعداد الكوكيز =====
 builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.LoginPath = "/Organization/Login";
-    options.AccessDeniedPath = "/Organization/Login";
+    // الأفراد من /Account/Login؛ صفحات المنظمات ([Authorize(Roles = "…Organization")]) من /Organization/Login — بلغة الرابط وبـreturnUrl
+    options.LoginPath = LoginRedirect.IndividualLoginPath;
+    options.ReturnUrlParameter = "returnUrl";
+    // "تذكرني" والتطبيق المثبّت: 30 يومًا تتجدد مع كل زيارة (الافتراضي كان 14 يومًا)
+    options.ExpireTimeSpan = TimeSpan.FromDays(30);
+    options.SlidingExpiration = true;
+    options.Events.OnRedirectToLogin = ctx =>
+    {
+        if (ctx.Request.Path.StartsWithSegments("/api"))
+        {
+            ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        }
+        var authorize = ctx.HttpContext.GetEndpoint()?.Metadata.GetOrderedMetadata<Microsoft.AspNetCore.Authorization.IAuthorizeData>()
+                        ?? Array.Empty<Microsoft.AspNetCore.Authorization.IAuthorizeData>();
+        ctx.Response.Redirect(LoginRedirect.BuildLoginUrl(ctx.Request.Path.Value, ctx.Request.QueryString.Value, authorize));
+        return Task.CompletedTask;
+    };
+    // مسجَّل بلا صلاحية: صفحة 403 بالعلامة بدل تحويله إلى صفحة دخول أخرى
+    options.Events.OnRedirectToAccessDenied = ctx =>
+    {
+        ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
 });
 
 // ===== إعداد خدمات البريد =====

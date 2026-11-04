@@ -195,14 +195,20 @@ namespace Foras_Khadra.Controllers
         // ====== LOGIN ======
         [HttpGet]
         [RedirectSignedIn]
-        public IActionResult Login() => View();
+        public IActionResult Login(string? returnUrl)
+        {
+            ViewData["ReturnUrl"] = Url.IsLocalUrl(returnUrl) ? returnUrl : null;
+            return View(new OrganizationLoginViewModel { RememberMe = true });
+        }
 
         [HttpPost]
         [RedirectSignedIn]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("auth")]
-        public async Task<IActionResult> Login(OrganizationLoginViewModel model)
+        public async Task<IActionResult> Login(OrganizationLoginViewModel model, string? returnUrl)
         {
+            returnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null;
+            ViewData["ReturnUrl"] = returnUrl;
             if (!ModelState.IsValid)
                 return View(model);
 
@@ -238,10 +244,12 @@ namespace Foras_Khadra.Controllers
             {
                 TempData["UserLoginAlert"] = _localizer["UserLoginAlert"].Value;
                 TempData["UserLoginRedirectText"] = _localizer["UserLoginRedirectText"].Value;
-                TempData["UserLoginRedirect"] = Url.Action("Login", "Account");
-                return RedirectToAction("Login");
+                TempData["UserLoginRedirect"] = Url.Action("Login", "Account", new { returnUrl });
+                return RedirectToAction("Login", new { returnUrl });
             }
-            await _signInManager.SignInAsync(user, isPersistent: false);
+            // "تذكرني" كان يُعرض ولا يُقرأ؛ والتطبيق المثبّت (كوكي fk_app) دخوله دائم
+            await _signInManager.SignInAsync(user, isPersistent: model.RememberMe || Request.Cookies.ContainsKey("fk_app"));
+            if (returnUrl != null) return LocalRedirect(returnUrl);
             // توجيه الادمن للوحة الإدارة والمنظمة للوحة التحكم الخاصة بها
             if (isAdmin)
                 return RedirectToAction("Dashboard", "Admin");

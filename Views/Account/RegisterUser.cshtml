@@ -24,7 +24,7 @@
             <!-- Left: Main form -->
             <div class="reg-main">
 
-                <form asp-action="RegisterUser" method="post" id="registerWizard">
+                <form asp-action="RegisterUser" asp-route-returnUrl="@(ViewData["ReturnUrl"] as string)" method="post" id="registerWizard">
                     @Html.AntiForgeryToken()
 
                     <!-- STEP 1: Account type -->

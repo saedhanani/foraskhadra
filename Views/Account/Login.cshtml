@@ -16,7 +16,7 @@
         <h1 class="auth-title">@Localizer["LoginTitle"]</h1>
         <p class="auth-subtitle">@Localizer["LoginSubtitle"]</p>
 
-        <form asp-action="Login" method="post" class="mt-4" data-submit-once>
+        <form asp-action="Login" asp-route-returnUrl="@(ViewData["ReturnUrl"] as string)" method="post" class="mt-4" data-submit-once>
             @Html.AntiForgeryToken()
 
             <div asp-validation-summary="All" class="text-danger mb-3"></div>
@@ -69,7 +69,7 @@
 
             <div class="auth-footer">
                 <span>@Localizer["NoAccount"]</span>
-                <a asp-action="RegisterUser" asp-controller="Account" class="auth-link ms-1">@Localizer["CreateAccount"]</a>
+                <a asp-action="RegisterUser" asp-controller="Account" asp-route-returnUrl="@(ViewData["ReturnUrl"] as string)" class="auth-link ms-1">@Localizer["CreateAccount"]</a>
             </div>
         </form>
     </div>

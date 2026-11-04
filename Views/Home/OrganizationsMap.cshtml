@@ -144,6 +144,8 @@
                          role="button"
                          aria-label="@Localizer["LabelOrganizationName"] @org.Name">
                         <div class="org-card-body">
+                            @* رابط حقيقي فوق البطاقة (لمحركات البحث ولوحة المفاتيح)؛ النقر يمر من معالج البطاقة أدناه *@
+                            <a class="org-card-link" href="@(org.IsManual ? Url.Action("ManualOrganizationDetails", "Home", new { id = org.Id }) : Url.Action("DetailsOrganization", "Home", new { id = org.Id }))" aria-label="@org.Name" style="position:absolute;inset:0;z-index:3;border-radius:50%;"></a>
                             <img src="@org.LogoPath" class="org-logo" alt="logo" loading="lazy" decoding="async" />
 
                             <div class="org-card-hover" aria-hidden="true">
@@ -220,12 +222,16 @@
         const L = { loginTitle: @Html.Raw(loginTitle), loginText: @Html.Raw(loginText), loginBtn: @Html.Raw(loginBtn) };
 
        document.querySelectorAll(".org-card").forEach(function (card) {
-    card.addEventListener("click", function () {
+    card.addEventListener("click", function (e) {
 
         const orgId = this.dataset.orgId;
         const isManual = this.dataset.manual === "true";
+        const orgUrl = isManual
+            ? "@Url.Action("ManualOrganizationDetails", "Home")/" + orgId
+            : "@Url.Action("DetailsOrganization", "Home")/" + orgId;
 
         if (!isAuthenticated) {
+            e.preventDefault();
             Swal.fire({
                 icon: "warning",
                 title: L.loginTitle,
@@ -234,17 +240,13 @@
                 confirmButtonColor: "#F99D27"
             }).then(function (result) {
                 if (result.isConfirmed) {
-                    window.location.href = "@CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)/Account/Login";
+                    window.location.href = "@Url.Action("Login", "Account")?returnUrl=" + encodeURIComponent(orgUrl);
                 }
             });
             return;
         }
 
-        if (isManual) {
-            window.location.href = "@CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)/Home/ManualOrganizationDetails/" + orgId;
-        } else {
-            window.location.href = "@CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)/Home/DetailsOrganization/" + orgId;
-        }
+        if (!e.target.closest("a")) window.location.href = orgUrl;
     });
 });
 

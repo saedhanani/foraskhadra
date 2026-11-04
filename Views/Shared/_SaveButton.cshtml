@@ -20,7 +20,7 @@
 }
 else
 {
-    <a class="save-btn" href="@Url.Action("Login", "Account")" title="@saveLabel" aria-label="@saveLabel">
+    <a class="save-btn" href="@Url.Action("Login", "Account", new { returnUrl = Context.Request.Path + Context.Request.QueryString })" title="@saveLabel" aria-label="@saveLabel">
         <i class="bi bi-bookmark"></i>
     </a>
 }

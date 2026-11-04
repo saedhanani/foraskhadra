@@ -22,6 +22,14 @@ namespace Foras_Khadra.Helpers
             var userManager = context.HttpContext.RequestServices.GetRequiredService<UserManager<ApplicationUser>>();
             if (await userManager.GetUserAsync(principal) == null) return;
 
+            // مسجَّل أصلاً وجاء بـreturnUrl (من /go أو نافذة "الدخول مطلوب"): نعيده إلى ما كان يفتحه
+            var returnUrl = context.HttpContext.Request.Query["returnUrl"].ToString();
+            if (returnUrl.Length > 1 && returnUrl[0] == '/' && returnUrl[1] != '/' && returnUrl[1] != '\\')
+            {
+                context.Result = new LocalRedirectResult(returnUrl);
+                return;
+            }
+
             // نفس وجهات ما بعد الدخول في AccountController و OrganizationController
             context.Result = principal.IsInRole("Admin") ? new RedirectToActionResult("Dashboard", "Admin", null)
                 : principal.IsInRole("Organization") ? new RedirectToActionResult("Index", "Home", null)

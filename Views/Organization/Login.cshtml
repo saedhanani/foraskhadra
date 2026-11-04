@@ -16,7 +16,7 @@
         <h1 class="auth-title">@Localizer["LoginTitle"]</h1>
         <p class="auth-subtitle">@Localizer["LoginSubtitle"]</p>
 
-        <form asp-action="Login" method="post" class="mt-4" data-submit-once>
+        <form asp-action="Login" asp-route-returnUrl="@(ViewData["ReturnUrl"] as string)" method="post" class="mt-4" data-submit-once>
             @Html.AntiForgeryToken()
 
             <div asp-validation-summary="All" class="text-danger mb-3"></div>
@@ -51,7 +51,7 @@
             <!-- Remember + Forgot -->
             <div class="d-flex align-items-center justify-content-between mt-2 mb-3 auth-row">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="rememberMeOrg" />
+                    <input class="form-check-input" type="checkbox" id="rememberMeOrg" asp-for="RememberMe" />
                     <label class="form-check-label" for="rememberMeOrg">@Localizer["RememberMe"]</label>
                 </div>
 
