@@ -469,15 +469,21 @@ public async Task<IActionResult> Create()
         /// </summary>
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> Go(int id, [FromServices] IApplyClickCounter clicks)
+        public async Task<IActionResult> Go(int id, [FromServices] IApplyClickCounter clicks, [FromServices] IAnalytics analytics)
         {
             if (User.Identity?.IsAuthenticated != true)
+            {
+                analytics.Event("go.guest");
                 return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Details", "Opportunity", new { id }) });
+            }
 
             // التأكيد مطلوب عند «قدّم الآن» فقط (التصفح والحفظ بلا تأكيد)
             var applicant = await _userManager.GetUserAsync(User);
             if (applicant != null && !applicant.EmailConfirmed && !User.IsInRole("Admin"))
+            {
+                analytics.Event("go.unconfirmed");
                 return RedirectToAction("ConfirmRequired", "Account", new { returnUrl = Url.Action("Details", "Opportunity", new { id }) });
+            }
 
             var opp = await _context.Opportunities.AsNoTracking()
                 .Where(o => o.Id == id)
@@ -489,6 +495,7 @@ public async Task<IActionResult> Create()
             if (target == null) return NotFound();
 
             await clicks.CountAsync(id);
+            analytics.Event("go.click");
             return Redirect(target);
         }
 

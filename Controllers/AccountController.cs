@@ -1,4 +1,5 @@
-﻿using Foras_Khadra.Helpers;
+﻿using Foras_Khadra.Services;
+using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
 using Foras_Khadra.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -64,7 +65,7 @@ namespace Foras_Khadra.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("auth")]
-        public async Task<IActionResult> RegisterUser(RegisterViewModel model, string? returnUrl)
+        public async Task<IActionResult> RegisterUser(RegisterViewModel model, string? returnUrl, [FromServices] IAnalytics analytics)
         {
             returnUrl = SafeReturnUrl(returnUrl);
             ViewData["ReturnUrl"] = returnUrl;
@@ -126,6 +127,7 @@ namespace Foras_Khadra.Controllers
             await SendConfirmationEmailAsync(user, returnUrl);
             // دخول فوري: يتصفح ويحفظ قبل التأكيد؛ التأكيد يلزم عند «قدّم الآن» فقط
             await _signInManager.SignInAsync(user, isPersistent: true);
+            analytics.Event("register.done");
             return RedirectToAction("RegisterConfirmation", new { returnUrl });
         }
 
@@ -140,7 +142,7 @@ namespace Foras_Khadra.Controllers
 
         // ===== تأكيد البريد (المرحلة 0.4): التسجيل يرسل الرابط ويُدخل المستخدم؛ رابط «قدّم الآن» (/go/) يتطلب التأكيد =====
         [HttpGet]
-        public async Task<IActionResult> ConfirmEmail(string? userId, string? code, string? returnUrl)
+        public async Task<IActionResult> ConfirmEmail(string? userId, string? code, string? returnUrl, [FromServices] IAnalytics analytics)
         {
             ViewData["ReturnUrl"] = SafeReturnUrl(returnUrl);
             var token = TokenCodec.Decode(code);
@@ -159,6 +161,7 @@ namespace Foras_Khadra.Controllers
             var currentUserId = _userManager.GetUserId(User);
             if (currentUserId == user.Id) await _signInManager.RefreshSignInAsync(user);
             else if (currentUserId == null) await _signInManager.SignInAsync(user, isPersistent: true);
+            analytics.Event("email.confirmed");
             return ConfirmView(true, T("شكرًا! بريدك مؤكَّد وروابط التقديم مفتوحة لك الآن.",
                 "Thank you! Your email is confirmed and apply links are now open to you.",
                 "Merci ! Votre e-mail est confirmé et les liens de candidature vous sont ouverts."));
@@ -248,7 +251,7 @@ namespace Foras_Khadra.Controllers
         [RedirectSignedIn]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("auth")]
-        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl)
+        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl, [FromServices] IAnalytics analytics)
         {
             returnUrl = SafeReturnUrl(returnUrl);
             ViewData["ReturnUrl"] = returnUrl;
@@ -285,6 +288,7 @@ namespace Foras_Khadra.Controllers
                 return RedirectToAction("Login", new { returnUrl });
             }
             await _signInManager.SignInAsync(user, isPersistent: model.RememberMe || IsInstalledApp);
+            analytics.Event("login.done");
             // جاء من /go أو من نافذة "الدخول مطلوب": نعيده إلى ما كان يفعله بدل لوحة البداية
             if (returnUrl != null) return LocalRedirect(returnUrl);
             if (await _userManager.IsInRoleAsync(user, "Admin"))

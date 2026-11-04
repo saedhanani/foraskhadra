@@ -85,6 +85,49 @@ namespace Foras_Khadra.Controllers
             return RedirectToAction(nameof(Review));
         }
 
+        // ===== التحليلات الداخلية بلا كوكيز (Services/Analytics) =====
+        [HttpGet]
+        public async Task<IActionResult> Analytics(int days = 7)
+        {
+            days = days switch { 30 => 30, 90 => 90, _ => 7 };
+            var to = DateOnly.FromDateTime(DateTime.Now);
+            var from = to.AddDays(-(days - 1));
+            var previousFrom = from.AddDays(-days);
+
+            var views = await _context.PageViewDailyStats.AsNoTracking().Where(r => r.Day >= from && r.Day <= to).ToListAsync();
+            var sources = await _context.TrafficSourceDailyStats.AsNoTracking().Where(r => r.Day >= from && r.Day <= to).ToListAsync();
+            var events = await _context.SiteEventDailyStats.AsNoTracking().Where(r => r.Day >= from && r.Day <= to).ToListAsync();
+            var oppStats = await _context.OpportunityDailyStats.AsNoTracking().Where(r => r.Day >= from && r.Day <= to).ToListAsync();
+            var previous = await _context.PageViewDailyStats.AsNoTracking().Where(r => r.Day >= previousFrom && r.Day < from).SumAsync(r => (int?)r.Views) ?? 0;
+
+            var eventTotals = events.Where(e => e.Label == null).GroupBy(e => e.Event).ToDictionary(g => g.Key, g => g.Sum(e => e.Count));
+            eventTotals["register.view"] = views.Where(v => v.Path == "/account/registeruser").Sum(v => v.Views);
+            eventTotals["search.zero"] = events.Where(e => e.Event == "search.zero").Sum(e => e.Count);
+
+            var topOpportunities = oppStats.GroupBy(s => s.OpportunityId)
+                .Select(g => new { Id = g.Key, Views = g.Sum(s => s.Views), Clicks = g.Sum(s => s.ApplyClicks) })
+                .OrderByDescending(x => x.Views).ThenByDescending(x => x.Clicks).Take(10).ToList();
+            var ids = topOpportunities.Select(x => x.Id).ToList();
+            var titles = await _context.Opportunities.AsNoTracking().Where(o => ids.Contains(o.Id)).ToDictionaryAsync(o => o.Id, o => o.TitleAr);
+
+            var vm = new AnalyticsVM
+            {
+                Days = days, From = from, To = to,
+                TotalViews = views.Sum(v => v.Views),
+                PreviousTotalViews = previous,
+                PerDay = Enumerable.Range(0, days).Select(i => from.AddDays(i)).Select(d => (d, views.Where(v => v.Day == d).Sum(v => v.Views))).ToList(),
+                ByCulture = views.GroupBy(v => v.Culture).ToDictionary(g => g.Key, g => g.Sum(v => v.Views)),
+                TopPages = views.GroupBy(v => v.Path).Select(g => (g.Key, g.Sum(v => v.Views))).OrderByDescending(x => x.Item2).Take(25).ToList(),
+                TopSources = sources.GroupBy(s => s.Source).Select(g => (g.Key, g.Sum(s => s.Views))).OrderByDescending(x => x.Item2).Take(20).ToList(),
+                Events = eventTotals,
+                ZeroResultSearches = events.Where(e => e.Event == "search.zero" && e.Label != null).GroupBy(e => e.Label!)
+                    .Select(g => (g.Key, g.Sum(e => e.Count))).OrderByDescending(x => x.Item2).Take(30).ToList(),
+                TopOpportunities = topOpportunities.Select(x => (x.Id, titles.TryGetValue(x.Id, out var t) ? t : $"#{x.Id}", x.Views, x.Clicks)).ToList(),
+                ApplyClicks = oppStats.Sum(s => s.ApplyClicks)
+            };
+            return View(vm);
+        }
+
         // ===== طلبات النشر من بوابة المنظمات (Services/PublishRequestService) =====
         [HttpGet]
         public async Task<IActionResult> PublishRequests(string? status = null)

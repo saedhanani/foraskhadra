@@ -301,7 +301,7 @@ namespace Foras_Khadra.Controllers
 
         // ================= صفحة كل الفرص العامة =================
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("search")]
-        public async Task<IActionResult> AllOpportunities(string country, string[] type, string search, int page = 1)
+        public async Task<IActionResult> AllOpportunities(string country, string[] type, string search, [FromServices] IAnalytics analytics, int page = 1)
         {
             var query = _context.Opportunities
                                 .Include(o => o.AvailableCountries)
@@ -340,6 +340,13 @@ namespace Foras_Khadra.Controllers
 
             page = Math.Max(1, page);
             var allOpportunities = PageOf(query, page, out var totalCount);
+
+            // تحليلات: عدد عمليات البحث، والبحث بصفر نتائج مع العبارة (ما يطلبه الزوار ولا نملكه)
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                analytics.Event("search");
+                if (totalCount == 0) analytics.Event("search.zero", search);
+            }
 
             var countries = _context.Countries
                                     .OrderBy(c => c.NameAr)

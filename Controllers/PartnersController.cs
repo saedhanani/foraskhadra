@@ -18,12 +18,14 @@ namespace Foras_Khadra.Controllers
         private readonly ApplicationDbContext _db;
         private readonly IPublishRequestService _requests;
         private readonly IAudienceEstimator _audience;
+        private readonly IAnalytics _analytics;
 
-        public PartnersController(ApplicationDbContext db, IPublishRequestService requests, IAudienceEstimator audience)
+        public PartnersController(ApplicationDbContext db, IPublishRequestService requests, IAudienceEstimator audience, IAnalytics analytics)
         {
             _db = db;
             _requests = requests;
             _audience = audience;
+            _analytics = analytics;
         }
 
         private static string Lang => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
@@ -71,6 +73,7 @@ namespace Foras_Khadra.Controllers
                 EstimatedReach = estimate
             });
 
+            _analytics.Event("publish_request.sent");
             TempData["RequestSentTo"] = email;
             TempData["RequestReach"] = estimate;
             return RedirectToAction(nameof(Index), new { sent = 1 });

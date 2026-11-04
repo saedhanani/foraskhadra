@@ -1,0 +1,131 @@
+@model Foras_Khadra.Models.AnalyticsVM
+@{
+    ViewData["Title"] = "التحليلات";
+    var maxDay = Model.PerDay.Count == 0 ? 1 : Math.Max(1, Model.PerDay.Max(d => d.Views));
+    string N(int n) => n.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+    string Delta(int now, int before) => before == 0 ? "" : $"{(now >= before ? "+" : "")}{(now - before) * 100 / before}% عن المدة السابقة";
+    int Ev(string name) => Model.Events.TryGetValue(name, out var n) ? n : 0;
+    string Pct(int part, int whole) => whole == 0 ? "—" : (part * 100 / whole) + "%";
+    var funnel = new (string Label, int Value)[]
+    {
+        ("صفحة التسجيل", Ev("register.view")),
+        ("حساب جديد", Ev("register.done")),
+        ("بريد مؤكَّد", Ev("email.confirmed")),
+        ("نقرات «قدّم الآن»", Model.ApplyClicks),
+    };
+}
+
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="m-0">التحليلات <small class="text-muted fs-6">@Model.From.ToString("yyyy-MM-dd") → @Model.To.ToString("yyyy-MM-dd")</small></h2>
+        <div class="d-flex gap-2">
+            @foreach (var d in new[] { 7, 30, 90 })
+            {
+                <a asp-controller="Admin" asp-action="Analytics" asp-route-days="@d" class="btn @(Model.Days == d ? "btn-primary" : "btn-outline-primary")">@d يومًا</a>
+            }
+            <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-secondary">لوحة التحكم</a>
+        </div>
+    </div>
+    <p class="text-muted small">بلا كوكيز ولا عناوين IP: مشاهدات الصفحات العامة فقط (الزاحفات والمديرون لا يُعدّون)، تُكتب كل دقيقة كصفوف يومية وتُحفظ 400 يومًا. المصدر = أول صفحة في الزيارة (الإحالة الخارجية أو utm أو التطبيق).</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">مشاهدات الصفحات</div><div class="fs-3 fw-bold">@N(Model.TotalViews)</div><div class="small text-muted">@Delta(Model.TotalViews, Model.PreviousTotalViews)</div></div></div></div>
+        <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">نقرات «قدّم الآن»</div><div class="fs-3 fw-bold">@N(Model.ApplyClicks)</div><div class="small text-muted">@Pct(Model.ApplyClicks, Model.TotalViews) من المشاهدات</div></div></div></div>
+        <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">حسابات جديدة</div><div class="fs-3 fw-bold">@N(Ev("register.done"))</div><div class="small text-muted">@Pct(Ev("register.done"), Ev("register.view")) من زوار صفحة التسجيل</div></div></div></div>
+        <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">بحث بصفر نتائج</div><div class="fs-3 fw-bold">@N(Ev("search.zero"))</div><div class="small text-muted">من @N(Ev("search")) عملية بحث</div></div></div></div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">المشاهدات يومًا بيوم</h5>
+            <div class="d-flex align-items-end gap-1" style="height:140px;">
+                @foreach (var (day, views) in Model.PerDay)
+                {
+                    <div class="flex-fill text-center" title="@day.ToString("yyyy-MM-dd"): @N(views)">
+                        <div style="background:#1B6B23;border-radius:4px 4px 0 0;height:@(Math.Max(2, views * 120 / maxDay))px;"></div>
+                        @if (Model.Days <= 30)
+                        {
+                            <div class="small text-muted" style="font-size:.65rem;">@day.Day</div>
+                        }
+                    </div>
+                }
+            </div>
+            <div class="small text-muted mt-2">
+                اللغات:
+                @foreach (var kv in Model.ByCulture.OrderByDescending(k => k.Value))
+                {
+                    <span class="badge bg-light text-dark border me-1">@kv.Key: @N(kv.Value) (@Pct(kv.Value, Model.TotalViews))</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100"><div class="card-body">
+                <h5 class="card-title">أكثر الصفحات مشاهدة</h5>
+                <table class="table table-sm mb-0"><tbody>
+                @foreach (var (path, views) in Model.TopPages)
+                {
+                    <tr><td class="text-break" dir="ltr" style="text-align:left;">@path</td><td class="text-nowrap">@N(views)</td></tr>
+                }
+                @if (!Model.TopPages.Any()) { <tr><td class="text-muted">لا بيانات بعد.</td></tr> }
+                </tbody></table>
+            </div></div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card h-100"><div class="card-body">
+                <h5 class="card-title">مصادر الزيارات</h5>
+                <table class="table table-sm mb-0"><tbody>
+                @foreach (var (source, views) in Model.TopSources)
+                {
+                    <tr><td dir="ltr" style="text-align:left;">@source</td><td class="text-nowrap">@N(views)</td></tr>
+                }
+                @if (!Model.TopSources.Any()) { <tr><td class="text-muted">لا بيانات بعد.</td></tr> }
+                </tbody></table>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="card h-100"><div class="card-body">
+                <h5 class="card-title">قمع الزائر</h5>
+                <table class="table table-sm mb-0"><tbody>
+                @foreach (var (label, value) in funnel)
+                {
+                    <tr><td>@label</td><td class="text-nowrap">@N(value)</td></tr>
+                }
+                <tr><td>دخول ناجح</td><td>@N(Ev("login.done"))</td></tr>
+                <tr><td>«قدّم الآن» من زائر (طُلب الدخول)</td><td>@N(Ev("go.guest"))</td></tr>
+                <tr><td>«قدّم الآن» ببريد غير مؤكَّد</td><td>@N(Ev("go.unconfirmed"))</td></tr>
+                <tr><td>طلبات نشر من منظمات</td><td>@N(Ev("publish_request.sent"))</td></tr>
+                </tbody></table>
+            </div></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100"><div class="card-body">
+                <h5 class="card-title">بحث بصفر نتائج <small class="text-muted">— ما يبحث عنه الزوار ولا نملكه</small></h5>
+                <table class="table table-sm mb-0"><tbody>
+                @foreach (var (term, count) in Model.ZeroResultSearches)
+                {
+                    <tr><td class="text-break">@term</td><td class="text-nowrap">@N(count)</td></tr>
+                }
+                @if (!Model.ZeroResultSearches.Any()) { <tr><td class="text-muted">لا شيء — كل بحث وجد نتائج.</td></tr> }
+                </tbody></table>
+            </div></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100"><div class="card-body">
+                <h5 class="card-title">أكثر الفرص مشاهدة</h5>
+                <table class="table table-sm mb-0"><thead><tr><th>الفرصة</th><th>مشاهدات</th><th>قدّم</th></tr></thead><tbody>
+                @foreach (var (id, title, views, clicks) in Model.TopOpportunities)
+                {
+                    <tr><td><a asp-controller="Opportunity" asp-action="Details" asp-route-id="@id">@title</a></td><td>@N(views)</td><td>@N(clicks)</td></tr>
+                }
+                @if (!Model.TopOpportunities.Any()) { <tr><td class="text-muted" colspan="3">لا بيانات بعد.</td></tr> }
+                </tbody></table>
+            </div></div>
+        </div>
+    </div>
+</div>

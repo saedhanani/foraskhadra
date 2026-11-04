@@ -35,6 +35,9 @@ namespace Foras_Khadra.Data
         public DbSet<OpportunityDailyStat> OpportunityDailyStats { get; set; }
         public DbSet<Field> Fields { get; set; }
         public DbSet<PublishRequest> PublishRequests { get; set; }
+        public DbSet<PageViewDailyStat> PageViewDailyStats { get; set; }
+        public DbSet<TrafficSourceDailyStat> TrafficSourceDailyStats { get; set; }
+        public DbSet<SiteEventDailyStat> SiteEventDailyStats { get; set; }
 
         // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -82,6 +85,11 @@ namespace Foras_Khadra.Data
                 .WithMany()
                 .HasForeignKey(r => r.OpportunityId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // التحليلات اليومية: صف واحد لكل (يوم، مفتاح)
+            modelBuilder.Entity<PageViewDailyStat>().HasIndex(r => new { r.Day, r.Path, r.Culture }).IsUnique();
+            modelBuilder.Entity<TrafficSourceDailyStat>().HasIndex(r => new { r.Day, r.Source }).IsUnique();
+            modelBuilder.Entity<SiteEventDailyStat>().HasIndex(r => new { r.Day, r.Event, r.Label }).IsUnique();
 
             // الفرص المحفوظة: لا تكرار لنفس الفرصة عند نفس المستخدم، وتُحذف مع حذف الفرصة.
             // جهة المستخدم بلا cascade في القاعدة (SQL Server يرفض مسارين: المستخدم → المحفوظات والمستخدم → فرصه → المحفوظات)؛

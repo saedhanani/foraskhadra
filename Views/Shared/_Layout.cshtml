@@ -1,3 +1,4 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Config
 <!DOCTYPE html>
 @{
     var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
@@ -56,6 +57,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>@fullTitle</title>
     <meta name="description" content="@metaDescription" />
+    @* تحقق Google Search Console وBing Webmaster: القيم في إعدادات الخادم (Seo:GoogleSiteVerification، Seo:BingSiteVerification)؛ فارغة = لا وسم *@
+    @if (!string.IsNullOrEmpty(Config["Seo:GoogleSiteVerification"]))
+    {
+        <meta name="google-site-verification" content="@Config["Seo:GoogleSiteVerification"]" />
+    }
+    @if (!string.IsNullOrEmpty(Config["Seo:BingSiteVerification"]))
+    {
+        <meta name="msvalidate.01" content="@Config["Seo:BingSiteVerification"]" />
+    }
     @if (isErrorPage)
     {
         <meta name="robots" content="noindex" />

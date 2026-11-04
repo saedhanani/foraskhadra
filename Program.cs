@@ -111,6 +111,9 @@ builder.Services.AddScoped<IApplyClickCounter, ApplyClickCounter>();
 // بوابة المنظمات: طلبات النشر بلا حساب + تقدير الأعضاء المؤهَّلين (مخزَّن ساعة)
 builder.Services.AddScoped<IPublishRequestService, PublishRequestService>();
 builder.Services.AddScoped<IAudienceEstimator, AudienceEstimator>();
+// تحليلات داخلية بلا كوكيز: عدّادات في الذاكرة تُكتب كل دقيقة كصفوف يومية (Services/Analytics)
+builder.Services.AddSingleton<IAnalytics, Analytics>();
+builder.Services.AddHostedService<AnalyticsFlushService>();
 // إشعارات الدفع (Web Push): مفاتيح VAPID في App_Data/push-vapid.json، والإرسال من NotificationSweepHostedService
 builder.Services.AddSingleton<IVapidKeyStore, VapidKeyStore>();
 builder.Services.AddHttpClient(WebPushSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(15));
@@ -377,6 +380,7 @@ var localizationOptions = app.Services
     .Value;
 
 app.UseCultureRedirects(); // ?culture= القديمة → 301؛ "/" لزائر كوكيه en/fr → 302؛ تذكّر آخر لغة
+app.UseAnalytics(); // مشاهدات الصفحات العامة تُعدّ بعد اكتمال الرد (لا زاحفات ولا مديرين ولا كوكيز)
 app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
