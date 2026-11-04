@@ -356,7 +356,7 @@ const string ContentSecurityPolicy =
     "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; " +
     "img-src 'self' data: blob: https:; " +
     "connect-src 'self' https://ipapi.co https://api.iconify.design https://api.simplesvg.com https://api.unisvg.com; " +
-    "frame-src https://www.google.com; " +
+    "frame-src 'self' https://www.google.com; " + // 'self': معاينة الودجت في /embed (3.3) داخل iframe من الموقع نفسه
     "frame-ancestors 'self'; " +
     "object-src 'none'; " +
     "base-uri 'self'";
