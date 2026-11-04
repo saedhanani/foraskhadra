@@ -29,6 +29,10 @@ namespace Foras_Khadra.Models
         public List<CountryOption> CountryOptions { get; set; } = new();
         /// <summary>بلدان الاستضافة الموجودة فعلًا في الفرص المنشورة.</summary>
         public List<CountryOption> HostOptions { get; set; } = new();
+        /// <summary>صفحة نية (المرحلة 2.3) إن كانت هذه صفحة نية؛ Filter حينها هو الدمج (فلترها + الطلب) وExtraFilter هو الطلب وحده.</summary>
+        public LandingPage? Landing { get; set; }
+        public ParsedFilter ExtraFilter { get; set; } = new();
+        public bool LandingIndexable { get; set; }
 
         // لتوليد قائمة الأنواع للـ dropdown
         public List<SelectListItem> TypeSelectList

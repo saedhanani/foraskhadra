@@ -9,14 +9,17 @@
     var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
     var tp = Model.TypePage;
+    var lp = Model.Landing;
     var f = Model.Filter;
-    ViewData["Title"] = tp != null ? tp.Title(lang) : Localizer["PageTitle"].Value;
-    if (tp != null) ViewData["Description"] = tp.Meta(lang);
+    var fc = lp != null ? Model.ExtraFilter : f; // رقائق صفحة النية من معايير الطلب فقط (فلترها المحفوظ لا يُزال)
+    ViewData["Title"] = lp != null ? lp.Title(lang) : tp != null ? tp.Title(lang) : Localizer["PageTitle"].Value;
+    if (lp != null) ViewData["Description"] = lp.Meta(lang);
+    else if (tp != null) ViewData["Description"] = tp.Meta(lang);
 
     // canonical (2.2): صفحة النوع والقائمة بلا فلاتر → ذاتي مع رقم الصفحة فقط (لا rel=prev/next)؛
     // أي فلتر أو بحث أو ترتيب → noindex مع canonical ذاتي كامل (لا إشارات متضاربة)
     var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}";
-    var filtered = tp == null ? f.HasCriteria : f.HasCriteriaBeyondType;
+    var filtered = lp != null ? Model.ExtraFilter.HasCriteria : tp == null ? f.HasCriteria : f.HasCriteriaBeyondType;
     if (filtered)
     {
         ViewData["Robots"] = "noindex,follow";
@@ -24,9 +27,11 @@
     }
     else
     {
-        ViewData["Canonical"] = baseUrl + (tp != null ? Url.Action("ByType", "Home", new { type = tp.Slug }) : Context.Request.Path.Value)
+        ViewData["Canonical"] = baseUrl + (lp != null ? Url.Action("ByType", "Home", new { type = lp.Slug }) : tp != null ? Url.Action("ByType", "Home", new { type = tp.Slug }) : Context.Request.Path.Value)
             + (Model.Page > 1 ? $"?page={Model.Page}" : "");
     }
+    // صفحة نية غير مكتملة (مسودة، مقدمة قصيرة، أقل من 5 فرص مفتوحة) تظهر لكن لا تُفهرس
+    if (lp != null && !Model.LandingIndexable) ViewData["Robots"] = "noindex,follow";
 
     // رقائق الفلاتر الفعّالة: كل رقاقة رابط يزيل معيارها ويبقي الباقي
     string Without(string key, string? value = null)
@@ -42,20 +47,21 @@
     string FieldName(Field x) => lang == "en" ? x.NameEn : lang == "fr" ? x.NameFr : x.NameAr;
 
     var chips = new List<(string Label, string Url)>();
-    if (f.Search.Length > 0) chips.Add((T("بحث: ", "Search: ", "Recherche : ") + f.Search, Without("search")));
-    if (tp == null) foreach (var t in f.Types) chips.Add((t.GetDisplayName(lang), Without("type", t.ToString())));
-    if (f.CountryIso != null) chips.Add((T("دولتي: ", "My country: ", "Mon pays : ") + (f.CountryIso == "XA" ? T("كل الوطن العربي", "Arab world", "Monde arabe") : Model.CountryOptions.FirstOrDefault(c => c.Iso == f.CountryIso)?.Name ?? CountryHelper.NameForIso(f.CountryIso, lang) ?? f.CountryIso), Without("country")));
-    else if (f.CountryName != null) chips.Add((f.CountryName, Without("country")));
-    if (f.Funding != null) chips.Add((FundingName(f.Funding.Value), Without("funding")));
-    if (f.Degree != null) chips.Add((DegreeName(f.Degree.Value), Without("degree")));
-    foreach (var k in f.Fields) chips.Add((Model.Fields.FirstOrDefault(x => x.Key == k) is Field fld ? FieldName(fld) : k, Without("field", k)));
-    if (f.Theme != null) chips.Add((ThemeName(f.Theme.Value), Without("theme")));
-    if (f.Host != null) chips.Add((T("في ", "In ", "En ") + (Model.HostOptions.FirstOrDefault(h => h.Iso == f.Host)?.Name ?? f.Host), Without("host")));
-    if (f.Remote) chips.Add((T("عن بُعد", "Remote", "À distance"), Without("remote")));
-    if (f.NoIelts) chips.Add((T("بدون آيلتس", "No IELTS", "Sans IELTS"), Without("noielts")));
-    if (f.Within != null) chips.Add((T($"ينتهي خلال {f.Within} يومًا", $"Closes within {f.Within} days", $"Se clôture sous {f.Within} jours"), Without("within")));
-    if (f.Sort != "open") chips.Add((f.Sort == "newest" ? T("الأحدث", "Newest", "Plus récentes") : T("الأقرب موعدًا", "Closest deadline", "Échéance proche"), Without("sort")));
-    var clearUrl = tp != null ? Url.Action("ByType", "Home", new { type = tp.Slug }) : Url.Action("AllOpportunities", "Home");
+    if (fc.Search.Length > 0) chips.Add((T("بحث: ", "Search: ", "Recherche : ") + fc.Search, Without("search")));
+    if (tp == null) foreach (var t in fc.Types) chips.Add((t.GetDisplayName(lang), Without("type", t.ToString())));
+    if (fc.CountryIso != null) chips.Add((T("دولتي: ", "My country: ", "Mon pays : ") + (fc.CountryIso == "XA" ? T("كل الوطن العربي", "Arab world", "Monde arabe") : Model.CountryOptions.FirstOrDefault(c => c.Iso == fc.CountryIso)?.Name ?? CountryHelper.NameForIso(fc.CountryIso, lang) ?? fc.CountryIso), Without("country")));
+    else if (fc.CountryName != null) chips.Add((fc.CountryName, Without("country")));
+    if (fc.Funding != null) chips.Add((FundingName(fc.Funding.Value), Without("funding")));
+    if (fc.Degree != null) chips.Add((DegreeName(fc.Degree.Value), Without("degree")));
+    foreach (var k in fc.Fields) chips.Add((Model.Fields.FirstOrDefault(x => x.Key == k) is Field fld ? FieldName(fld) : k, Without("field", k)));
+    if (fc.Theme != null) chips.Add((ThemeName(fc.Theme.Value), Without("theme")));
+    if (fc.Host != null) chips.Add((T("في ", "In ", "En ") + (Model.HostOptions.FirstOrDefault(h => h.Iso == fc.Host)?.Name ?? fc.Host), Without("host")));
+    if (fc.Remote) chips.Add((T("عن بُعد", "Remote", "À distance"), Without("remote")));
+    if (fc.NoIelts) chips.Add((T("بدون آيلتس", "No IELTS", "Sans IELTS"), Without("noielts")));
+    if (fc.Women) chips.Add((T("للنساء", "For women", "Pour les femmes"), Without("women")));
+    if (fc.Within != null) chips.Add((T($"ينتهي خلال {fc.Within} يومًا", $"Closes within {fc.Within} days", $"Se clôture sous {fc.Within} jours"), Without("within")));
+    if (fc.Sort != "open") chips.Add((fc.Sort == "newest" ? T("الأحدث", "Newest", "Plus récentes") : T("الأقرب موعدًا", "Closest deadline", "Échéance proche"), Without("sort")));
+    var clearUrl = lp != null ? Url.Action("ByType", "Home", new { type = lp.Slug }) : tp != null ? Url.Action("ByType", "Home", new { type = tp.Slug }) : Url.Action("AllOpportunities", "Home");
 
     // روابط الصفحات تحافظ على فلاتر البحث الحالية وتغيّر page فقط (type قد تتكرر، لذا لا نجمعها في نص واحد)
     string PageUrl(int p)
@@ -495,6 +501,12 @@
     .ob-chip { display: inline-flex; align-items: center; gap: 4px; background: #E8F5E9; color: #1B6B23; border-radius: 999px; padding: 4px 10px; font-size: .85rem; font-weight: 700; text-decoration: none; }
     .ob-chip:hover { background: #d4ecd6; color: #1B6B23; }
     .ob-clear { color: #B91C1C; font-size: .85rem; text-decoration: none; }
+    .ob-faq { background: #fff; border: 1px solid #DCEFDD; border-radius: 16px; padding: 18px 20px; margin: 24px 0; }
+    .ob-faq h2 { font-size: 1.2rem; font-weight: 800; color: #1B6B23; margin: 0 0 8px; }
+    .ob-faq details { border-bottom: 1px solid #E5E7EB; padding: 10px 0; }
+    .ob-faq details:last-child { border-bottom: 0; }
+    .ob-faq summary { cursor: pointer; font-weight: 700; color: #0F3D14; }
+    .ob-faq p { margin: 8px 0 0; color: #475569; line-height: 1.8; }
 </style>
 
 <div class="page-wrapper container">
@@ -503,7 +515,7 @@
             <div class="header-logo">
                 <img src="/images/about_us_leaf.svg" alt="Logo" />
             </div>
-            <h1 class="header-title">@(tp != null ? tp.Title(lang) : Localizer["all_opportunities"].Value)</h1>
+            <h1 class="header-title">@(lp != null ? lp.Title(lang) : tp != null ? tp.Title(lang) : Localizer["all_opportunities"].Value)</h1>
         </div>
 
         <div class="header-left">
@@ -598,18 +610,25 @@
         </div>
     </header>
 
-    @if (tp != null)
+    @if (lp != null)
+    {
+        foreach (var para in (lp.Intro(lang) ?? "").Split("\n\n", StringSplitOptions.RemoveEmptyEntries))
+        {
+            <p class="ob-intro">@para.Trim()</p>
+        }
+    }
+    else if (tp != null)
     {
         <p class="ob-intro">@tp.Intro(lang)</p>
     }
 
     @* بحث ظاهر + فلاتر من الحقول المهيكلة + ترتيب + عدّاد + رقائق (المرحلة 2.2) — تتغيّر فتُرسل تلقائيًا *@
-    <form method="get" class="ob-bar" action="@(tp != null ? Url.Action("ByType", "Home", new { type = tp.Slug }) : Url.Action("AllOpportunities", "Home"))" id="obForm">
-        @if (tp == null)
+    <form method="get" class="ob-bar" action="@clearUrl" id="obForm">
+        @if (tp == null && lp == null)
         {
             foreach (var t in f.Types) { <input type="hidden" name="type" value="@t" /> }
         }
-        @if (f.CountryName != null) { <input type="hidden" name="country" value="@f.CountryName" /> }
+        @if (f.CountryName != null && lp == null) { <input type="hidden" name="country" value="@f.CountryName" /> }
         <div class="ob-search">
             <i class="bi bi-search" aria-hidden="true"></i>
             <input type="search" name="search" value="@f.Search" maxlength="100" placeholder="@T("ابحث: منحة ماجستير في ألمانيا…", "Search: master's scholarship in Germany…", "Rechercher : bourse de master en Allemagne…")" aria-label="@T("بحث", "Search", "Rechercher")" />
@@ -653,6 +672,7 @@
             </select>
             <label class="ob-toggle"><input type="checkbox" name="remote" value="true" checked="@f.Remote" /> @T("عن بُعد", "Remote", "À distance")</label>
             <label class="ob-toggle"><input type="checkbox" name="noielts" value="true" checked="@f.NoIelts" /> @T("بدون آيلتس", "No IELTS", "Sans IELTS")</label>
+            <label class="ob-toggle"><input type="checkbox" name="women" value="true" checked="@f.Women" /> @T("للنساء", "For women", "Pour les femmes")</label>
             <select name="sort" aria-label="@T("الترتيب", "Sort", "Tri")">
                 <option value="" selected="@(f.Sort == "open")">@T("المفتوحة أولًا", "Open first", "Ouvertes d'abord")</option>
                 <option value="deadline" selected="@(f.Sort == "deadline")">@T("الأقرب موعدًا", "Closest deadline", "Échéance proche")</option>
@@ -830,6 +850,29 @@
             }
         }
     </div>
+
+    @if (lp != null && lp.Faq(lang).Count > 0)
+    {
+        var faq = lp.Faq(lang);
+        <section class="ob-faq">
+            <h2>@T("أسئلة شائعة", "Frequently asked questions", "Questions fréquentes")</h2>
+            @foreach (var item in faq)
+            {
+                <details><summary>@item.Q</summary><p>@item.A</p></details>
+            }
+        </section>
+        var faqLd = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["@context"] = "https://schema.org",
+            ["@type"] = "FAQPage",
+            ["mainEntity"] = faq.Select(i => new Dictionary<string, object>
+            {
+                ["@type"] = "Question", ["name"] = i.Q,
+                ["acceptedAnswer"] = new Dictionary<string, object> { ["@type"] = "Answer", ["text"] = i.A }
+            }).ToList()
+        });
+        @Html.Raw("<script type=\"application/ld+json\">" + faqLd + "</script>")
+    }
 
     @if (Model.TotalPages > 1)
     {

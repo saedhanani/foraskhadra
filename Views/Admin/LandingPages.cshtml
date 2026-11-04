@@ -1,0 +1,69 @@
+@model List<(Foras_Khadra.Models.LandingPage Page, int OpenCount)>
+@using Foras_Khadra.Models
+@{
+    ViewData["Title"] = "صفحات النية";
+}
+
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="m-0">صفحات النية <span class="badge bg-secondary">@Model.Count</span></h2>
+        <div class="d-flex gap-2">
+            <a asp-controller="Admin" asp-action="LandingPageEdit" class="btn btn-primary"><i class="bi bi-plus"></i> صفحة جديدة</a>
+            <form asp-controller="Admin" asp-action="LandingPagesSeed" method="post">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-outline-primary" title="يضيف صفحات الدفعة الأولى الناقصة فقط (22 دولة، الوطن العربي، ممولة بالكامل، بدون آيلتس، زمالات مناخية، ماستر/دكتوراه، تدريب عن بُعد، للنساء، منح في 6 دول)">استيراد الدفعة الأولى</button>
+            </form>
+            <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-secondary">لوحة التحكم</a>
+        </div>
+    </div>
+
+    @if (TempData["LandingMessage"] is string msg)
+    {
+        <div class="alert alert-success">@msg</div>
+    }
+
+    <p class="text-muted">
+        الرابط <code>/opportunities/{slug}</code> (و<code>/en/…</code> و<code>/fr/…</code>). تُفهرس الصفحة فقط إن كانت منشورة وبمقدمة لا تقل عن
+        @LandingPage.MinIntroWords كلمة وبـ@LandingPage.MinOpenToIndex فرص مفتوحة على الأقل؛ وإلا تظهر للزوار بـ<code>noindex</code> حتى تكتمل.
+    </p>
+
+    <table class="table table-sm align-middle">
+        <thead><tr><th>#</th><th>الرابط</th><th>العنوان</th><th>الفلتر</th><th>مفتوحة</th><th>الحالة</th><th></th></tr></thead>
+        <tbody>
+        @foreach (var (p, open) in Model)
+        {
+            var q = p.Query();
+            var filter = string.Join(" · ", new[]
+            {
+                q.Type.Count > 0 ? string.Join("+", q.Type) : null, q.Country, q.Funding, q.Degree, q.Field.FirstOrDefault(), q.Theme,
+                q.Host != null ? "host:" + q.Host : null, q.Remote ? "remote" : null, q.NoIelts ? "no-ielts" : null, q.Women ? "women" : null,
+                q.Within != null ? $"within:{q.Within}" : null, string.IsNullOrEmpty(q.Search) ? null : "\"" + q.Search + "\""
+            }.Where(x => !string.IsNullOrEmpty(x)));
+            var indexable = p.IsIndexable(open, "ar");
+            <tr>
+                <td>@p.SortOrder</td>
+                <td dir="ltr"><a href="/opportunities/@p.Slug" target="_blank" rel="noopener">/opportunities/@p.Slug</a></td>
+                <td>@p.TitleAr<br /><small class="text-muted">@p.TitleEn</small></td>
+                <td><small dir="ltr">@filter</small></td>
+                <td>@open</td>
+                <td>
+                    @if (!p.IsPublished) { <span class="badge bg-secondary">مسودة</span> }
+                    else if (indexable) { <span class="badge bg-success">تُفهرس</span> }
+                    else { <span class="badge bg-warning text-dark" title="@(p.HasIntro("ar") ? "أقل من 5 فرص مفتوحة" : "المقدمة قصيرة")">noindex</span> }
+                </td>
+                <td class="text-nowrap">
+                    <a asp-controller="Admin" asp-action="LandingPageEdit" asp-route-id="@p.Id" class="btn btn-sm btn-outline-primary">تحرير</a>
+                    <form asp-controller="Admin" asp-action="LandingPageDelete" asp-route-id="@p.Id" method="post" class="d-inline" onsubmit="return confirm('حذف هذه الصفحة؟');">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger">حذف</button>
+                    </form>
+                </td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr><td colspan="7" class="text-center text-muted py-4">لا صفحات بعد — ابدأ بـ«استيراد الدفعة الأولى».</td></tr>
+        }
+        </tbody>
+    </table>
+</div>

@@ -251,7 +251,20 @@ namespace Foras_Khadra.Controllers
         public async Task<IActionResult> ByType(string type, [FromQuery] OpportunityQuery q)
         {
             var page = OpportunityTypePages.BySlug(type);
-            if (page == null) return NotFound();
+            if (page == null)
+            {
+                // صفحة نية (المرحلة 2.3): فلتر محفوظ + مقدمة بشرية + أسئلة؛ فلاتر الطلب تُضاف فوقه (وتجعلها noindex)
+                var slug = type.Trim().ToLowerInvariant();
+                var landing = await _context.LandingPages.AsNoTracking().FirstOrDefaultAsync(l => l.Slug == slug && l.IsPublished);
+                if (landing == null) return NotFound();
+                var all = await CountriesAsync();
+                var vm = await BuildListAsync(OpportunityQuery.Merge(landing.Query(), q), null, all);
+                vm.Landing = landing;
+                vm.ExtraFilter = OpportunityFilter.Parse(q, all);
+                vm.LandingIndexable = landing.IsIndexable(await LandingPage.OpenCountAsync(_context, landing, all, DateTime.Now),
+                    System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName);
+                return View("AllOpportunities", vm);
+            }
             if (!string.Equals(type, page.Slug, StringComparison.Ordinal))
                 return RedirectToActionPermanent(nameof(ByType), new { type = page.Slug, page = q.Page > 1 ? q.Page : (int?)null }); // الأسماء القديمة والأحرف الكبيرة → الرابط القانوني
             q.Type = new List<string> { page.Type.ToString() };

@@ -1,0 +1,120 @@
+@model Foras_Khadra.Models.LandingPageForm
+@using Foras_Khadra.Models
+@{
+    ViewData["Title"] = Model.Id == 0 ? "صفحة نية جديدة" : "تحرير صفحة النية";
+    var fields = ViewBag.Fields as List<Field> ?? new List<Field>();
+    var countries = ViewBag.Countries as List<CountryOption> ?? new List<CountryOption>();
+    var hosts = ViewBag.Hosts as List<CountryOption> ?? new List<CountryOption>();
+    bool Has(string v) => Model.Types.Contains(v, StringComparer.OrdinalIgnoreCase);
+}
+
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="m-0">@ViewData["Title"]</h2>
+        <a asp-controller="Admin" asp-action="LandingPages" class="btn btn-outline-secondary">كل الصفحات</a>
+    </div>
+
+    <form asp-controller="Admin" asp-action="LandingPageEdit" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-bold">الرابط (slug) *</label>
+                <input asp-for="Slug" class="form-control" dir="ltr" placeholder="scholarships-in-germany" />
+                <small class="text-muted">/opportunities/<b>slug</b> — أحرف لاتينية صغيرة وشرطات. لا يجوز أن يكون اسم نوع (jobs, scholarships…).</small>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold">الترتيب</label>
+                <input asp-for="SortOrder" type="number" class="form-control" />
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check"><input asp-for="IsPublished" class="form-check-input" /><label asp-for="IsPublished" class="form-check-label">منشورة</label></div>
+            </div>
+        </div>
+
+        <h5 class="mt-4">الفلتر المحفوظ</h5>
+        <p class="text-muted small">ما يُطبَّق على الفرص في هذه الصفحة. اترك الحقل فارغًا إن لم يكن جزءًا من النية.</p>
+        <div class="row g-3">
+            <div class="col-md-12">
+                <label class="form-label">الأنواع</label>
+                <div class="d-flex flex-wrap gap-3">
+                    @foreach (var t in Enum.GetValues<OpportunityType>())
+                    {
+                        <label class="form-check-label"><input type="checkbox" name="Types" value="@t" class="form-check-input" checked="@Has(t.ToString())" /> @t.GetDisplayName("ar")</label>
+                    }
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">دولتي (ISO أو XA)</label>
+                <select asp-for="Country" class="form-select">
+                    <option value="">—</option>
+                    <option value="XA">كل الوطن العربي (XA)</option>
+                    @foreach (var c in countries) { <option value="@c.Iso">@c.Name (@c.Iso)</option> }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">التمويل</label>
+                <select asp-for="Funding" class="form-select"><option value="">—</option><option value="FullyFunded">ممولة بالكامل</option><option value="PartiallyFunded">ممولة جزئيًا</option><option value="SelfFunded">على نفقة المتقدم</option><option value="Paid">بأجر</option></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">المرحلة</label>
+                <select asp-for="Degree" class="form-select"><option value="">—</option><option value="HighSchool">ثانوي</option><option value="Bachelor">بكالوريوس</option><option value="Master">ماستر</option><option value="PhD">دكتوراه</option><option value="Postdoc">ما بعد الدكتوراه</option><option value="Professional">مهني</option></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">المجال</label>
+                <select asp-for="Field" class="form-select"><option value="">—</option>@foreach (var f in fields) { <option value="@f.Key">@f.NameAr</option> }</select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">المحور الأخضر</label>
+                <select asp-for="Theme" class="form-select"><option value="">—</option>@foreach (var g in new[] { "Climate", "Energy", "Water", "Biodiversity", "CircularEconomy", "Agriculture", "SustainableCities", "Policy" }) { <option value="@g">@g</option> }</select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">بلد الاستضافة (ISO)</label>
+                <input asp-for="Host" class="form-control" dir="ltr" maxlength="2" list="hostList" placeholder="DE" />
+                <datalist id="hostList">@foreach (var h in hosts) { <option value="@h.Iso">@h.Name</option> }</datalist>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">ينتهي خلال (أيام)</label>
+                <select asp-for="Within" class="form-select"><option value="">—</option><option value="7">7</option><option value="30">30</option><option value="90">90</option></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">بحث نصي</label>
+                <input asp-for="Search" class="form-control" />
+            </div>
+            <div class="col-md-9 d-flex align-items-end gap-4">
+                <div class="form-check"><input asp-for="Remote" class="form-check-input" /><label asp-for="Remote" class="form-check-label">عن بُعد فقط</label></div>
+                <div class="form-check"><input asp-for="NoIelts" class="form-check-input" /><label asp-for="NoIelts" class="form-check-label">بدون آيلتس (None فقط)</label></div>
+                <div class="form-check"><input asp-for="Women" class="form-check-input" /><label asp-for="Women" class="form-check-label">للنساء فقط</label></div>
+            </div>
+        </div>
+
+        <h5 class="mt-4">النصوص</h5>
+        <p class="text-muted small">المقدمة بشرية 150–300 كلمة لكل لغة (الحد الأدنى للفهرسة @LandingPage.MinIntroWords كلمة)؛ فقرات مفصولة بسطر فارغ. الأسئلة الشائعة: سؤال في سطر ثم جوابه في السطر التالي، والأسئلة مفصولة بسطر فارغ — تُنشر كـFAQPage لـGoogle.</p>
+        <div class="row g-3">
+            @foreach (var (lang, label, dirAttr) in new[] { ("Ar", "العربية", "rtl"), ("En", "English", "ltr"), ("Fr", "Français", "ltr") })
+            {
+                <div class="col-lg-4">
+                    <div class="card"><div class="card-body" dir="@dirAttr">
+                        <h6 class="card-title">@label</h6>
+                        <label class="form-label">العنوان *</label>
+                        <input name="Title@(lang)" value="@(lang == "Ar" ? Model.TitleAr : lang == "En" ? Model.TitleEn : Model.TitleFr)" class="form-control mb-2" maxlength="200" />
+                        <label class="form-label">المقدمة</label>
+                        <textarea name="Intro@(lang)" class="form-control mb-2" rows="9">@(lang == "Ar" ? Model.IntroAr : lang == "En" ? Model.IntroEn : Model.IntroFr)</textarea>
+                        <label class="form-label">الأسئلة الشائعة</label>
+                        <textarea name="Faq@(lang)" class="form-control" rows="8">@(lang == "Ar" ? Model.FaqAr : lang == "En" ? Model.FaqEn : Model.FaqFr)</textarea>
+                    </div></div>
+                </div>
+            }
+        </div>
+
+        <div class="mt-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">حفظ</button>
+            @if (Model.Id != 0)
+            {
+                <a href="/opportunities/@Model.Slug" target="_blank" rel="noopener" class="btn btn-outline-secondary">معاينة</a>
+            }
+        </div>
+    </form>
+</div>

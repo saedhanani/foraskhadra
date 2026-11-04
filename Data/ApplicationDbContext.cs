@@ -39,6 +39,7 @@ namespace Foras_Khadra.Data
         public DbSet<TrafficSourceDailyStat> TrafficSourceDailyStats { get; set; }
         public DbSet<SiteEventDailyStat> SiteEventDailyStats { get; set; }
         public DbSet<EligibilityProfile> EligibilityProfiles { get; set; }
+        public DbSet<LandingPage> LandingPages { get; set; }
 
         // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -94,6 +95,9 @@ namespace Foras_Khadra.Data
 
             // ملف الأهلية (بوصلة): واحد لكل مستخدم، يُحذف معه
             modelBuilder.Entity<EligibilityProfile>().HasIndex(p => p.UserId).IsUnique();
+
+            // صفحات النية: الرابط فريد
+            modelBuilder.Entity<LandingPage>().HasIndex(p => p.Slug).IsUnique();
             modelBuilder.Entity<EligibilityProfile>()
                 .HasOne(p => p.User)
                 .WithOne()

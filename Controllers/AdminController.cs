@@ -128,6 +128,98 @@ namespace Foras_Khadra.Controllers
             return View(vm);
         }
 
+        // ===== صفحات النية (المرحلة 2.3) =====
+        [HttpGet]
+        public async Task<IActionResult> LandingPages()
+        {
+            var countries = await _context.Countries.AsNoTracking().ToListAsync();
+            var pages = await _context.LandingPages.AsNoTracking().OrderBy(p => p.SortOrder).ThenBy(p => p.Slug).ToListAsync();
+            var rows = new List<(LandingPage Page, int OpenCount)>();
+            foreach (var p in pages) rows.Add((p, await LandingPage.OpenCountAsync(_context, p, countries, DateTime.Now)));
+            return View(rows);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> LandingPageEdit(int? id)
+        {
+            var form = new LandingPageForm { SortOrder = await _context.LandingPages.CountAsync() };
+            if (id is > 0)
+            {
+                var page = await _context.LandingPages.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
+                if (page == null) return NotFound();
+                form = LandingPageForm.From(page);
+            }
+            await FillLandingOptionsAsync();
+            return View(form);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LandingPageEdit(LandingPageForm form)
+        {
+            var slug = (form.Slug ?? "").Trim().ToLowerInvariant();
+            if (OpportunityTypePages.BySlug(slug) != null) ModelState.AddModelError(nameof(form.Slug), "هذا الاسم محجوز لصفحة نوع.");
+            if (await _context.LandingPages.AnyAsync(p => p.Slug == slug && p.Id != form.Id)) ModelState.AddModelError(nameof(form.Slug), "الرابط مستخدم في صفحة أخرى.");
+            if (!ModelState.IsValid)
+            {
+                await FillLandingOptionsAsync();
+                return View(form);
+            }
+            var page = form.Id > 0 ? await _context.LandingPages.FirstOrDefaultAsync(p => p.Id == form.Id) : null;
+            if (page == null)
+            {
+                page = new LandingPage();
+                _context.LandingPages.Add(page);
+            }
+            form.ApplyTo(page);
+            await _context.SaveChangesAsync();
+            TempData["LandingMessage"] = $"حُفظت الصفحة /opportunities/{page.Slug}.";
+            return RedirectToAction(nameof(LandingPages));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LandingPageDelete(int id)
+        {
+            var page = await _context.LandingPages.FirstOrDefaultAsync(p => p.Id == id);
+            if (page != null)
+            {
+                _context.LandingPages.Remove(page);
+                await _context.SaveChangesAsync();
+                TempData["LandingMessage"] = "حُذفت الصفحة.";
+            }
+            return RedirectToAction(nameof(LandingPages));
+        }
+
+        /// <summary>الدفعة الأولى (Data/LandingPageSeed): يضيف الناقص بالـslug فقط ولا يمسّ الموجود.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LandingPagesSeed()
+        {
+            var countries = await _context.Countries.AsNoTracking().ToListAsync();
+            var existing = (await _context.LandingPages.Select(p => p.Slug).ToListAsync()).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var added = 0;
+            foreach (var page in LandingPageSeed.All(countries))
+            {
+                if (existing.Contains(page.Slug)) continue;
+                _context.LandingPages.Add(page);
+                added++;
+            }
+            await _context.SaveChangesAsync();
+            TempData["LandingMessage"] = added == 0 ? "لا جديد: كل صفحات الدفعة الأولى موجودة." : $"أُضيفت {added} صفحة.";
+            return RedirectToAction(nameof(LandingPages));
+        }
+
+        private async Task FillLandingOptionsAsync()
+        {
+            ViewBag.Fields = await _context.Fields.AsNoTracking().Where(f => f.Key != Field.AnyKey).OrderBy(f => f.SortOrder).ToListAsync();
+            ViewBag.Countries = (await _context.Countries.AsNoTracking().ToListAsync())
+                .Where(c => c.IsoCode != null && CompassMatcher.ArabIso.Contains(c.IsoCode))
+                .Select(c => new CountryOption(c.IsoCode!.ToUpperInvariant(), c.NameAr)).OrderBy(o => o.Name).ToList();
+            var hostIso = await _context.Opportunities.AsNoTracking().Where(o => o.HostCountryIso != null && o.HostCountryIso != "").Select(o => o.HostCountryIso!).Distinct().ToListAsync();
+            ViewBag.Hosts = hostIso.Select(iso => new CountryOption(iso.ToUpperInvariant(), CountryHelper.NameForIso(iso, "ar") ?? iso)).OrderBy(o => o.Name).ToList();
+        }
+
         // ===== طلبات النشر من بوابة المنظمات (Services/PublishRequestService) =====
         [HttpGet]
         public async Task<IActionResult> PublishRequests(string? status = null)

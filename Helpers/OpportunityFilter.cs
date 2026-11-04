@@ -19,11 +19,32 @@ namespace Foras_Khadra.Helpers
         public string? Host { get; set; }
         public bool Remote { get; set; }
         public bool NoIelts { get; set; }
+        /// <summary>الفرص المخصصة للنساء فقط.</summary>
+        public bool Women { get; set; }
         /// <summary>ينتهي خلال N يومًا: 7 أو 30 أو 90.</summary>
         public int? Within { get; set; }
         /// <summary>open (الافتراضي: المفتوحة أولًا ثم الأحدث) أو newest أو deadline.</summary>
         public string? Sort { get; set; }
         public int Page { get; set; } = 1;
+
+        /// <summary>صفحة نية: فلترها المحفوظ أساس، وما يأتي في الطلب يغلبه (القوائم إن لم تكن فارغة، والمفاتيح إن كانت true).</summary>
+        public static OpportunityQuery Merge(OpportunityQuery baseQ, OpportunityQuery request) => new()
+        {
+            Search = string.IsNullOrWhiteSpace(request.Search) ? baseQ.Search : request.Search,
+            Type = request.Type.Count > 0 ? request.Type : baseQ.Type,
+            Country = string.IsNullOrWhiteSpace(request.Country) ? baseQ.Country : request.Country,
+            Funding = string.IsNullOrWhiteSpace(request.Funding) ? baseQ.Funding : request.Funding,
+            Degree = string.IsNullOrWhiteSpace(request.Degree) ? baseQ.Degree : request.Degree,
+            Field = request.Field.Count > 0 ? request.Field : baseQ.Field,
+            Theme = string.IsNullOrWhiteSpace(request.Theme) ? baseQ.Theme : request.Theme,
+            Host = string.IsNullOrWhiteSpace(request.Host) ? baseQ.Host : request.Host,
+            Remote = request.Remote || baseQ.Remote,
+            NoIelts = request.NoIelts || baseQ.NoIelts,
+            Women = request.Women || baseQ.Women,
+            Within = request.Within ?? baseQ.Within,
+            Sort = request.Sort,
+            Page = request.Page
+        };
     }
 
     /// <summary>القيم المفهومة بعد التحقق — ما لا يُفهم يُهمل بصمت.</summary>
@@ -41,13 +62,14 @@ namespace Foras_Khadra.Helpers
         public string? Host { get; set; }
         public bool Remote { get; set; }
         public bool NoIelts { get; set; }
+        public bool Women { get; set; }
         public int? Within { get; set; }
         public string Sort { get; set; } = "open";
 
         /// <summary>أي معيار غير النوع (يجعل الصفحة noindex).</summary>
         public bool HasCriteriaBeyondType =>
             Search.Length > 0 || CountryIso != null || CountryName != null || Funding != null || Degree != null
-            || Fields.Count > 0 || Theme != null || Host != null || Remote || NoIelts || Within != null || Sort != "open";
+            || Fields.Count > 0 || Theme != null || Host != null || Remote || NoIelts || Women || Within != null || Sort != "open";
 
         public bool HasCriteria => Types.Count > 0 || HasCriteriaBeyondType;
 
@@ -74,6 +96,7 @@ namespace Foras_Khadra.Helpers
             p.Host = FacetParser.NormalizeCode(q.Host);
             p.Remote = q.Remote;
             p.NoIelts = q.NoIelts;
+            p.Women = q.Women;
             p.Within = q.Within is 7 or 30 or 90 ? q.Within : null;
             p.Sort = SortOptions.Contains(q.Sort ?? string.Empty) ? q.Sort! : "open";
 
@@ -143,6 +166,7 @@ namespace Foras_Khadra.Helpers
             if (p.Host != null) { var h = p.Host; q = q.Where(o => o.HostCountryIso == h); }
             if (p.Remote) q = q.Where(o => o.IsRemote || o.IsOnline);
             if (p.NoIelts) q = q.Where(o => o.LanguageRequirement == LanguageRequirement.None); // None فقط، لا Unknown
+            if (p.Women) q = q.Where(o => o.ForWomenOnly);
             if (p.Within != null)
             {
                 var until = today.AddDays(p.Within.Value);

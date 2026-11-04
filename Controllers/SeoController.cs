@@ -5,6 +5,7 @@ using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Foras_Khadra.Controllers
 {
@@ -14,10 +15,12 @@ namespace Foras_Khadra.Controllers
     public class SeoController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMemoryCache _cache;
 
-        public SeoController(ApplicationDbContext context)
+        public SeoController(ApplicationDbContext context, IMemoryCache cache)
         {
             _context = context;
+            _cache = cache;
         }
 
         private string BaseUrl => $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
@@ -54,6 +57,21 @@ namespace Foras_Khadra.Controllers
             Add("/Home/AllOpportunities", null, "daily", "0.9");
             foreach (var typePage in OpportunityTypePages.All)
                 Add($"/opportunities/{typePage.Slug}", null, "daily", "0.9");
+
+            // صفحات النية المنشورة القابلة للفهرسة (مقدمة + 5 فرص مفتوحة على الأقل) — تُحسب كل ساعة
+            var landing = await _cache.GetOrCreateAsync("sitemap:landing", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
+                var countries = await _context.Countries.AsNoTracking().ToListAsync();
+                var pages = await _context.LandingPages.AsNoTracking().Where(p => p.IsPublished).OrderBy(p => p.SortOrder).ToListAsync();
+                var list = new List<(string Slug, DateTime Updated)>();
+                foreach (var p in pages)
+                    if (p.IsIndexable(await LandingPage.OpenCountAsync(_context, p, countries, DateTime.Now), "ar"))
+                        list.Add((p.Slug, p.UpdatedAt));
+                return list;
+            }) ?? new List<(string Slug, DateTime Updated)>();
+            foreach (var (slug, updated) in landing)
+                Add($"/opportunities/{slug}", updated, "weekly", "0.8");
             Add("/Home/Articles", null, "weekly", "0.7");
             Add("/Home/News", null, "weekly", "0.7");
             Add("/Home/OrganizationsMap", null, "weekly", "0.6");
