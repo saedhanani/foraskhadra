@@ -1,0 +1,228 @@
+@* «بوصلة» — 8 أسئلة في 3 خطوات (من أنت / مؤهلاتك / ماذا تريد). للزائر وللعضو بلا ملف ولتعديل الملف *@
+@model Foras_Khadra.Models.CompassIndexVM
+@using Foras_Khadra.Models
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    ViewData["Title"] = Model.IsEdit ? T("تعديل بوصلتي", "Edit my compass", "Modifier ma boussole") : T("بوصلة: اعرف كم فرصة تستطيع التقديم عليها الآن", "Compass: see how many opportunities you can apply to now", "Boussole : combien d'opportunités pouvez-vous demander maintenant ?");
+    ViewData["Description"] = T("أجب عن 8 أسئلة في دقيقتين، واعرف الفرص المؤهَّل لها الآن وما سيُفتح لك قريبًا — منح ووظائف وزمالات لشباب الوطن العربي.",
+        "Answer 8 questions in two minutes and see the opportunities you qualify for now and what opens soon — scholarships, jobs and fellowships for youth in the Arab world.",
+        "Répondez à 8 questions en deux minutes et découvrez les opportunités pour lesquelles vous êtes éligible maintenant et celles qui s'ouvriront bientôt.");
+    var a = Model.A;
+    var year = DateTime.Now.Year;
+    var degrees = new (string Key, string Name)[]
+    {
+        ("HighSchool", T("ثانوي", "High school", "Lycée")), ("Bachelor", T("بكالوريوس", "Bachelor's", "Licence")), ("Master", T("ماستر", "Master's", "Master")),
+        ("PhD", T("دكتوراه", "PhD", "Doctorat")), ("Postdoc", T("ما بعد الدكتوراه", "Postdoc", "Post-doctorat")), ("Professional", T("مهني / حرفي", "Professional / vocational", "Professionnel"))
+    };
+    var goals = new (OpportunityType Type, string Name, string Icon)[]
+    {
+        (OpportunityType.Scholarships, T("منحة دراسية", "Scholarship", "Bourse"), "bi-mortarboard"),
+        (OpportunityType.Fellowships, T("زمالة", "Fellowship", "Fellowship"), "bi-award"),
+        (OpportunityType.Jobs, T("وظيفة خضراء", "Green job", "Emploi vert"), "bi-briefcase"),
+        (OpportunityType.Internships, T("تدريب", "Internship", "Stage"), "bi-laptop"),
+        (OpportunityType.Volunteering, T("تطوع", "Volunteering", "Bénévolat"), "bi-heart"),
+        (OpportunityType.Conferences, T("مؤتمر أو ورشة", "Conference / workshop", "Conférence / atelier"), "bi-people"),
+        (OpportunityType.Competitions, T("مسابقة أو جائزة", "Competition / award", "Concours / prix"), "bi-trophy"),
+    };
+    string FieldName(Field f) => lang == "en" ? f.NameEn : lang == "fr" ? f.NameFr : f.NameAr;
+    bool Has(List<string> list, string v) => list.Contains(v, StringComparer.OrdinalIgnoreCase);
+}
+
+<link asp-append-version="true" rel="stylesheet" href="~/css/compass.css" />
+
+<div class="cp-page" dir="@dir">
+    <header class="cp-head">
+        <span class="cp-kicker"><i class="bi bi-compass"></i> @T("بوصلة", "Compass", "Boussole")</span>
+        <h1>@(Model.IsEdit ? T("حدّث إجاباتك", "Update your answers", "Mettez à jour vos réponses") : T("كم فرصة تستطيع التقديم عليها الآن؟", "How many opportunities can you apply to right now?", "À combien d'opportunités pouvez-vous postuler maintenant ?"))</h1>
+        <p>@T("8 أسئلة، دقيقتان، بلا حساب. النتيجة: الفرص المؤهَّل لها اليوم، وما سيُفتح لك قريبًا، وما ينقصك لتصبح جاهزًا.",
+             "8 questions, two minutes, no account. You get: what you qualify for today, what opens soon, and what you still need.",
+             "8 questions, deux minutes, sans compte. Résultat : ce à quoi vous êtes éligible aujourd'hui, ce qui s'ouvre bientôt et ce qu'il vous manque.")</p>
+        <ol class="cp-steps" aria-label="@T("الخطوات", "Steps", "Étapes")">
+            <li data-step-dot="1" class="is-active"><span>1</span>@T("من أنت", "About you", "Vous")</li>
+            <li data-step-dot="2"><span>2</span>@T("مؤهلاتك", "Your background", "Votre parcours")</li>
+            <li data-step-dot="3"><span>3</span>@T("ماذا تريد", "What you want", "Ce que vous voulez")</li>
+        </ol>
+    </header>
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger">@T("اختر هدفًا واحدًا على الأقل في الخطوة الثالثة.", "Pick at least one goal in step 3.", "Choisissez au moins un objectif à l'étape 3.")</div>
+    }
+
+    <form method="post" action="@Url.Action("Index", "Compass")" id="compassForm" data-submit-once>
+        @Html.AntiForgeryToken()
+
+        @* ===== 1 من أنت ===== *@
+        <section class="cp-step" data-step="1">
+            <div class="cp-grid">
+                <div class="cp-field">
+                    <label for="A_Residence">@T("بلد الإقامة", "Country of residence", "Pays de résidence")</label>
+                    <select id="A_Residence" name="A.Residence">
+                        <option value="">@T("اختر…", "Choose…", "Choisir…")</option>
+                        @foreach (var c in Model.ArabCountries) { <option value="@c.Iso" selected="@(a.Residence == c.Iso)">@c.Name</option> }
+                        <option value="" disabled>──</option>
+                        <option value="ZZ" selected="@(a.Residence == "ZZ")">@T("خارج الوطن العربي", "Outside the Arab world", "Hors du monde arabe")</option>
+                    </select>
+                </div>
+                <div class="cp-field">
+                    <label for="A_Nationality">@T("الجنسية", "Nationality", "Nationalité")</label>
+                    <select id="A_Nationality" name="A.Nationality">
+                        <option value="">@T("اختر…", "Choose…", "Choisir…")</option>
+                        @foreach (var c in Model.ArabCountries) { <option value="@c.Iso" selected="@(a.Nationality == c.Iso)">@c.Name</option> }
+                        <option value="" disabled>──</option>
+                        <option value="ZZ" selected="@(a.Nationality == "ZZ")">@T("أخرى", "Other", "Autre")</option>
+                    </select>
+                </div>
+                <div class="cp-field">
+                    <label for="A_BirthYear">@T("سنة الميلاد", "Year of birth", "Année de naissance")</label>
+                    <select id="A_BirthYear" name="A.BirthYear">
+                        <option value="">@T("اختر…", "Choose…", "Choisir…")</option>
+                        @for (var y = year - 15; y >= year - 60; y--) { <option value="@y" selected="@(a.BirthYear == y)">@y</option> }
+                    </select>
+                    <small>@T("لفرص بحدّ عمر (مثل تحت 35).", "For opportunities with an age limit (e.g. under 35).", "Pour les opportunités avec une limite d'âge.")</small>
+                </div>
+                <div class="cp-field">
+                    <span class="cp-label">@T("الجنس (اختياري)", "Gender (optional)", "Genre (facultatif)")</span>
+                    <div class="cp-chips">
+                        <label class="cp-chip-opt"><input type="radio" name="A.Gender" value="" checked="@(a.Gender == null)" /><span>@T("أفضّل عدم الذكر", "Prefer not to say", "Je préfère ne pas dire")</span></label>
+                        <label class="cp-chip-opt"><input type="radio" name="A.Gender" value="f" checked="@(a.Gender == "f")" /><span>@T("أنثى", "Female", "Femme")</span></label>
+                        <label class="cp-chip-opt"><input type="radio" name="A.Gender" value="m" checked="@(a.Gender == "m")" /><span>@T("ذكر", "Male", "Homme")</span></label>
+                    </div>
+                    <small>@T("يُستعمل فقط للفرص المخصصة للنساء.", "Used only for women-only opportunities.", "Utilisé uniquement pour les opportunités réservées aux femmes.")</small>
+                </div>
+            </div>
+            <div class="cp-nav"><span></span><button type="button" class="cp-btn" data-next>@T("التالي", "Next", "Suivant") <i class="bi @(dir == "rtl" ? "bi-arrow-left" : "bi-arrow-right")"></i></button></div>
+        </section>
+
+        @* ===== 2 مؤهلاتك ===== *@
+        <section class="cp-step" data-step="2" hidden>
+            <div class="cp-field">
+                <span class="cp-label">@T("مرحلتك الدراسية الحالية", "Your current level", "Votre niveau actuel")</span>
+                <div class="cp-chips">
+                    @foreach (var d in degrees)
+                    {
+                        <label class="cp-chip-opt"><input type="radio" name="A.Degree" value="@d.Key" checked="@(string.Equals(a.Degree, d.Key, StringComparison.OrdinalIgnoreCase))" /><span>@d.Name</span></label>
+                    }
+                </div>
+            </div>
+            <div class="cp-field">
+                <span class="cp-label">@T("مجالك (اختر حتى 3)", "Your field (up to 3)", "Votre domaine (jusqu'à 3)")</span>
+                <div class="cp-chips" data-max="3">
+                    @foreach (var f in Model.Fields)
+                    {
+                        <label class="cp-chip-opt"><input type="checkbox" name="A.Fields" value="@f.Key" checked="@Has(a.Fields, f.Key)" /><span>@FieldName(f)</span></label>
+                    }
+                </div>
+            </div>
+            <div class="cp-grid">
+                <div class="cp-field">
+                    <label for="A_GraduationYear">@T("سنة التخرج (أو المتوقعة)", "Graduation year (or expected)", "Année de diplôme (ou prévue)")</label>
+                    <select id="A_GraduationYear" name="A.GraduationYear">
+                        <option value="">@T("اختر…", "Choose…", "Choisir…")</option>
+                        @for (var y = year + 6; y >= year - 25; y--) { <option value="@y" selected="@(a.GraduationYear == y)">@y</option> }
+                    </select>
+                </div>
+                <div class="cp-field">
+                    <label for="A_University">@T("الجامعة (اختياري)", "University (optional)", "Université (facultatif)")</label>
+                    <input id="A_University" name="A.University" value="@a.University" maxlength="150" />
+                </div>
+                <div class="cp-field">
+                    <label for="A_ExperienceYears">@T("سنوات الخبرة", "Years of experience", "Années d'expérience")</label>
+                    <select id="A_ExperienceYears" name="A.ExperienceYears">
+                        <option value="">@T("اختر…", "Choose…", "Choisir…")</option>
+                        @foreach (var e in new[] { 0, 1, 2, 3, 5, 8, 10, 15 }) { <option value="@e" selected="@(a.ExperienceYears == e)">@(e == 0 ? T("بلا خبرة بعد", "None yet", "Aucune") : e + "+")</option> }
+                    </select>
+                </div>
+            </div>
+            <div class="cp-field">
+                <span class="cp-label">@T("شهادات اللغة التي تملكها", "Language certificates you hold", "Certificats de langue")</span>
+                <div class="cp-chips">
+                    <label class="cp-chip-opt"><input type="checkbox" name="A.English" value="ielts" checked="@Has(a.English, "ielts")" /><span>IELTS</span></label>
+                    <label class="cp-chip-opt"><input type="checkbox" name="A.English" value="toefl" checked="@Has(a.English, "toefl")" /><span>TOEFL</span></label>
+                    <label class="cp-chip-opt"><input type="checkbox" name="A.French" value="true" checked="@a.French" /><span>DELF / TCF</span></label>
+                    <input class="cp-score" name="A.EnglishScore" value="@a.EnglishScore" maxlength="20" placeholder="@T("الدرجة (مثل 6.5)", "Score (e.g. 6.5)", "Score (ex. 6,5)")" />
+                </div>
+                <small>@T("لا شهادة؟ لا بأس — سنُظهر لك الفرص التي لا تطلبها، ونخبرك أين تنقصك.", "No certificate? Fine — we show opportunities that don't require one, and tell you where it's missing.", "Pas de certificat ? Pas de problème — nous montrons celles qui n'en exigent pas.")</small>
+            </div>
+            <div class="cp-nav"><button type="button" class="cp-btn cp-btn--ghost" data-prev><i class="bi @(dir == "rtl" ? "bi-arrow-right" : "bi-arrow-left")"></i> @T("السابق", "Back", "Retour")</button><button type="button" class="cp-btn" data-next>@T("التالي", "Next", "Suivant") <i class="bi @(dir == "rtl" ? "bi-arrow-left" : "bi-arrow-right")"></i></button></div>
+        </section>
+
+        @* ===== 3 ماذا تريد ===== *@
+        <section class="cp-step" data-step="3" hidden>
+            <div class="cp-field">
+                <span class="cp-label">@T("هدفك (اختر واحدًا أو أكثر) *", "Your goal (one or more) *", "Votre objectif (un ou plusieurs) *")</span>
+                <div class="cp-goals">
+                    @foreach (var g in goals)
+                    {
+                        <label class="cp-goal"><input type="checkbox" name="A.Goals" value="@g.Type" checked="@Has(a.Goals, g.Type.ToString())" /><i class="bi @g.Icon"></i><span>@g.Name</span></label>
+                    }
+                </div>
+                <span asp-validation-for="A.Goals" class="cp-err"></span>
+            </div>
+            <div class="cp-field">
+                <span class="cp-label">@T("بلدان تفضّل الدراسة أو العمل فيها (اختياري)", "Countries you'd like to study or work in (optional)", "Pays où vous aimeriez étudier ou travailler (facultatif)")</span>
+                <div class="cp-chips" data-max="5">
+                    @foreach (var h in Model.HostOptions)
+                    {
+                        <label class="cp-chip-opt"><input type="checkbox" name="A.HostCountries" value="@h.Iso" checked="@Has(a.HostCountries, h.Iso)" /><span>@h.Name</span></label>
+                    }
+                </div>
+            </div>
+            <div class="cp-grid">
+                <div class="cp-field">
+                    <label class="cp-switch"><input type="checkbox" name="A.FullyFundedOnly" value="true" checked="@a.FullyFundedOnly" /><span>@T("الممولة بالكامل فقط", "Fully funded only", "Entièrement financées seulement")</span></label>
+                    <label class="cp-switch"><input type="checkbox" name="A.RemoteOnly" value="true" checked="@a.RemoteOnly" /><span>@T("عن بُعد فقط", "Remote only", "À distance seulement")</span></label>
+                </div>
+                <div class="cp-field">
+                    <label for="A_StartWithinMonths">@T("متى تستطيع البدء؟", "When can you start?", "Quand pouvez-vous commencer ?")</label>
+                    <select id="A_StartWithinMonths" name="A.StartWithinMonths">
+                        <option value="">@T("لا يهم", "Doesn't matter", "Peu importe")</option>
+                        <option value="0" selected="@(a.StartWithinMonths == 0)">@T("فورًا", "Right away", "Tout de suite")</option>
+                        <option value="3" selected="@(a.StartWithinMonths == 3)">@T("خلال 3 أشهر", "Within 3 months", "Sous 3 mois")</option>
+                        <option value="6" selected="@(a.StartWithinMonths == 6)">@T("خلال 6 أشهر", "Within 6 months", "Sous 6 mois")</option>
+                        <option value="12" selected="@(a.StartWithinMonths == 12)">@T("السنة القادمة", "Next year", "L'année prochaine")</option>
+                    </select>
+                </div>
+            </div>
+            @if (Model.IsMember)
+            {
+                @foreach (var d in a.Documents) { <input type="hidden" name="A.Documents" value="@d" /> }
+            }
+            <div class="cp-nav">
+                <button type="button" class="cp-btn cp-btn--ghost" data-prev><i class="bi @(dir == "rtl" ? "bi-arrow-right" : "bi-arrow-left")"></i> @T("السابق", "Back", "Retour")</button>
+                <button type="submit" class="cp-btn cp-btn--primary"><i class="bi bi-compass"></i> @(Model.IsMember ? T("احفظ وأظهر بوصلتي", "Save and show my compass", "Enregistrer et voir ma boussole") : T("أظهر فرصي", "Show my opportunities", "Voir mes opportunités"))</button>
+            </div>
+        </section>
+    </form>
+
+    <p class="cp-privacy"><i class="bi bi-shield-lock"></i> @T("إجاباتك تبقى على جهازك حتى تقرر إنشاء حساب. لا نسأل ما لا نحتاجه للمطابقة.", "Your answers stay on your device until you decide to create an account. We only ask what matching needs.", "Vos réponses restent sur votre appareil jusqu'à ce que vous créiez un compte.")</p>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            const steps = Array.from(document.querySelectorAll('.cp-step'));
+            const dots = Array.from(document.querySelectorAll('[data-step-dot]'));
+            let current = @(ViewData.ModelState.IsValid ? 1 : 3);
+            function show(n) {
+                current = Math.min(3, Math.max(1, n));
+                steps.forEach(s => s.hidden = Number(s.dataset.step) !== current);
+                dots.forEach(d => d.classList.toggle('is-active', Number(d.dataset.stepDot) <= current));
+                window.scrollTo({ top: document.querySelector('.cp-head').offsetTop - 60, behavior: 'smooth' });
+            }
+            document.querySelectorAll('[data-next]').forEach(b => b.addEventListener('click', () => show(current + 1)));
+            document.querySelectorAll('[data-prev]').forEach(b => b.addEventListener('click', () => show(current - 1)));
+            // حدّ الاختيارات في مجموعات الرقائق
+            document.querySelectorAll('.cp-chips[data-max]').forEach(group => {
+                const max = Number(group.dataset.max);
+                group.addEventListener('change', () => {
+                    const checked = group.querySelectorAll('input:checked').length;
+                    group.querySelectorAll('input:not(:checked)').forEach(i => i.disabled = checked >= max);
+                });
+            });
+            show(current);
+        })();
+    </script>
+}

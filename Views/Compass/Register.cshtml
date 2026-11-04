@@ -1,0 +1,48 @@
+@* تسجيل مختصر من البوصلة: بريد وكلمة مرور فقط؛ الاسم والباقي لاحقًا من الملف الشخصي *@
+@model Foras_Khadra.Models.CompassRegisterVM
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    ViewData["Title"] = T("احفظ بوصلتك", "Save your compass", "Enregistrez votre boussole");
+    var loginUrl = Url.Action("Login", "Account", new { returnUrl = Url.Action("Me", "Compass") });
+}
+<meta name="robots" content="noindex" />
+
+<div class="auth-page" dir="@dir">
+    <div class="auth-bg-circle"></div>
+    <div class="auth-card">
+        <h1 class="auth-title">@T("أنشئ حسابك في دقيقة", "Create your account in a minute", "Créez votre compte en une minute")</h1>
+        <p class="auth-subtitle">@T("بريد وكلمة مرور فقط. بوصلتك محفوظة وستفتح كاملة فور الدخول.", "Just an email and a password. Your compass is saved and opens fully right away.", "Un e-mail et un mot de passe. Votre boussole est enregistrée et s'ouvre entièrement.")</p>
+
+        <form asp-controller="Compass" asp-action="Register" method="post" class="mt-4" data-submit-once>
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label auth-label">@T("البريد الإلكتروني", "Email", "E-mail")</label>
+                <input asp-for="Email" class="form-control auth-control" type="email" autocomplete="email" dir="ltr" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label auth-label">@T("كلمة المرور", "Password", "Mot de passe")</label>
+                <input asp-for="Password" class="form-control auth-control" type="password" autocomplete="new-password" dir="ltr" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+                <small class="text-muted">@T("8 أحرف على الأقل، فيها حرف كبير وصغير ورقم ورمز.", "At least 8 characters with upper and lower case, a digit and a symbol.", "Au moins 8 caractères, majuscule, minuscule, chiffre et symbole.")</small>
+            </div>
+            <div class="mb-3">
+                <label asp-for="ConfirmPassword" class="form-label auth-label">@T("تأكيد كلمة المرور", "Confirm password", "Confirmer le mot de passe")</label>
+                <input asp-for="ConfirmPassword" class="form-control auth-control" type="password" autocomplete="new-password" dir="ltr" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn auth-btn w-100"><i class="bi bi-compass"></i> @T("احفظ بوصلتي وافتح النتائج", "Save my compass and unlock results", "Enregistrer et débloquer")</button>
+
+            <div class="auth-footer">
+                <span>@T("لديك حساب؟", "Already have an account?", "Vous avez déjà un compte ?")</span>
+                <a href="@loginUrl" class="auth-link ms-1">@T("سجّل الدخول", "Sign in", "Se connecter")</a>
+            </div>
+        </form>
+        <p class="text-muted small mt-3 mb-0">@T("نرسل رابط تأكيد للبريد؛ التأكيد مطلوب فقط عند الضغط على «قدّم الآن».", "We email a confirmation link; confirmation is only needed when you press “Apply now”.", "Nous envoyons un lien de confirmation ; il n'est requis qu'au moment de postuler.")</p>
+    </div>
+</div>

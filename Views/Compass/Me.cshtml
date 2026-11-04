@@ -1,0 +1,135 @@
+@* «بوصلتي» للعضو: الآن / قريبًا / جاهزيتك / خطة الأسبوع / تقديماتي + بطاقة المشاركة *@
+@model Foras_Khadra.Models.CompassMeVM
+@using Foras_Khadra.Models
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var r = Model.Result;
+    ViewData["Title"] = T("بوصلتي", "My compass", "Ma boussole");
+    ViewData["Description"] = ViewData["Title"];
+    ViewData["SavedIds"] = Model.SavedIds;
+    var eligible = r.Now.Where(m => m.Eligible).Take(12).ToList();
+    var partial = r.Now.Where(m => !m.Eligible).Take(6).ToList();
+    var shareText = T($"مؤهَّل لـ{r.NowCount} فرصة هذا الشهر على فرص خضراء — اكتشف فرصك في دقيقتين:", $"I qualify for {r.NowCount} opportunities this month on Foras Khadra — find yours in two minutes:", $"Je suis éligible à {r.NowCount} opportunités ce mois-ci sur Foras Khadra — trouvez les vôtres en deux minutes :");
+    string MonthName(DateTime d) => d.ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo(lang == "ar" ? "ar-EG" : lang == "fr" ? "fr-FR" : "en-GB"));
+}
+<link asp-append-version="true" rel="stylesheet" href="~/css/compass.css" />
+
+<div class="cp-page" dir="@dir">
+    <section class="cp-hero">
+        <span class="cp-kicker"><i class="bi bi-compass"></i> @T("بوصلتي", "My compass", "Ma boussole") · @Model.Answers.CompletionPercent%</span>
+        <h1>@T("أهلًا ", "Hi ", "Bonjour ")@Model.FirstName@T("، أنت مؤهَّل الآن لـ", ", you qualify right now for ", ", vous êtes éligible maintenant à ")<b>@r.NowCount</b> @T("فرصة", "opportunities", "opportunités")@(r.NewThisWeek > 0 ? T($" — منها {r.NewThisWeek} جديدة هذا الأسبوع", $" — {r.NewThisWeek} of them new this week", $" — dont {r.NewThisWeek} nouvelles cette semaine") : "").</h1>
+        <p>@T("تتجدد كل يوم مع كل فرصة تُنشر. كل بطاقة تشرح لماذا تناسبك وما ينقصك.", "Refreshed every day as opportunities are published. Each card explains why it fits and what is missing.", "Mise à jour chaque jour. Chaque carte explique pourquoi elle vous convient et ce qu'il manque.")</p>
+        <div class="cp-stats">
+            <div class="cp-stat"><b>@r.NowCount</b><span>@T("مؤهَّل الآن", "eligible now", "éligible maintenant")</span></div>
+            <div class="cp-stat"><b>@r.PartialCount</b><span>@T("تنقصها شهادة", "one certificate away", "à un certificat près")</span></div>
+            <div class="cp-stat"><b>@r.Soon.Count</b><span>@T("تفتح قريبًا", "opening soon", "bientôt ouvertes")</span></div>
+            <div class="cp-stat"><b>@r.ReadinessPercent%</b><span>@T("جاهزية أوراقك", "documents ready", "documents prêts")</span></div>
+        </div>
+        <div class="cp-links">
+            <a href="@Url.Action("Index", "Compass", new { edit = true })"><i class="bi bi-pencil"></i> @T("عدّل إجاباتك", "Edit answers", "Modifier mes réponses")</a>
+            <a href="@Url.Action("Saved", "Opportunity")"><i class="bi bi-bookmark-check"></i> @T("تقديماتي ومحفوظاتي", "My applications and saved", "Mes candidatures")</a>
+            <a href="@Url.Action("Dashboard", "User")"><i class="bi bi-person"></i> @T("صفحتي", "My page", "Ma page")</a>
+        </div>
+    </section>
+
+    @if (r.Week.Count > 0)
+    {
+        <section class="cp-section">
+            <h2><i class="bi bi-calendar-week"></i> @T("خطة هذا الأسبوع", "This week's plan", "Plan de la semaine")</h2>
+            <ul class="cp-week">
+                @foreach (var w in r.Week)
+                {
+                    <li>
+                        <i class="bi @(w.Kind == "deadline" ? "bi-alarm" : w.Kind == "new" ? "bi-stars" : "bi-file-earmark-check")"></i>
+                        @if (w.OpportunityId.HasValue) { <a href="@Url.Action("Details", "Opportunity", new { id = w.OpportunityId })">@w.Text</a> } else { <a href="#readiness">@w.Text</a> }
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    <section class="cp-section">
+        <h2><i class="bi bi-lightning-charge"></i> @T("الآن", "Now", "Maintenant")</h2>
+        <p class="sub">@T("مرتبة بدرجة التطابق والموعد. احفظ ما يعنيك لتتابعه بقائمة أوراق خاصة به.", "Ranked by match and deadline. Save what matters to track it with its own checklist.", "Classées par correspondance et échéance. Enregistrez ce qui vous intéresse pour le suivre.")</p>
+        @if (eligible.Count == 0)
+        {
+            <p class="sub">@T("لا فرصة مؤهَّل لها تمامًا اليوم. وسّع أهدافك أو أزل «الممولة بالكامل فقط»، وسنعلمك فور نشر ما يناسبك.", "Nothing fully matching today. Widen your goals or remove “fully funded only”; we'll notify you when a match is published.", "Rien d'entièrement correspondant aujourd'hui. Élargissez vos objectifs ; nous vous préviendrons dès qu'une opportunité correspond.")</p>
+        }
+        <div class="cp-cards">
+            @foreach (var m in eligible) { @await Html.PartialAsync("_CompassCard", m) }
+        </div>
+        @if (partial.Count > 0)
+        {
+            <h2 style="margin-top:18px;"><i class="bi bi-exclamation-circle"></i> @T("تنقصك شهادة واحدة", "One certificate away", "À un certificat près")</h2>
+            <div class="cp-cards">
+                @foreach (var m in partial) { @await Html.PartialAsync("_CompassCard", m) }
+            </div>
+        }
+    </section>
+
+    @if (r.Soon.Count > 0)
+    {
+        <section class="cp-section">
+            <h2><i class="bi bi-hourglass"></i> @T("قريبًا", "Opening soon", "Bientôt")</h2>
+            <p class="sub">@T("برامج متكررة تناسبك ومغلقة الآن. ابدأ التجهيز قبل أن تفتح.", "Recurring programs that fit you and are closed now. Start preparing before they open.", "Programmes récurrents qui vous correspondent et fermés pour l'instant. Préparez-vous avant l'ouverture.")</p>
+            <div class="cp-soon">
+                @foreach (var s in r.Soon)
+                {
+                    var o = s.LastCycle;
+                    var title = lang == "en" ? o.TitleEn : lang == "fr" ? o.TitleFr : o.TitleAr;
+                    <div class="cp-soon__item">
+                        <b><a href="@Url.Action("Details", "Opportunity", new { id = o.Id })" style="color:inherit;text-decoration:none;">@title</a></b>
+                        <span class="cp-soon__when"><i class="bi bi-calendar-event"></i> @(s.ExpectedOpen.HasValue ? T("يفتح عادةً في " + MonthName(s.ExpectedOpen.Value), "Usually opens in " + MonthName(s.ExpectedOpen.Value), "Ouvre généralement en " + MonthName(s.ExpectedOpen.Value)) : T("دورة جديدة متوقعة", "New cycle expected", "Nouveau cycle attendu"))</span>
+                        <small>@string.Join(" · ", s.Reasons)</small>
+                        <form asp-controller="Tracker" asp-action="ToggleCycleWatch" asp-route-id="@o.Id" asp-route-returnUrl="@Url.Action("Me", "Compass")" method="post" style="margin-top:8px;">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="cp-btn" style="padding:6px 12px;font-size:.9rem;"><i class="bi bi-bell"></i> @T("أعلمني حين تفتح", "Notify me when it opens", "Prévenez-moi à l'ouverture")</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+
+    <section class="cp-section" id="readiness">
+        <h2><i class="bi bi-file-earmark-check"></i> @T("جاهزيتك", "Your readiness", "Votre préparation")</h2>
+        <p class="sub">@T("قائمة أوراق واحدة تُستعمل لكل التقديمات. علّم ما جهّزته، ونخبرك أي ورقة تفتح لك أكبر عدد من الفرص.", "One document list for all applications. Tick what you have, and we tell you which document unlocks the most opportunities.", "Une seule liste de documents pour toutes vos candidatures. Cochez ce que vous avez.")</p>
+        <div class="cp-ready">
+            <b>@T($"جاهز بنسبة {r.ReadinessPercent}%", $"{r.ReadinessPercent}% ready", $"Prêt à {r.ReadinessPercent}%")</b>
+            <div class="cp-ready__bar"><span style="width:@r.ReadinessPercent%"></span></div>
+            <ul>
+                @foreach (var d in r.Readiness)
+                {
+                    <li>
+                        <form asp-controller="Compass" asp-action="Document" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="key" value="@d.Key" />
+                            <input type="hidden" name="have" value="@(d.Have ? "false" : "true")" />
+                            <button type="submit" class="@(d.Have ? "is-done" : "")" title="@(d.Have ? T("علّم كغير جاهزة", "Mark as not ready", "Marquer comme non prêt") : T("علّم كجاهزة", "Mark as ready", "Marquer comme prêt"))">
+                                <i class="bi @(d.Have ? "bi-check-circle-fill" : "bi-circle")"></i>
+                                <span>@d.Label</span>
+                                @if (!d.Have && d.Unlocks > 0) { <small>+@d.Unlocks</small> }
+                            </button>
+                        </form>
+                    </li>
+                }
+            </ul>
+            @if (r.Readiness.Count == 0)
+            {
+                <p class="sub" style="margin:0;">@T("اختر هدفًا في إجاباتك لنعرض أوراقه.", "Pick a goal in your answers to see its documents.", "Choisissez un objectif pour voir ses documents.")</p>
+            }
+        </div>
+    </section>
+
+    <section class="cp-section">
+        <h2><i class="bi bi-share"></i> @T("شارك بوصلتك", "Share your compass", "Partagez votre boussole")</h2>
+        <div class="cp-share">
+            <b>@shareText</b>
+            <input type="text" readonly value="@Model.ShareUrl" onclick="this.select()" aria-label="@T("رابط الإحالة", "Referral link", "Lien de parrainage")" />
+            <a class="cp-btn cp-btn--primary" target="_blank" rel="noopener" href="https://wa.me/?text=@Uri.EscapeDataString(shareText + " " + Model.ShareUrl)"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+            <a class="cp-btn" target="_blank" rel="noopener" href="https://twitter.com/intent/tweet?text=@Uri.EscapeDataString(shareText)&url=@Uri.EscapeDataString(Model.ShareUrl)"><i class="bi bi-twitter-x"></i></a>
+        </div>
+    </section>
+</div>

@@ -18,7 +18,8 @@ namespace Foras_Khadra.Helpers
             "/savedsearch", "/push", "/opportunity/index", "/opportunity/create", "/opportunity/edit", "/opportunity/delete",
             "/opportunity/orgopportunities", "/opportunity/toggle", "/articles/index", "/articles/create", "/articles/edit",
             "/activities/index", "/activities/create", "/activities/edit", "/programs/index", "/programs/create", "/programs/edit",
-            "/health", "/sitemap", "/robots", "/offline"
+            "/health", "/sitemap", "/robots", "/offline",
+            "/compass/me", "/compass/result", "/compass/register", "/compass/documents"
         };
         private static readonly string[] TrackedAccountPages = { "/account/login", "/account/registeruser" };
 

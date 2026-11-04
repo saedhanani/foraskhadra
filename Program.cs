@@ -111,6 +111,8 @@ builder.Services.AddScoped<IApplyClickCounter, ApplyClickCounter>();
 // بوابة المنظمات: طلبات النشر بلا حساب + تقدير الأعضاء المؤهَّلين (مخزَّن ساعة)
 builder.Services.AddScoped<IPublishRequestService, PublishRequestService>();
 builder.Services.AddScoped<IAudienceEstimator, AudienceEstimator>();
+// «بوصلة»: الأهلية من ملف العضو (أو كوكي الزائر) على الفرص المفتوحة (مخزَّنة 10 دقائق)
+builder.Services.AddScoped<ICompassService, CompassService>();
 // تحليلات داخلية بلا كوكيز: عدّادات في الذاكرة تُكتب كل دقيقة كصفوف يومية (Services/Analytics)
 builder.Services.AddSingleton<IAnalytics, Analytics>();
 builder.Services.AddHostedService<AnalyticsFlushService>();

@@ -740,6 +740,7 @@
                                 }
                                 else
                                 {
+                                    <a asp-controller="Compass" asp-action="Me" data-close-menu><i class="bi bi-compass"></i> @(culture == "en" ? "My compass" : culture == "fr" ? "Ma boussole" : "بوصلتي")</a>
                                     <a asp-controller="User" asp-action="Dashboard" data-close-menu>@(culture == "en" ? "My page" : culture == "fr" ? "Ma page" : "صفحتي")</a>
                                     <a asp-controller="Opportunity" asp-action="Saved" data-close-menu>@(culture == "en" ? "My opportunities" : culture == "fr" ? "Mes opportunités" : "فرصي")</a>
                                     <a asp-controller="Resources" asp-action="Vault" data-close-menu>@(culture == "en" ? "Members' vault" : culture == "fr" ? "Coffre des membres" : "خزانة الأعضاء")</a>

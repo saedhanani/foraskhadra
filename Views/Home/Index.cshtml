@@ -434,6 +434,29 @@ html[dir="ltr"] #heroBg1 {
     })();
 </script>
 
+@* «بوصلة» (المرحلة 1.1): الخطّاف — 8 أسئلة ثم عدد الفرص المؤهَّل لها الآن؛ للعضو تفتح بوصلته *@
+<section class="py-4" dir="@dir">
+    <div class="container">
+        <a href="@Url.Action(User.Identity?.IsAuthenticated == true ? "Me" : "Index", "Compass")" class="fk-compass-cta">
+            <span class="fk-compass-cta__icon"><i class="bi bi-compass"></i></span>
+            <span class="fk-compass-cta__text">
+                <b>@(culture == "en" ? "How many opportunities can you apply to right now?" : culture == "fr" ? "À combien d'opportunités pouvez-vous postuler maintenant ?" : "كم فرصة تستطيع التقديم عليها الآن؟")</b>
+                <small>@(culture == "en" ? "8 questions, two minutes, no account — then your personal compass." : culture == "fr" ? "8 questions, deux minutes, sans compte — puis votre boussole personnelle." : "8 أسئلة، دقيقتان، بلا حساب — ثم بوصلتك الخاصة التي تتجدد كل يوم.")</small>
+            </span>
+            <span class="fk-compass-cta__btn">@(culture == "en" ? "Start" : culture == "fr" ? "Commencer" : "ابدأ") <i class="bi @(culture == "ar" ? "bi-arrow-left" : "bi-arrow-right")"></i></span>
+        </a>
+    </div>
+</section>
+<style>
+    .fk-compass-cta { display: flex; align-items: center; gap: 16px; background: linear-gradient(135deg, #1B6B23, #25652C); color: #fff; border-radius: 18px; padding: 18px 22px; text-decoration: none; box-shadow: 0 10px 30px rgba(27,107,35,.2); }
+    .fk-compass-cta:hover { color: #fff; transform: translateY(-1px); }
+    .fk-compass-cta__icon { font-size: 2rem; flex: none; }
+    .fk-compass-cta__text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .fk-compass-cta__text b { font-size: 1.15rem; }
+    .fk-compass-cta__text small { opacity: .9; }
+    .fk-compass-cta__btn { background: #F99D27; color: #fff; border-radius: 12px; padding: 10px 18px; font-weight: 800; white-space: nowrap; }
+    @@media (max-width: 640px) { .fk-compass-cta { flex-wrap: wrap; } .fk-compass-cta__btn { width: 100%; text-align: center; } }
+</style>
 <section class="latest-articles py-5" dir="@dir" style="background:#F6FBF7;">
     <div class="container">
 

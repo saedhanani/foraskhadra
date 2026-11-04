@@ -10,11 +10,12 @@
 | 1.4 | اللغة من الرابط: العربية بلا بادئة، `/en/…` و`/fr/…`، hreflang + x-default، sitemap بالبدائل، `?culture=` → 301 | `6f73848` |
 | 1.3 + 1.5 | روابط حقيقية في الرئيسية؛ `returnUrl` عبر النافذة والتسجيل والدخول ورابط البريد؛ دخول تلقائي بعد التأكيد؛ `[Authorize]` للأفراد → `/Account/Login`؛ كوكي 30 يومًا؛ "تذكرني"؛ التطبيق المثبّت دخوله دائم | `98d2de4` |
 | 1.2 | بوابة المنظمات `/for-organizations` + `PublishRequests` + `GET /api/team/requests` + تقدير المؤهَّلين + `/Admin/PublishRequests` | `387d373` |
-| 1.6 | تحليلات داخلية بلا كوكيز (`/Admin/Analytics`) + وسم تحقق Search Console/Bing من الإعدادات | آخر commit |
+| 1.6 | تحليلات داخلية بلا كوكيز (`/Admin/Analytics`) + وسم تحقق Search Console/Bing من الإعدادات | `ca63ff5` |
+| 1.1 | «بوصلة»: `/compass` → `/compass/result` → `/compass/register` → `/compass/me` + `EligibilityProfiles` | آخر commit |
 
 ## قبل النشر
 
-1. **SQL** في SQL Studio (بعد نسخة احتياطية): `Migrations/Sql/2026-11-publish-requests.sql` ثم `Migrations/Sql/2026-11-analytics.sql` — أربعة جداول جديدة فقط (`PublishRequests`، `PageViewDailyStats`، `TrafficSourceDailyStats`، `SiteEventDailyStats`) وتسجيل الهجرتين. كل سكربت دفعة واحدة (لا تعديل على أعمدة أُضيفت في الدفعة نفسها). بلا EXEC وبلا ENDPOINT.
+1. **SQL** في SQL Studio (بعد نسخة احتياطية): `Migrations/Sql/2026-11-publish-requests.sql` ثم `2026-11-analytics.sql` ثم `2026-11-eligibility-profiles.sql` — خمسة جداول جديدة فقط (`PublishRequests`، `PageViewDailyStats`، `TrafficSourceDailyStats`، `SiteEventDailyStats`، `EligibilityProfiles`) وتسجيل الهجرات الثلاث. كل سكربت دفعة واحدة (لا تعديل على أعمدة أُضيفت في الدفعة نفسها). بلا EXEC وبلا ENDPOINT.
 2. إعدادات اختيارية على الخادم (`appsettings.production.json`): `"Seo": { "GoogleSiteVerification": "<الرمز من Search Console>", "BingSiteVerification": "<الرمز من Bing>" }` — فارغة = لا وسم. `BaseUrl` الموجود يُستعمل في رسائل المنظمات.
 3. **أبلغ منصة الكتابة** أن `GET /api/team/requests` مفعَّلة (النص المحدَّث في `docs/PIPELINE-PROMPT-v2.md`، بند "طلبات المنظمات") وأن `languageRequirement` تقبل `Unknown`.
 
@@ -29,6 +30,7 @@
    - `/User/Dashboard` لزائر → `/Account/Login?returnUrl=…` (لا `/Organization/Login`).
    - `/api/team/requests` بلا مفتاح = 401، وبالمفتاح = `{"count":0,"items":[]}`.
    - `/Admin/Analytics` يفتح؛ بعد دقيقتين من التصفح العادي (من متصفح غير مسجَّل كمدير) تظهر مشاهدات.
+   - `/compass` بثلاث لغات؛ أجب كزائر → `/compass/result` يعطي عددًا غير صفري (يعتمد على بيانات الأهلية المعبَّأة في `/Admin/Facets`) → `/compass/register` ببريد تجريبي → `/compass/me` تفتح كاملة.
 4. **بعد النشر:** أرسل طلبًا تجريبيًا من `/for-organizations` ببريدك، تحقق من وصول رسالة الاستلام ومن ظهوره في `/Admin/PublishRequests` وجرس المدير، ثم اربطه بفرصة منشورة وتحقق من رسالة "نُشرت فرصتكم". اختبر أيضًا تأكيد بريد لحساب جديد: يجب أن يسجّل الدخول تلقائيًا من الرابط.
 5. حدّث `publish/site-files-current`، ثم `git push`.
 

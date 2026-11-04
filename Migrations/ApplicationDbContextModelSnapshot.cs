@@ -584,6 +584,97 @@ namespace Foras_Khadra.Migrations
                     b.ToTable("CycleWatches");
                 });
 
+            modelBuilder.Entity("Foras_Khadra.Models.EligibilityProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("BirthYear")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Degree")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Documents")
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<string>("EnglishScore")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("EnglishTests")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<int?>("ExperienceYears")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FieldKeys")
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<bool>("FrenchCertificate")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("FullyFundedOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)");
+
+                    b.Property<string>("Goals")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("GraduationYear")
+                        .HasColumnType("int");
+
+                    b.Property<string>("HostCountries")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NationalityIso")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<bool>("RemoteOnly")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ResidenceIso")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<int?>("StartWithinMonths")
+                        .HasColumnType("int");
+
+                    b.Property<string>("University")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("EligibilityProfiles");
+                });
+
             modelBuilder.Entity("Foras_Khadra.Models.Field", b =>
                 {
                     b.Property<int>("Id")
@@ -2106,6 +2197,17 @@ namespace Foras_Khadra.Migrations
                         .IsRequired();
 
                     b.Navigation("Opportunity");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.EligibilityProfile", b =>
+                {
+                    b.HasOne("Foras_Khadra.Models.ApplicationUser", "User")
+                        .WithOne()
+                        .HasForeignKey("Foras_Khadra.Models.EligibilityProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

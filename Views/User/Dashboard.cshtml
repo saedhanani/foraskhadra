@@ -533,6 +533,10 @@
 
     @* ===== روابط سريعة: ملخص الأسبوع، خزانة الأعضاء، بطاقة الإنجاز (المرحلة 5) ===== *@
     <div class="fk-quick">
+        <a class="fk-quick-item" href="@Url.Action("Me", "Compass")">
+            <i class="bi bi-compass"></i>
+            <span><b>@T("بوصلتي", "My compass", "Ma boussole")</b><small>@T("الفرص المؤهَّل لها الآن، وما يفتح قريبًا، وجاهزية أوراقك.", "What you qualify for now, what opens soon, and your document readiness.", "Ce à quoi vous êtes éligible, ce qui s'ouvre bientôt, et vos documents.")</small></span>
+        </a>
         <a class="fk-quick-item" href="@Url.Action("Weekly", "User")">
             <i class="bi bi-calendar-week"></i>
             <span><b>@T("ملخص أسبوعك", "Your weekly summary", "Votre résumé hebdo")</b><small>@T("ما جدّ خلال 7 أيام في اهتماماتك ومحفوظاتك", "What's new in 7 days across your interests and saves", "Les nouveautés de la semaine")</small></span>

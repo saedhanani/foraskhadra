@@ -1,0 +1,77 @@
+@* نتيجة الزائر: العدد الكامل، ثلاث بطاقات ظاهرة، والباقي مغبَّش خلف بوابة التسجيل (returnUrl يعيده إلى بوصلته) *@
+@model Foras_Khadra.Models.CompassResultVM
+@using Foras_Khadra.Models
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var r = Model.Result;
+    ViewData["Title"] = T($"وجدنا لك {r.NowCount} فرصة تستطيع التقديم عليها الآن", $"We found {r.NowCount} opportunities you can apply to now", $"Nous avons trouvé {r.NowCount} opportunités pour vous");
+    ViewData["Description"] = T("نتيجة بوصلتك: الفرص المؤهَّل لها الآن وما سيُفتح قريبًا.", "Your compass result: what you qualify for now and what opens soon.", "Votre résultat : ce à quoi vous êtes éligible maintenant et ce qui s'ouvre bientôt.");
+    var visible = r.Now.Take(CompassResultVM.VisibleCards).ToList();
+    var locked = r.Now.Skip(CompassResultVM.VisibleCards).Take(6).ToList();
+    var registerUrl = Url.Action("Register", "Compass");
+    var loginUrl = Url.Action("Login", "Account", new { returnUrl = Url.Action("Me", "Compass") });
+}
+<meta name="robots" content="noindex" />
+<link asp-append-version="true" rel="stylesheet" href="~/css/compass.css" />
+
+<div class="cp-page" dir="@dir">
+    <section class="cp-hero">
+        <span class="cp-kicker"><i class="bi bi-compass"></i> @T("نتيجة بوصلتك", "Your compass result", "Votre boussole")</span>
+        @if (r.NowCount > 0)
+        {
+            <h1>@T("وجدنا لك", "We found", "Nous avons trouvé") <b>@r.NowCount</b> @T("فرصة تستطيع التقديم عليها الآن", "opportunities you can apply to right now", "opportunités auxquelles vous pouvez postuler maintenant")@(r.SoonWithin3Months > 0 ? T($"، و{r.SoonWithin3Months} برامج تفتح خلال 3 أشهر", $", and {r.SoonWithin3Months} programs opening within 3 months", $", et {r.SoonWithin3Months} programmes qui s'ouvrent sous 3 mois") : "").</h1>
+        }
+        else
+        {
+            <h1>@T("لا فرصة مطابقة تمامًا الآن", "No exact match right now", "Pas de correspondance exacte pour le moment")@(r.PartialCount > 0 ? T($"، لكن {r.PartialCount} تنقصها شهادة واحدة فقط", $", but {r.PartialCount} are one certificate away", $", mais {r.PartialCount} ne demandent qu'un certificat") : "").</h1>
+        }
+        <p>@T("اختبار الأهلية تم على الدولة والمرحلة والعمر والمجال واللغة والتمويل. كل بطاقة تشرح لماذا تناسبك.", "Eligibility was checked on country, level, age, field, language and funding. Each card explains why it fits you.", "L'éligibilité a été vérifiée sur le pays, le niveau, l'âge, le domaine, la langue et le financement. Chaque carte explique pourquoi elle vous convient.")</p>
+        <div class="cp-stats">
+            <div class="cp-stat"><b>@r.NowCount</b><span>@T("مؤهَّل الآن", "eligible now", "éligible maintenant")</span></div>
+            <div class="cp-stat"><b>@r.PartialCount</b><span>@T("تنقصها شهادة", "one certificate away", "à un certificat près")</span></div>
+            <div class="cp-stat"><b>@r.Soon.Count</b><span>@T("تفتح قريبًا", "opening soon", "bientôt ouvertes")</span></div>
+            <div class="cp-stat"><b>@r.NewThisWeek</b><span>@T("جديدة هذا الأسبوع", "new this week", "nouvelles cette semaine")</span></div>
+        </div>
+        <div class="cp-actions">
+            <a class="cp-btn cp-btn--orange" href="@registerUrl"><i class="bi bi-unlock"></i> @T("أنشئ حسابًا مجانيًا لفتح كل النتائج", "Create a free account to unlock all results", "Créez un compte gratuit pour tout débloquer")</a>
+            <a class="cp-btn cp-btn--ghost" href="@Url.Action("Index", "Compass", new { edit = true })"><i class="bi bi-pencil"></i> @T("عدّل إجاباتك", "Edit answers", "Modifier")</a>
+        </div>
+    </section>
+
+    @if (visible.Count > 0)
+    {
+        <section class="cp-section">
+            <h2><i class="bi bi-lightning-charge"></i> @T("الآن", "Now", "Maintenant")</h2>
+            <p class="sub">@T("مرتبة بدرجة التطابق. ثلاثة أسباب لكل فرصة، وسبب نقص واحد إن كانت جزئية.", "Ranked by match. Three reasons per opportunity, and one gap when it is partial.", "Classées par correspondance. Trois raisons par opportunité, et un manque si elle est partielle.")</p>
+            <div class="cp-cards">
+                @foreach (var m in visible) { @await Html.PartialAsync("_CompassCard", m) }
+            </div>
+        </section>
+    }
+
+    @if (locked.Count > 0 || r.Soon.Count > 0)
+    {
+        <section class="cp-section cp-locked">
+            <div class="cp-cards" aria-hidden="true">
+                @foreach (var m in locked) { @await Html.PartialAsync("_CompassCard", m) }
+            </div>
+            <div class="cp-gate">
+                <div class="cp-gate__box">
+                    <h3>@T($"و{Math.Max(0, r.NowCount - visible.Count(v => v.Eligible))} فرصة أخرى، و{r.Soon.Count} برامج تفتح قريبًا، وقائمة أوراقك", $"{Math.Max(0, r.NowCount - visible.Count(v => v.Eligible))} more opportunities, {r.Soon.Count} programs opening soon, and your document checklist", $"{Math.Max(0, r.NowCount - visible.Count(v => v.Eligible))} opportunités de plus, {r.Soon.Count} programmes bientôt ouverts, et votre liste de documents")</h3>
+                    <p>@T("بوصلتك تتجدد كل يوم: فرصة جديدة تناسبك، موعد يقترب، ورقة تجهّزها — وإشعار قبل أن يفتح برنامج تنتظره.", "Your compass refreshes every day: a new match, a closing deadline, a document to prepare — and a heads-up before a program you follow opens.", "Votre boussole se met à jour chaque jour : une nouvelle correspondance, une échéance proche, un document à préparer — et une alerte avant l'ouverture d'un programme.")</p>
+                    <a class="cp-btn cp-btn--primary" href="@registerUrl"><i class="bi bi-envelope"></i> @T("بريد وكلمة مرور فقط — دقيقة واحدة", "Email and password only — one minute", "E-mail et mot de passe — une minute")</a>
+                    <p style="margin:10px 0 0;font-size:.9rem;">@T("لديك حساب؟", "Already have an account?", "Vous avez déjà un compte ?") <a href="@loginUrl">@T("سجّل الدخول وستجد بوصلتك جاهزة", "Sign in and your compass will be waiting", "Connectez-vous, votre boussole vous attend")</a></p>
+                </div>
+            </div>
+        </section>
+    }
+    else if (r.NowCount == 0 && r.PartialCount == 0)
+    {
+        <section class="cp-section">
+            <p class="sub">@T("جرّب هدفًا آخر أو أزل «الممولة بالكامل فقط» — أو أنشئ حسابًا لنخبرك فور نشر فرصة تناسبك.", "Try another goal or remove “fully funded only” — or create an account and we'll tell you the moment a matching opportunity is published.", "Essayez un autre objectif ou retirez « entièrement financées seulement » — ou créez un compte pour être prévenu dès qu'une opportunité correspond.")</p>
+            <a class="cp-btn cp-btn--primary" href="@registerUrl">@T("أنشئ حسابًا", "Create an account", "Créer un compte")</a>
+        </section>
+    }
+</div>

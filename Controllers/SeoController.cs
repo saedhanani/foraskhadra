@@ -58,6 +58,7 @@ namespace Foras_Khadra.Controllers
             Add("/Home/News", null, "weekly", "0.7");
             Add("/Home/OrganizationsMap", null, "weekly", "0.6");
             Add("/for-organizations", null, "monthly", "0.7");
+            Add("/compass", null, "weekly", "0.9");
             Add("/Home/AboutUs", null, "monthly", "0.4");
             Add("/contact/Index", null, "monthly", "0.4");
             foreach (var policyPage in new[] { "PolicyPrivacy", "UsagePolicy", "TermsAndConditions" })
@@ -119,7 +120,8 @@ namespace Foras_Khadra.Controllers
                 "/Articles/Index", "/Articles/Create", "/Articles/Edit",
                 "/Activities/Index", "/Activities/Create", "/Activities/Edit",
                 "/Programs/Index", "/Programs/Create", "/Programs/Edit",
-                "/ImpactStats/"
+                "/ImpactStats/",
+                "/compass/me", "/compass/result", "/compass/register", "/compass/documents"
             };
             var lines = new List<string> { "User-agent: *" };
             // المسارات نفسها بالعربية (بلا بادئة) وبـ/en و/fr

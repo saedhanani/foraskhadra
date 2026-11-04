@@ -1,0 +1,45 @@
+@* بطاقة فرصة في البوصلة: العنوان والنوع والموعد، وثلاثة أسباب ✓ "لماذا تناسبك"، وسبب نقص واحد ✗ إن كانت جزئية. Model: CompassMatch؛ ViewData["SavedIds"] اختياري *@
+@using Foras_Khadra.Helpers
+@using Foras_Khadra.Models
+@model Foras_Khadra.Helpers.CompassMatch
+@{
+    var o = Model.Opportunity;
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var title = lang switch { "en" => o.TitleEn, "fr" => o.TitleFr, _ => o.TitleAr };
+    if (string.IsNullOrWhiteSpace(title)) title = o.TitleAr;
+    var url = Url.Action("Details", "Opportunity", new { id = o.Id, slug = SlugHelper.Make(title) });
+    var savedIds = ViewData["SavedIds"] as HashSet<int>;
+    var img = string.IsNullOrEmpty(o.ImagePath) ? "/images/default-opportunity.jpg" : o.ImagePath;
+}
+<article class="cp-card @(Model.Eligible ? "" : "cp-card--partial")">
+    <a class="cp-card__img" href="@url" tabindex="-1" aria-hidden="true"><img src="@img" alt="" loading="lazy" decoding="async" /></a>
+    <div class="cp-card__body">
+        <div class="cp-card__meta">
+            <span class="cp-chip">@o.Type.GetDisplayName(lang)</span>
+            @if (Model.DaysLeft is >= 0)
+            {
+                <span class="cp-chip @(Model.DaysLeft <= 7 ? "cp-chip--urgent" : "")"><i class="bi bi-hourglass-split"></i> @T($"{Model.DaysLeft} يومًا", $"{Model.DaysLeft} days", $"{Model.DaysLeft} jours")</span>
+            }
+            else if (o.DeadlineType != DeadlineType.SpecificDate)
+            {
+                <span class="cp-chip">@T("بلا موعد محدد", "No fixed deadline", "Sans date limite")</span>
+            }
+            @if (savedIds != null)
+            {
+                <span class="cp-card__save">@await Html.PartialAsync("_SaveButton", (o.Id, savedIds.Contains(o.Id)))</span>
+            }
+        </div>
+        <h3 class="cp-card__title"><a href="@url">@title</a></h3>
+        <ul class="cp-card__why">
+            @foreach (var r in Model.Reasons)
+            {
+                <li><i class="bi bi-check-circle-fill"></i> @r</li>
+            }
+            @if (Model.Gap != null)
+            {
+                <li class="gap"><i class="bi bi-exclamation-circle-fill"></i> @Model.Gap</li>
+            }
+        </ul>
+    </div>
+</article>

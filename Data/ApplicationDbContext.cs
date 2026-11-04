@@ -38,6 +38,7 @@ namespace Foras_Khadra.Data
         public DbSet<PageViewDailyStat> PageViewDailyStats { get; set; }
         public DbSet<TrafficSourceDailyStat> TrafficSourceDailyStats { get; set; }
         public DbSet<SiteEventDailyStat> SiteEventDailyStats { get; set; }
+        public DbSet<EligibilityProfile> EligibilityProfiles { get; set; }
 
         // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -90,6 +91,14 @@ namespace Foras_Khadra.Data
             modelBuilder.Entity<PageViewDailyStat>().HasIndex(r => new { r.Day, r.Path, r.Culture }).IsUnique();
             modelBuilder.Entity<TrafficSourceDailyStat>().HasIndex(r => new { r.Day, r.Source }).IsUnique();
             modelBuilder.Entity<SiteEventDailyStat>().HasIndex(r => new { r.Day, r.Event, r.Label }).IsUnique();
+
+            // ملف الأهلية (بوصلة): واحد لكل مستخدم، يُحذف معه
+            modelBuilder.Entity<EligibilityProfile>().HasIndex(p => p.UserId).IsUnique();
+            modelBuilder.Entity<EligibilityProfile>()
+                .HasOne(p => p.User)
+                .WithOne()
+                .HasForeignKey<EligibilityProfile>(p => p.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // الفرص المحفوظة: لا تكرار لنفس الفرصة عند نفس المستخدم، وتُحذف مع حذف الفرصة.
             // جهة المستخدم بلا cascade في القاعدة (SQL Server يرفض مسارين: المستخدم → المحفوظات والمستخدم → فرصه → المحفوظات)؛
