@@ -1,0 +1,86 @@
+@* نافذة «أبلغ عن مشكلة» (3.1): عنصر dialog أصلي (Escape وحبس التركيز من المتصفح)، يرسل بـfetch ويقع على إرسال عادي بلا JS *@
+@model Foras_Khadra.Models.Opportunity
+@using Foras_Khadra.Models
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+}
+
+<dialog id="reportDialog" class="fk-dialog" aria-labelledby="reportDialogTitle">
+    <form method="post" action="@Url.Action("Report", "Opportunity", new { id = Model.Id })" id="reportForm" class="fk-dialog-form"
+          data-msg-sent="@T("شكرًا، وصل بلاغك وسيراجعه الفريق.", "Thank you, your report was received and the team will review it.", "Merci, votre signalement a été reçu et sera examiné.")"
+          data-msg-dup="@T("بلاغك مسجَّل مسبقًا — شكرًا.", "Your report is already on file — thank you.", "Votre signalement est déjà enregistré — merci.")"
+          data-msg-err="@T("تعذّر الإرسال، حاول مرة أخرى.", "Could not send, please try again.", "Envoi impossible, réessayez.")">
+        @Html.AntiForgeryToken()
+        <h2 id="reportDialogTitle" class="fk-dialog-title">@T("أبلغ عن مشكلة في هذه الفرصة", "Report a problem with this opportunity", "Signaler un problème sur cette opportunité")</h2>
+        <p class="fk-dialog-hint">
+            @T("يصل بلاغك إلى الفريق فورًا. إن وصلت بلاغات من زائرَين مختلفَين نوقف زر التقديم حتى تنتهي المراجعة.",
+               "Your report reaches the team immediately. If two different visitors report, we pause the apply button until the review is done.",
+               "Votre signalement parvient immédiatement à l'équipe. Si deux visiteurs différents signalent, nous suspendons le bouton jusqu'à la fin de la vérification.")
+        </p>
+
+        <label class="fk-dialog-label" for="reportReason">@T("ما المشكلة؟", "What is the problem?", "Quel est le problème ?")</label>
+        <select id="reportReason" name="reason" class="fk-dialog-input" required>
+            <option value="@OpportunityReportReason.BrokenLink">@T("رابط التقديم لا يعمل", "The apply link does not work", "Le lien de candidature ne fonctionne pas")</option>
+            <option value="@OpportunityReportReason.Expired">@T("الفرصة منتهية رغم أنها تظهر مفتوحة", "The opportunity has closed but still shows as open", "L'opportunité est clôturée mais apparaît ouverte")</option>
+            <option value="@OpportunityReportReason.AsksForMoney">@T("يُطلب مني دفع مال", "I am being asked to pay money", "On me demande de payer")</option>
+            <option value="@OpportunityReportReason.WrongInfo">@T("معلومات خاطئة (الدول، الموعد، الشروط…)", "Wrong information (countries, deadline, criteria…)", "Informations erronées (pays, date limite, critères…)")</option>
+            <option value="@OpportunityReportReason.Other">@T("شيء آخر", "Something else", "Autre chose")</option>
+        </select>
+
+        <label class="fk-dialog-label" for="reportDetails">@T("تفاصيل (اختياري)", "Details (optional)", "Détails (facultatif)")</label>
+        <textarea id="reportDetails" name="details" class="fk-dialog-input" maxlength="@OpportunityReport.MaxDetails" rows="3"
+                  placeholder="@T("مثلًا: الرابط يفتح صفحة 404، أو الموعد الصحيح هو…", "e.g. the link opens a 404 page, or the correct deadline is…", "ex. : le lien ouvre une page 404, ou la vraie date limite est…")"></textarea>
+
+        @if (User.Identity?.IsAuthenticated != true)
+        {
+            <label class="fk-dialog-label" for="reportEmail">@T("بريدك (اختياري، إن أردت ردًا)", "Your email (optional, if you want a reply)", "Votre e-mail (facultatif, pour une réponse)")</label>
+            <input type="email" id="reportEmail" name="email" class="fk-dialog-input" maxlength="256" autocomplete="email" />
+        }
+
+        <div class="fk-dialog-actions">
+            <button type="button" class="fk-btn fk-btn-ghost" data-close-dialog>@T("إلغاء", "Cancel", "Annuler")</button>
+            <button type="submit" class="fk-btn fk-btn-primary">@T("إرسال البلاغ", "Send report", "Envoyer le signalement")</button>
+        </div>
+        <p class="fk-dialog-result" id="reportResult" role="status" aria-live="polite" hidden></p>
+    </form>
+</dialog>
+
+<script>
+    (function () {
+        var dlg = document.getElementById('reportDialog');
+        if (!dlg) return;
+        var form = document.getElementById('reportForm');
+        var out = document.getElementById('reportResult');
+        function open() {
+            out.hidden = true;
+            if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+            var first = dlg.querySelector('select');
+            if (first) first.focus();
+        }
+        function close() { if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open'); }
+        document.querySelectorAll('[data-open-dialog="reportDialog"]').forEach(function (b) { b.addEventListener('click', open); });
+        dlg.querySelectorAll('[data-close-dialog]').forEach(function (b) { b.addEventListener('click', close); });
+        dlg.addEventListener('click', function (e) { if (e.target === dlg) close(); });
+
+        form.addEventListener('submit', function (e) {
+            if (!window.fetch || !window.FormData) return; // بلا JS حديث: إرسال عادي ثم العودة برسالة
+            e.preventDefault();
+            var btn = form.querySelector('[type=submit]');
+            btn.disabled = true; btn.setAttribute('aria-busy', 'true');
+            fetch(form.action, {
+                method: 'POST', body: new FormData(form), credentials: 'same-origin',
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            })
+                .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+                .then(function (j) {
+                    out.hidden = false;
+                    out.textContent = j.added ? form.getAttribute('data-msg-sent') : form.getAttribute('data-msg-dup');
+                    if (j.hidden) setTimeout(function () { window.location.reload(); }, 1500);
+                    else setTimeout(close, 1800);
+                })
+                .catch(function () { out.hidden = false; out.textContent = form.getAttribute('data-msg-err'); })
+                .finally(function () { btn.disabled = false; btn.removeAttribute('aria-busy'); });
+        });
+    })();
+</script>

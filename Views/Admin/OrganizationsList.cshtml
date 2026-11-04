@@ -40,6 +40,10 @@
     <p class="section-hint">@Localizer["Hint"]</p>
 
     <div class="row g-4">
+        @if (!Model.Any())
+        {
+            <div class="fk-empty-state"><i class="bi bi-building"></i><p>لا منظمات مسجَّلة بعد — تظهر هنا حين تنشئ منظمة حسابها.</p></div>
+        }
         @foreach (var org in Model)
         {
             <div class="col-xl-4 col-lg-6">

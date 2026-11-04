@@ -98,6 +98,19 @@ namespace Foras_Khadra.Helpers
                         T("باب التقديم مفتوح", "Applications are open", "Candidatures ouvertes"),
                         n.Label ?? "", "/Programs/" + Uri.EscapeDataString(n.LinkParams), tag, lang);
 
+                case NotificationKind.OpportunityReported when opp != null:
+                    return new PushMessage(
+                        T("بلاغات أوقفت التقديم على فرصة", "Reports paused applying on an opportunity", "Des signalements ont suspendu une opportunité"),
+                        T($"{n.Count} مُبلِّغين على «{opp.TitleAr}» — راجع البلاغات.",
+                          $"{n.Count} reporters on “{opp.TitleEn}” — review the reports.",
+                          $"{n.Count} signalements sur « {opp.TitleFr} » — à vérifier."),
+                        "/Admin/Reports", $"reports{opp.Id}", lang);
+
+                case NotificationKind.OrganizationPublished when opp != null:
+                    return new PushMessage(
+                        T($"جديد من {n.Label}", $"New from {n.Label}", $"Nouveau de {n.Label}"),
+                        oppTitle!, oppUrl!, tag, lang);
+
                 case NotificationKind.WeeklySummary:
                     return new PushMessage(
                         T("ملخص أسبوعك جاهز", "Your weekly summary is ready", "Votre résumé hebdomadaire est prêt"),

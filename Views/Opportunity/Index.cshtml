@@ -193,11 +193,11 @@
         }
 
         function renderControls() {
-            let html = `<a href="#" class="pagination-arrow prev-arrow ${currentPage === 1 ? 'disabled-link' : ''}" data-page="${currentPage - 1}"><i class="bi bi-chevron-right"></i></a>`;
+            let html = `<a href="#" class="pagination-arrow prev-arrow ${currentPage === 1 ? 'disabled-link' : ''}" data-page="${currentPage - 1}"><i class="bi bi-chevron-right dir-flip"></i></a>`;
             for (let i = 1; i <= totalPages; i++) {
                 html += `<a href="#" class="page-link-num ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</a>`;
             }
-            html += `<a href="#" class="pagination-arrow next-arrow ${currentPage === totalPages ? 'disabled-link' : ''}" data-page="${currentPage + 1}"><i class="bi bi-chevron-left"></i></a>`;
+            html += `<a href="#" class="pagination-arrow next-arrow ${currentPage === totalPages ? 'disabled-link' : ''}" data-page="${currentPage + 1}"><i class="bi bi-chevron-left dir-flip"></i></a>`;
             controls.innerHTML = html;
             controls.querySelectorAll('a').forEach(link => {
                 link.onclick = (e) => {

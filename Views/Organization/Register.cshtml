@@ -21,7 +21,7 @@
 
         <div class="reg-card">
             <div class="reg-main">
-                <form asp-controller="Organization" asp-action="Register" method="post" id="orgRegisterWizard">
+                <form asp-controller="Organization" asp-action="Register" method="post" data-submit-once id="orgRegisterWizard">
                     @Html.AntiForgeryToken()
 
                     <!-- STEP 1: Account type -->

@@ -1,0 +1,175 @@
+@* مولّد أداة التضمين وشارة «نُشر على فرص خضراء» (المرحلة 3.3) — للجامعات والمنظمات، بلا حساب *@
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    var countries = ViewBag.Countries as List<(string Iso, string Name)> ?? new List<(string Iso, string Name)>();
+    var site = $"{Context.Request.Scheme}://{Context.Request.Host}";
+    var types = new (string Key, string Name)[]
+    {
+        ("", T("كل الأنواع", "All types", "Tous les types")),
+        ("Scholarships", T("منح دراسية", "Scholarships", "Bourses")),
+        ("Jobs", T("وظائف", "Jobs", "Emplois")),
+        ("Internships", T("تدريب", "Internships", "Stages")),
+        ("Fellowships", T("زمالات", "Fellowships", "Fellowships")),
+        ("Volunteering", T("تطوع", "Volunteering", "Bénévolat")),
+        ("Conferences", T("مؤتمرات", "Conferences", "Conférences")),
+        ("Competitions", T("مسابقات", "Competitions", "Concours"))
+    };
+}
+
+<div class="container py-4 embed-page" dir="@dir">
+    <h1 class="embed-h1">@T("اعرض الفرص على موقعك", "Show opportunities on your website", "Affichez les opportunités sur votre site")</h1>
+    <p class="embed-lead">
+        @T("ودجت مجاني للجامعات والمنظمات: قائمة حيّة بالفرص المفتوحة لشباب الوطن العربي تُحدَّث يوميًا، بثلاث لغات، بلا تسجيل. انسخ السطرين والصقهما في صفحتك.",
+           "A free widget for universities and organizations: a live list of open opportunities for youth in the Arab world, updated daily, in three languages, no sign-up. Copy the two lines into your page.",
+           "Un widget gratuit pour les universités et organisations : une liste vivante d'opportunités ouvertes aux jeunes du monde arabe, mise à jour chaque jour, en trois langues, sans inscription. Copiez les deux lignes dans votre page.")
+    </p>
+
+    <div class="embed-grid">
+        <form class="embed-form" id="embedForm" onsubmit="return false">
+            <h2 class="embed-h2">1 · @T("اختر ما يُعرض", "Choose what to show", "Choisissez le contenu")</h2>
+
+            <label for="embType">@T("النوع", "Type", "Type")</label>
+            <select id="embType" class="form-select">
+                @foreach (var t in types) { <option value="@t.Key">@t.Name</option> }
+            </select>
+
+            <label for="embCountry">@T("الدولة المقبولة", "Accepted country", "Pays accepté")</label>
+            <select id="embCountry" class="form-select">
+                <option value="">@T("كل الدول", "All countries", "Tous les pays")</option>
+                <option value="XA">@T("الوطن العربي كله", "The whole Arab world", "Tout le monde arabe")</option>
+                @foreach (var c in countries) { <option value="@c.Iso">@c.Name</option> }
+            </select>
+
+            <div class="embed-row">
+                <div>
+                    <label for="embLang">@T("اللغة", "Language", "Langue")</label>
+                    <select id="embLang" class="form-select">
+                        <option value="ar" selected="@(lang == "ar")">العربية</option>
+                        <option value="en" selected="@(lang == "en")">English</option>
+                        <option value="fr" selected="@(lang == "fr")">Français</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="embLimit">@T("عدد الفرص", "Number of items", "Nombre d'éléments")</label>
+                    <select id="embLimit" class="form-select">
+                        @foreach (var n in new[] { 3, 6, 9, 12 }) { <option value="@n" selected="@(n == 6)">@n</option> }
+                    </select>
+                </div>
+                <div>
+                    <label for="embTheme">@T("المظهر", "Theme", "Thème")</label>
+                    <select id="embTheme" class="form-select">
+                        <option value="light">@T("فاتح", "Light", "Clair")</option>
+                        <option value="dark">@T("داكن", "Dark", "Sombre")</option>
+                    </select>
+                </div>
+            </div>
+
+            <h2 class="embed-h2">2 · @T("انسخ الكود", "Copy the code", "Copiez le code")</h2>
+            <textarea id="embCode" class="embed-code" rows="4" readonly aria-label="@T("كود التضمين", "Embed code", "Code d'intégration")"></textarea>
+            <button type="button" class="btn btn-success" id="embCopy" data-done="@T("نُسخ ✓", "Copied ✓", "Copié ✓")">@T("نسخ الكود", "Copy code", "Copier le code")</button>
+            <p class="embed-hint">
+                @T("يعمل على ووردبريس وأي صفحة HTML. الروابط تفتح الفرصة على فرص خضراء، والقائمة تُخزَّن 10 دقائق ثم تتجدد تلقائيًا.",
+                   "Works on WordPress and any HTML page. Links open the opportunity on Foras Khadra; the list is cached for 10 minutes and refreshes automatically.",
+                   "Fonctionne sur WordPress et toute page HTML. Les liens ouvrent l'opportunité sur Foras Khadra ; la liste est mise en cache 10 minutes puis se rafraîchit.")
+            </p>
+        </form>
+
+        <div class="embed-preview">
+            <h2 class="embed-h2">@T("معاينة حيّة", "Live preview", "Aperçu en direct")</h2>
+            <div class="embed-frame-wrap">
+                <iframe id="embPreview" title="@T("معاينة الودجت", "Widget preview", "Aperçu du widget")" loading="lazy" scrolling="no"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <section class="embed-badge">
+        <h2 class="embed-h2">@T("شارة «نُشر على فرص خضراء»", "“Published on Foras Khadra” badge", "Badge « Publié sur Foras Khadra »")</h2>
+        <p class="embed-lead">
+            @T("للمنظمات التي نشرت فرصها عندنا: ضعي الشارة في صفحة الفرصة أو في تذييل موقعك ليعرف الشباب أن الفرصة موثوقة ومجانية.",
+               "For organizations that published with us: place the badge on your opportunity page or site footer so young people know the opportunity is vetted and free.",
+               "Pour les organisations qui ont publié chez nous : placez le badge sur la page de l'opportunité ou le pied de page de votre site.")
+        </p>
+        <div class="embed-badge-row">
+            @foreach (var b in new[] { "ar", "en", "fr" })
+            {
+                <figure class="embed-badge-fig">
+                    <img src="@site/images/badge-published-@(b).svg" width="220" height="48" alt="@(b == "en" ? "Published on Foras Khadra" : b == "fr" ? "Publié sur Foras Khadra" : "نُشر على فرص خضراء")" />
+                    <figcaption>@(b == "en" ? "English" : b == "fr" ? "Français" : "العربية")</figcaption>
+                </figure>
+            }
+        </div>
+        <label for="embBadgeCode" class="visually-hidden">@T("كود الشارة", "Badge code", "Code du badge")</label>
+        <textarea id="embBadgeCode" class="embed-code" rows="3" readonly></textarea>
+        <button type="button" class="btn btn-outline-success" id="embBadgeCopy" data-done="@T("نُسخ ✓", "Copied ✓", "Copié ✓")">@T("نسخ كود الشارة", "Copy badge code", "Copier le code du badge")</button>
+        <p class="embed-hint">
+            @T("استبدل رابط الشارة برابط فرصتك على فرص خضراء إن أردت أن تقود الشارة إليها مباشرة.",
+               "Replace the badge link with your opportunity's Foras Khadra URL if you want the badge to lead straight to it.",
+               "Remplacez le lien du badge par l'URL de votre opportunité sur Foras Khadra pour y mener directement.")
+        </p>
+    </section>
+</div>
+
+<style>
+    .embed-page { max-width: 1100px; }
+    .embed-h1 { font-size: 1.7rem; font-weight: 800; color: var(--fk-ink, #0d2910); }
+    .embed-h2 { font-size: 1.05rem; font-weight: 800; margin: 18px 0 8px; }
+    .embed-lead { color: #475569; max-width: 760px; }
+    .embed-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+    @@media (max-width: 860px) { .embed-grid { grid-template-columns: 1fr; } }
+    .embed-form label { display: block; font-weight: 700; font-size: .9rem; margin: 10px 0 4px; }
+    .embed-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .embed-code { width: 100%; font-family: Consolas, Menlo, monospace; font-size: .82rem; direction: ltr; text-align: left; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; background: #f8fafc; margin-bottom: 8px; }
+    .embed-hint { font-size: .85rem; color: #64748b; margin-top: 8px; }
+    .embed-frame-wrap { border: 1px dashed #cbd5e1; border-radius: 12px; padding: 8px; background: #fff; }
+    .embed-frame-wrap iframe { width: 100%; border: 0; min-height: 320px; display: block; }
+    .embed-badge { margin-top: 32px; padding-top: 20px; border-top: 1px solid #e2e8f0; }
+    .embed-badge-row { display: flex; gap: 18px; flex-wrap: wrap; margin: 10px 0 14px; }
+    .embed-badge-fig { margin: 0; text-align: center; font-size: .82rem; color: #64748b; }
+    .embed-badge-fig img { display: block; margin-bottom: 4px; border-radius: 12px; }
+</style>
+
+<script>
+    (function () {
+        var site = '@site';
+        var f = {
+            type: document.getElementById('embType'), country: document.getElementById('embCountry'), lang: document.getElementById('embLang'),
+            limit: document.getElementById('embLimit'), theme: document.getElementById('embTheme')
+        };
+        var code = document.getElementById('embCode'), preview = document.getElementById('embPreview');
+        function render() {
+            var attrs = ' data-lang="' + f.lang.value + '"';
+            if (f.type.value) attrs += ' data-type="' + f.type.value + '"';
+            if (f.country.value) attrs += ' data-country="' + f.country.value + '"';
+            attrs += ' data-limit="' + f.limit.value + '"';
+            if (f.theme.value === 'dark') attrs += ' data-theme="dark"';
+            code.value = '<div class="fk-embed"' + attrs + '></div>\n<script async src="' + site + '/js/embed.js"><\/script>';
+            var prefix = f.lang.value === 'ar' ? '' : '/' + f.lang.value;
+            var q = ['limit=' + f.limit.value];
+            if (f.type.value) q.push('type=' + encodeURIComponent(f.type.value));
+            if (f.country.value) q.push('country=' + encodeURIComponent(f.country.value));
+            if (f.theme.value === 'dark') q.push('theme=dark');
+            preview.src = site + prefix + '/embed/opportunities?' + q.join('&');
+        }
+        Object.keys(f).forEach(function (k) { f[k].addEventListener('change', render); });
+        window.addEventListener('message', function (e) {
+            if (e.origin !== location.origin || !e.data || typeof e.data.fkEmbedHeight !== 'number') return;
+            if (preview.contentWindow === e.source) preview.style.height = (e.data.fkEmbedHeight + 4) + 'px';
+        });
+        function copy(btn, area) {
+            btn.addEventListener('click', function () {
+                area.select();
+                var done = function () { var t = btn.textContent; btn.textContent = btn.getAttribute('data-done'); setTimeout(function () { btn.textContent = t; }, 1500); };
+                if (navigator.clipboard) navigator.clipboard.writeText(area.value).then(done, function () { document.execCommand('copy'); done(); });
+                else { document.execCommand('copy'); done(); }
+            });
+        }
+        copy(document.getElementById('embCopy'), code);
+        var badge = document.getElementById('embBadgeCode');
+        badge.value = '<a href="' + site + '/for-organizations?utm_source=badge" target="_blank" rel="noopener">\n  <img src="' + site + '/images/badge-published-' + f.lang.value + '.svg" width="220" height="48" alt="' + (f.lang.value === 'en' ? 'Published on Foras Khadra' : f.lang.value === 'fr' ? 'Publié sur Foras Khadra' : 'نُشر على فرص خضراء') + '">\n</a>';
+        f.lang.addEventListener('change', function () { badge.value = badge.value.replace(/badge-published-(ar|en|fr)\.svg/, 'badge-published-' + f.lang.value + '.svg'); });
+        copy(document.getElementById('embBadgeCopy'), badge);
+        render();
+    })();
+</script>

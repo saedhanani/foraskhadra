@@ -1,0 +1,87 @@
+@* شريط الثقة (المرحلة 3.1): تاريخ التحقق، المصدر الرسمي، شارة المنظمة، «التقديم مجاني»، تحذير الرسوم، «أبلغ عن مشكلة».
+   يقرأ ViewBag.CreatorOrg وViewBag.ApplyHidden وViewBag.Reported من OpportunityController.Details *@
+@model Foras_Khadra.Models.Opportunity
+@using Foras_Khadra.Helpers
+@using Foras_Khadra.Models
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+
+    var checkedAt = Model.LastCheckedAt ?? Model.ReviewedAt ?? Model.UpdatedAt ?? Model.PublishDate;
+    var checkedText = checkedAt.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+    var source = HttpUrl.Normalize(Model.SourceUrl) ?? HttpUrl.Normalize(Model.ApplyLink);
+    string? sourceHost = null;
+    if (source != null && Uri.TryCreate(source, UriKind.Absolute, out var sourceUri))
+        sourceHost = sourceUri.Host.StartsWith("www.", StringComparison.OrdinalIgnoreCase) ? sourceUri.Host[4..] : sourceUri.Host;
+    var org = ViewBag.CreatorOrg as Organization;
+    var applyHidden = (ViewBag.ApplyHidden as bool?) == true;
+    var reported = ViewBag.Reported as string;
+}
+
+<div class="trust-strip" role="list" aria-label="@T("مؤشرات الثقة", "Trust signals", "Signaux de confiance")">
+    <span class="trust-item trust-ok" role="listitem"
+          title="@T("آخر مراجعة لبيانات الفرصة ورابطها", "Last check of this opportunity's details and link", "Dernière vérification des informations et du lien")">
+        <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+        @T("تم التحقق بتاريخ", "Verified on", "Vérifié le") <time datetime="@checkedText">@checkedText</time>
+    </span>
+
+    @if (source != null)
+    {
+        <a class="trust-item" role="listitem" href="@source" target="_blank" rel="noopener nofollow">
+            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+            @T("المصدر الرسمي", "Official source", "Source officielle")@(sourceHost != null ? ": " + sourceHost : "")
+        </a>
+    }
+
+    @if (org != null && org.ShowsVerifiedBadge)
+    {
+        <a class="trust-item trust-ok" role="listitem" href="@Url.Action("DetailsOrganization", "Home", new { id = org.Id })"
+           title="@T("منظمة تحقق منها فريق فرص خضراء", "An organization checked by the Foras Khadra team", "Organisation vérifiée par l'équipe Foras Khadra")">
+            <i class="bi bi-shield-check" aria-hidden="true"></i>
+            @(org.VerificationTier == OrganizationTier.Partner
+                ? T("منظمة شريكة", "Partner organization", "Organisation partenaire")
+                : T("منظمة موثَّقة", "Verified organization", "Organisation vérifiée"))
+        </a>
+    }
+
+    @if (Model.HasApplicationFee)
+    {
+        <span class="trust-item trust-warn" role="listitem">
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+            @T("فيها رسوم تقديم تُدفع للجهة المنظمة فقط — لا تدفع لأي وسيط",
+               "Has an application fee payable to the organizer only — never pay an intermediary",
+               "Frais de candidature payables uniquement à l'organisateur — ne payez jamais un intermédiaire")
+        </span>
+    }
+    else
+    {
+        <span class="trust-item" role="listitem">
+            <i class="bi bi-cash-coin" aria-hidden="true"></i>
+            @T("التقديم مجاني — لا تدفع لأي وسيط", "Applying is free — never pay an intermediary", "Candidature gratuite — ne payez jamais un intermédiaire")
+        </span>
+    }
+
+    <button type="button" class="trust-item trust-report" role="listitem" data-open-dialog="reportDialog" aria-haspopup="dialog" aria-controls="reportDialog">
+        <i class="bi bi-flag" aria-hidden="true"></i>
+        @T("أبلغ عن مشكلة", "Report a problem", "Signaler un problème")
+    </button>
+</div>
+
+@if (applyHidden)
+{
+    <div class="trust-paused" role="status">
+        <i class="bi bi-pause-circle-fill" aria-hidden="true"></i>
+        @T("التقديم موقوف مؤقتًا: وصلتنا بلاغات من الزوار ونراجع هذه الفرصة. إن كنت تعرف الرابط الصحيح فأبلغنا من «أبلغ عن مشكلة».",
+           "Applying is paused: we received visitor reports and are reviewing this opportunity. If you know the correct link, tell us via “Report a problem”.",
+           "Candidature suspendue : nous avons reçu des signalements et vérifions cette opportunité. Si vous connaissez le bon lien, dites-le-nous via « Signaler un problème ».")
+    </div>
+}
+@if (reported != null)
+{
+    <div class="trust-thanks" role="status">
+        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+        @(reported == "duplicate"
+            ? T("بلاغك مسجَّل مسبقًا — شكرًا.", "Your report is already on file — thank you.", "Votre signalement est déjà enregistré — merci.")
+            : T("شكرًا، وصل بلاغك وسيراجعه الفريق.", "Thank you, your report was received and the team will review it.", "Merci, votre signalement a été reçu et sera examiné."))
+    </div>
+}

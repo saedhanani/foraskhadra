@@ -1138,3 +1138,24 @@ html[dir="ltr"] .back-arrow{ transform: rotate(180deg); }
 }
 .opp-actions .save-btn:hover { border-color: #9ccca4; color: #2e7d32; background: #f1f8f2; }
 .opp-actions .save-btn.is-saved { border-color: #2e7d32; color: #fff; background: #2e7d32; }
+
+/* ===== شريط الثقة (المرحلة 3.1) ===== */
+.trust-strip { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; padding: 0; }
+.trust-item {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 999px; font-size: .86rem; font-weight: 600;
+  background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; text-decoration: none; line-height: 1.3;
+}
+a.trust-item:hover, button.trust-item:hover { border-color: #9ccca4; background: #f1f8f2; color: #1B6B23; }
+.trust-item.trust-ok { background: #dff3e3; color: #1B6B23; border-color: #c6e8cd; }
+.trust-item.trust-warn { background: #fdecec; color: #b42318; border-color: #f5c2c0; }
+button.trust-item.trust-report { cursor: pointer; font-family: inherit; }
+.trust-item:focus-visible { outline: 3px solid #42BFDD; outline-offset: 2px; }
+.trust-paused, .trust-thanks {
+  display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 0; padding: 10px 14px; border-radius: 12px; font-size: .92rem;
+}
+.trust-paused { background: #fff4e5; color: #8a4b00; border: 1px solid #ffd9a8; }
+.trust-thanks { background: #dff3e3; color: #1B6B23; border: 1px solid #c6e8cd; }
+.apply-button[aria-disabled="true"] { cursor: not-allowed; }
+.org-inline-link { margin-inline-start: 8px; font-size: .9rem; color: #1B6B23; text-decoration: underline; }
+.info-value .follow-form { display: inline-block; margin-inline-start: 8px; vertical-align: middle; }

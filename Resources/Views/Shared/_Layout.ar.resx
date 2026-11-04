@@ -180,8 +180,8 @@
   <data name="AllOpportunities" xml:space="preserve">
     <value>كل الفرص</value>
   </data>
-  <data name="All rights reserved © 2025" xml:space="preserve">
-    <value>جميع الحقوق محفوظة © 2025</value>
+  <data name="AllRightsReserved" xml:space="preserve">
+    <value>جميع الحقوق محفوظة © {0}</value>
   </data>
   <data name="AboutUs" xml:space="preserve">
     <value>من نحن</value>

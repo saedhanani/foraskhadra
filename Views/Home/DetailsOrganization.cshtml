@@ -35,6 +35,9 @@
 
     var countryCode = Model.Country?.Trim() ?? "";
     var countryDisplay = GetCountryName(countryCode);
+    string T(string ar, string en, string fr) => culture == "en" ? en : culture == "fr" ? fr : ar;
+    var orgOpps = ViewBag.OrgOpportunities as List<Foras_Khadra.Models.Opportunity> ?? new List<Foras_Khadra.Models.Opportunity>();
+    var savedIds = ViewBag.SavedIds as HashSet<int> ?? new HashSet<int>();
 
     // q=placeName triggers Google's place card in embed; ll=lat,lng centers without that popup.
     string mapSrc;
@@ -132,12 +135,20 @@
                             <div class="org-details-title-row">
                                 <h1 class="org-details-title">
                                     @Model.Name
-                                    <span class="org-details-verified" title="@Localizer["Verified"]">
-                                        <iconify-icon icon="mdi:check-decagram" aria-hidden="true"></iconify-icon>
-                                    </span>
+                                    @if (Model.ShowsVerifiedBadge)
+                                    {
+                                        @* شارة التوثيق تظهر للموثَّقة والشريكة فقط (3.1) *@
+                                        <span class="org-details-verified" title="@(Model.VerificationTier == Foras_Khadra.Models.OrganizationTier.Partner ? T("منظمة شريكة", "Partner organization", "Organisation partenaire") : T("منظمة موثَّقة", "Verified organization", "Organisation vérifiée"))">
+                                            <iconify-icon icon="mdi:check-decagram" aria-hidden="true"></iconify-icon>
+                                        </span>
+                                    }
                                 </h1>
                             </div>
                             <p class="org-details-subtitle">@Localizer["Subtitle"]</p>
+                            <div class="org-follow-row">
+                                @await Html.PartialAsync("_FollowOrgButton", (Model.Id, (ViewBag.IsFollowing as bool?) == true))
+                                <span class="org-follow-count"><b data-follower-count>@((ViewBag.FollowerCount as int?) ?? 0)</b> @T("متابع", "followers", "abonnés")</span>
+                            </div>
                         </div>
 
                         <div class="org-details-rows">
@@ -197,4 +208,34 @@
             </div>
         </div>
     </div>
+
+    @* فرص المنظمة المنشورة (3.2): المفتوحة أولًا، حتى 12 *@
+    <section class="org-opps" aria-labelledby="orgOppsTitle">
+        <h2 id="orgOppsTitle" class="org-opps-title">@T("فرص هذه المنظمة", "Opportunities from this organization", "Opportunités de cette organisation")</h2>
+        @if (orgOpps.Count == 0)
+        {
+            <div class="org-opps-empty">
+                <i class="bi bi-inbox" aria-hidden="true"></i>
+                <p>@T("لا فرص منشورة حاليًا — تابع المنظمة لتصلك أول فرصة تنشرها.", "No published opportunities right now — follow the organization to get its first one.", "Aucune opportunité publiée pour l'instant — suivez l'organisation pour recevoir la première.")</p>
+            </div>
+        }
+        else
+        {
+            <div class="org-opps-grid">
+                @foreach (var o in orgOpps)
+                {
+                    var oTitle = culture == "en" ? o.TitleEn : culture == "fr" ? o.TitleFr : o.TitleAr;
+                    var deadline = Foras_Khadra.Helpers.DeadlineInfo.For(o, culture);
+                    <a class="org-opp" href="@Url.Action("Details", "Opportunity", new { id = o.Id, slug = Foras_Khadra.Helpers.SlugHelper.Make(oTitle) })">
+                        <img class="org-opp-img" src="@(string.IsNullOrEmpty(o.ImagePath) ? "/images/default.jpg" : o.ImagePath)" alt="" loading="lazy" />
+                        <span class="org-opp-body">
+                            <span class="org-opp-type">@Foras_Khadra.Helpers.OpportunityTypeExtensions.GetDisplayName(o.Type, culture)</span>
+                            <span class="org-opp-title">@oTitle</span>
+                            <span class="org-opp-deadline @(deadline.IsExpired ? "is-expired" : "")">@deadline.Label</span>
+                        </span>
+                    </a>
+                }
+            </div>
+        }
+    </section>
 </div>

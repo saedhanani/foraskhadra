@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.IO;
@@ -103,7 +104,7 @@ public async Task<IActionResult> Create()
 
         [HttpPost]
         [Authorize(Roles = "Admin,Organization")]
-        public async Task<IActionResult> Create(OpportunityCreateVM model, [FromServices] IOpportunityReviewService review)
+        public async Task<IActionResult> Create(OpportunityCreateVM model, [FromServices] IOpportunityReviewService review, [FromServices] IOrganizationFollowService follows)
         {
            
             if (model.DeadlineType == DeadlineType.SpecificDate && model.EndDate == null)
@@ -199,6 +200,8 @@ public async Task<IActionResult> Create()
 
             _context.Opportunities.Add(opportunity);
             await _context.SaveChangesAsync();
+            // المنظمة الموثَّقة تنشر مباشرة: متابعوها يُشعَرون الآن (3.2)
+            if (opportunity.Status == OpportunityStatus.Published && org != null) await follows.NotifyFollowersAsync(opportunity.Id);
             if (opportunity.Status == OpportunityStatus.PendingReview)
             {
                 await review.NotifyAdminsAsync(opportunity.Id);
@@ -209,7 +212,7 @@ public async Task<IActionResult> Create()
         }
         [HttpPost]
         [Authorize(Roles = "Admin,Organization")]
-        public async Task<IActionResult> Edit(OpportunityEditVM model, [FromServices] IOpportunityReviewService review, [FromServices] IPublishRequestService requests)
+        public async Task<IActionResult> Edit(OpportunityEditVM model, [FromServices] IOpportunityReviewService review, [FromServices] IPublishRequestService requests, [FromServices] IOrganizationFollowService follows)
         {
             if (model.Facets.Validate() is string facetError) ModelState.AddModelError("Facets", facetError);
             if (model.Image != null && _images.Validate(model.Image) is string imageError)
@@ -360,6 +363,8 @@ public async Task<IActionResult> Create()
             await _context.SaveChangesAsync();
             // طلب نشر من بوابة المنظمات مرتبط بهذه الفرصة؟ يُغلق وتُراسَل المنظمة بالرابط
             if (opportunity.Status == OpportunityStatus.Published) await requests.MarkPublishedAsync(opportunity.Id);
+            // متابعو المنظمة يُشعَرون مرة واحدة لكل فرصة منشورة (الخدمة تتجاهل فرص الإدارة والمكرَّر) — 3.2
+            if (opportunity.Status == OpportunityStatus.Published) await follows.NotifyFollowersAsync(opportunity.Id);
             if (opportunity.Status == OpportunityStatus.PendingReview)
             {
                 await review.NotifyAdminsAsync(opportunity.Id);
@@ -469,13 +474,20 @@ public async Task<IActionResult> Create()
         /// </summary>
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> Go(int id, [FromServices] IApplyClickCounter clicks, [FromServices] IAnalytics analytics)
+        public async Task<IActionResult> Go(int id, [FromServices] IApplyClickCounter clicks, [FromServices] IAnalytics analytics, [FromServices] IOpportunityReportService reports)
         {
             var opp = await _context.Opportunities.AsNoTracking()
                 .Where(o => o.Id == id)
                 .Select(o => new { o.Status, o.ApplyLink, o.Type })
                 .FirstOrDefaultAsync();
             if (opp == null || opp.Status != OpportunityStatus.Published) return NotFound();
+
+            // بلاغات الزوار أوقفت التقديم مؤقتًا (3.1): لا تحويل حتى يراجع المدير البلاغات
+            if (await reports.IsApplyHiddenAsync(id))
+            {
+                analytics.Event("go.hidden");
+                return RedirectToAction("Details", "Opportunity", new { id });
+            }
 
             // الوظائف والتدريب والتطوع مفتوحة للزائر وبلا تأكيد بريد (Google for Jobs يرفض جدار الدخول — المرحلة 2.4)؛
             // بقية الأنواع تطلب الدخول ثم تأكيد البريد عند «قدّم الآن» فقط (التصفح والحفظ بلا تأكيد)
@@ -507,10 +519,33 @@ public async Task<IActionResult> Create()
             return Redirect(target);
         }
 
+        /// <summary>
+        /// «أبلغ عن مشكلة» (3.1): للزائر والعضو. الخدمة تمنع التكرار من المُبلِّغ نفسه، وبلاغان من مُبلِّغَين مختلفَين
+        /// يوقفان زر التقديم ويُشعران المدير. يرد JSON لطلبات fetch وإلا يعود إلى صفحة الفرصة برسالة.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost]
+        [EnableRateLimiting("contact")]
+        public async Task<IActionResult> Report(int id, OpportunityReportReason reason, string? details, string? email,
+            [FromServices] IOpportunityReportService reports, [FromServices] IAnalytics analytics)
+        {
+            var userId = _userManager.GetUserId(User);
+            var key = OpportunityReportService.ReporterKeyFor(userId, HttpContext.Connection.RemoteIpAddress?.ToString(), Request.Headers.UserAgent.ToString());
+            var result = await reports.SubmitAsync(id, reason, details, key, userId, email);
+            if (result == null) return NotFound();
+            analytics.Event("report.sent", reason.ToString());
+
+            var wantsJson = Request.Headers.XRequestedWith == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json");
+            if (wantsJson) return Json(new { ok = true, added = result.Added, hidden = result.ApplyHidden });
+
+            TempData["Reported"] = result.Added ? "sent" : "duplicate";
+            return RedirectToAction("Details", "Opportunity", new { id });
+        }
+
         // ================= DETAILS =================
         [AllowAnonymous]
         [HttpGet]
-        public async Task<IActionResult> Details(int id)
+        public async Task<IActionResult> Details(int id, [FromServices] IOpportunityReportService reports, [FromServices] IOrganizationFollowService follows)
         {
             var opp = await _context.Opportunities
                 .Include(o => o.AvailableCountries)
@@ -535,6 +570,17 @@ public async Task<IActionResult> Create()
             ViewBag.EmailUnconfirmed = userId != null && !User.IsInRole("Admin") && (await _userManager.FindByIdAsync(userId))?.EmailConfirmed == false;
             ViewBag.IsWatching = userId != null && await _tracker.IsWatchingAsync(userId, opp.Id);
             ViewBag.SaveCount = (await _saved.SaveCountsAsync(new[] { opp.Id })).GetValueOrDefault(opp.Id);
+
+            // الثقة (3.1): بلاغان مفتوحان من مُبلِّغَين مختلفَين يوقفان زر التقديم؛ ومنظمة الناشر لشارة التوثيق وزر المتابعة (3.2)
+            var openReporters = await reports.OpenReportersAsync(opp.Id);
+            ViewBag.OpenReporters = openReporters;
+            ViewBag.ApplyHidden = OpportunityReportService.IsApplyHidden(openReporters);
+            ViewBag.Reported = TempData["Reported"] as string;
+            Organization? creatorOrg = null;
+            if (creator != null && !opp.IsPublishedByAdmin)
+                creatorOrg = await _context.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.UserId == creator.Id);
+            ViewBag.CreatorOrg = creatorOrg;
+            ViewBag.IsFollowing = creatorOrg != null && userId != null && User.IsInRole("User") && await follows.IsFollowingAsync(userId, creatorOrg.Id);
 
             // "تابعت مؤخرًا" للمسجّلين (المنظمات والإدارة تتصفح لأغراض أخرى)
             if (userId != null && opp.Status == OpportunityStatus.Published && !User.IsInRole("Organization") && !User.IsInRole("Admin"))

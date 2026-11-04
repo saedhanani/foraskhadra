@@ -147,4 +147,16 @@
   <data name="SiteName" xml:space="preserve">
     <value>Foras Khadra</value>
   </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>E-mail ou mot de passe incorrect</value>
+  </data>
+  <data name="AccountLockedOut" xml:space="preserve">
+    <value>Compte temporairement verrouillé après plusieurs tentatives échouées. Réessayez dans 15 minutes.</value>
+  </data>
+  <data name="PasswordRules" xml:space="preserve">
+    <value>Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule, un chiffre et un symbole</value>
+  </data>
+  <data name="PasswordMismatch" xml:space="preserve">
+    <value>Le mot de passe et sa confirmation ne correspondent pas</value>
+  </data>
 </root>

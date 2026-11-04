@@ -78,7 +78,7 @@ namespace Foras_Khadra.Controllers
 
             if (model.Interests == null || !model.Interests.Any())
             {
-                ModelState.AddModelError("Interests", "اختر اهتمام واحد على الأقل");
+                ModelState.AddModelError("Interests", _localizer["ChooseOneInterest"].Value);
                 return View(model);
             }
 
@@ -260,7 +260,7 @@ namespace Foras_Khadra.Controllers
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                ModelState.AddModelError("", "البريد الإلكتروني أو كلمة المرور غير صحيحة");
+                ModelState.AddModelError("", _localizer["InvalidCredentials"].Value);
                 return View(model);
             }
 
@@ -270,13 +270,13 @@ namespace Foras_Khadra.Controllers
 
             if (result.IsLockedOut)
             {
-                ModelState.AddModelError("", "تم قفل الحساب مؤقتًا بسبب محاولات دخول فاشلة متكررة، حاول مجددًا بعد 15 دقيقة");
+                ModelState.AddModelError("", _localizer["AccountLockedOut"].Value);
                 return View(model);
             }
 
             if (!result.Succeeded)
             {
-                ModelState.AddModelError("", "البريد الإلكتروني أو كلمة المرور غير صحيحة");
+                ModelState.AddModelError("", _localizer["InvalidCredentials"].Value);
                 return View(model);
             }
 

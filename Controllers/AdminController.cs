@@ -20,13 +20,15 @@ namespace Foras_Khadra.Controllers
         private readonly IImageUploadService _images;
         private readonly IOpportunityReviewService _review;
         private readonly IPublishRequestService _requests;
+        private readonly IOpportunityReportService _reports;
 
-        public AdminController(ApplicationDbContext context, IImageUploadService images, IOpportunityReviewService review, IPublishRequestService requests)
+        public AdminController(ApplicationDbContext context, IImageUploadService images, IOpportunityReviewService review, IPublishRequestService requests, IOpportunityReportService reports)
         {
             _context = context;
             _images = images;
             _review = review;
             _requests = requests;
+            _reports = reports;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -49,7 +51,8 @@ namespace Foras_Khadra.Controllers
                 RejectReelsRequests = rejectedReelsRequests,
                 TotalManualOrganizations = await _context.ManualOrganizations.CountAsync(),
                 PendingReviewCount = await _review.PendingCountAsync(),
-                OpenPublishRequests = await _requests.OpenCountAsync()
+                OpenPublishRequests = await _requests.OpenCountAsync(),
+                OpenReports = await _reports.OpenCountAsync()
             };
 
             return View(model);
@@ -267,6 +270,44 @@ namespace Foras_Khadra.Controllers
         {
             await _review.SetOrganizationSuspendedAsync(id, suspended);
             return RedirectToAction(nameof(OrganizationDetails), new { id });
+        }
+
+        /// <summary>درجة التوثيق المعروضة للزوار (3.1): None / Registered / Verified / Partner — Verified فأعلى تنشر بلا مراجعة.</summary>
+        [HttpPost]
+        public async Task<IActionResult> SetOrganizationTier(int id, OrganizationTier tier)
+        {
+            await _review.SetOrganizationTierAsync(id, tier);
+            return RedirectToAction(nameof(OrganizationDetails), new { id });
+        }
+
+        // ===== بلاغات الزوار على الفرص (Services/OpportunityReportService) — المرحلة 3.1 =====
+        [HttpGet]
+        public async Task<IActionResult> Reports(string? status = null)
+        {
+            var all = status == "all";
+            ViewBag.ShowingAll = all;
+            return View(await _reports.ListAsync(openOnly: !all));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResolveReport(int id, string? status)
+        {
+            var target = status == "dismissed" ? OpportunityReportStatus.Dismissed : OpportunityReportStatus.Resolved;
+            var adminId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+            TempData["ReportMessage"] = await _reports.ResolveAsync(id, target, adminId)
+                ? (target == OpportunityReportStatus.Dismissed ? "رُفض البلاغ." : "عُلِّم البلاغ معالَجًا.")
+                : "تعذّر تحديث هذا البلاغ.";
+            return RedirectToAction(nameof(Reports));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResolveOpportunityReports(int opportunityId, string? status)
+        {
+            var target = status == "dismissed" ? OpportunityReportStatus.Dismissed : OpportunityReportStatus.Resolved;
+            var adminId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+            var n = await _reports.ResolveAllAsync(opportunityId, target, adminId);
+            TempData["ReportMessage"] = n == 0 ? "لا بلاغات مفتوحة على هذه الفرصة." : $"أُغلقت {n} بلاغات وعاد زر التقديم للعمل.";
+            return RedirectToAction(nameof(Reports));
         }
 
         // ===== تعبئة بيانات الأهلية للفرص القديمة (Helpers/FacetGuesser يقترح، المدير يؤكد) =====

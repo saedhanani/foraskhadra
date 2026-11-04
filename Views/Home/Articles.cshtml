@@ -80,7 +80,7 @@
                     <span class="latest-overlay"></span>
 
                     <span class="latest-arrow" aria-hidden="true">
-                        <i class="fa-solid fa-arrow-left"></i>
+                        <i class="fa-solid fa-arrow-left dir-flip"></i>
                     </span>
 
                     <div class="latest-info">
@@ -109,7 +109,7 @@
     <span class="latest-overlay"></span>
 
     <span class="latest-arrow">
-        <i class="fa-solid fa-arrow-left"></i>
+        <i class="fa-solid fa-arrow-left dir-flip"></i>
     </span>
 
     <div class="latest-info">
@@ -141,6 +141,11 @@
 </div>
 
 
+    @if (!Model.OtherArticles.Any())
+    {
+        var emptyLang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+        <div class="fk-empty-state"><i class="bi bi-journal-text"></i><p>@(emptyLang == "en" ? "No more articles yet — new ones are published every week." : emptyLang == "fr" ? "Pas d'autres articles pour l'instant — de nouveaux paraissent chaque semaine." : "لا مقالات أخرى بعد — ننشر الجديد كل أسبوع.")</p></div>
+    }
     <div class="readalso-list">
         @foreach (var article in Model.OtherArticles)
         {
@@ -155,9 +160,9 @@
             article.ContentFr;
 
             plain ??= "";
-            plain = System.Text.RegularExpressions.Regex.Replace(plain, "<.*?>", string.Empty);
-            if (plain.Length > 220) plain = plain.Substring(0, 220) + "...";
-            plain = System.Text.RegularExpressions.Regex.Replace(plain, "<.*?>", string.Empty);
+            // إزالة الوسوم ثم فك ترميز الكيانات (&amp; و&nbsp;…) حتى لا تظهر نصًا (3.4)
+            plain = System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(plain, "<.*?>", " "));
+            plain = System.Text.RegularExpressions.Regex.Replace(plain, @"\s+", " ").Trim();
             if (plain.Length > 220) plain = plain.Substring(0, 220) + "...";
 
             var href = Url.Action("Details", "Articles", new { id = article.Id, slug = SlugHelper.Make(article.TitleAr) });

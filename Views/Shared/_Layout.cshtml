@@ -118,6 +118,7 @@
 </head>
 
 <body>
+<a class="skip-link" href="#main">@(culture == "en" ? "Skip to content" : culture == "fr" ? "Aller au contenu" : "تخطَّ إلى المحتوى")</a>
 
 @using Microsoft.AspNetCore.Mvc.Localization
 @inject IViewLocalizer Localizer
@@ -662,7 +663,7 @@
     <header class="navbar-header">
         <div class="top-banner">
 
-            <button class="mobile-menu-btn" type="button" onclick="toggleMobileMenu(event)" aria-label="menu">
+            <button class="mobile-menu-btn" type="button" onclick="toggleMobileMenu(event)" aria-label="@(culture == "en" ? "Menu" : culture == "fr" ? "Menu" : "القائمة")" aria-expanded="false" aria-controls="navContent">
                 <i class="fa-solid fa-bars"></i>
             </button>
 
@@ -716,7 +717,7 @@
                                     }
                                 </button>
                                 <div class="dropdown-list notif-list" id="notifMenu">
-                                    <div class="notif-empty"><i class="bi bi-hourglass-split"></i></div>
+                                    <div class="fk-loading" role="status" aria-busy="true">@(culture == "en" ? "Loading…" : culture == "fr" ? "Chargement…" : "جارٍ التحميل…")</div>
                                 </div>
                             </div>
                         }
@@ -736,6 +737,7 @@
                                 @if (isOrganization)
                                 {
                                     <a asp-controller="Opportunity" asp-action="OrgOpportunities" data-close-menu>@Localizer["AddOpportunity"]</a>
+                                    <a asp-controller="Organization" asp-action="Report" data-close-menu>@(culture == "en" ? "Reach report" : culture == "fr" ? "Rapport de portée" : "تقرير الوصول")</a>
                                     <a asp-controller="Organization" asp-action="ProfileSetting" data-close-menu>@Localizer["AccountSettings"]</a>
                                     <form asp-controller="Organization" asp-action="Logout" method="post">
                                         @Html.AntiForgeryToken()
@@ -857,7 +859,7 @@ else
 }
 
 <div class="container" style="flex:1 0 auto;">
-    <main role="main">
+    <main role="main" id="main">
         @RenderBody()
     </main>
 </div>
@@ -942,7 +944,7 @@ else
         </div>
 
         <div class="footer-bottom pt-3" style="text-align:center;  border-top:1px solid #e6ece8; ">
-            <p>@Localizer["All rights reserved © 2026"]</p>
+            <p>@Localizer["AllRightsReserved", DateTime.Now.Year]</p>
         </div>
     </footer>
 }

@@ -1,0 +1,30 @@
+@* زر «تابع هذه المنظمة» (3.2). Model: (رقم المنظمة، هل يتابعها العضو؟). العضو: نموذج POST يُرسل بـfetch؛ الزائر: رابط الدخول؛ المدير/المنظمة: لا شيء *@
+@model (int OrgId, bool Following)
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var here = Context.Request.Path + Context.Request.QueryString;
+    var followText = T("تابع المنظمة", "Follow", "Suivre");
+    var followingText = T("تتابعها ✓", "Following ✓", "Suivi ✓");
+}
+
+@if (User.IsInRole("User"))
+{
+    <form method="post" action="@Url.Action("ToggleFollow", "Organization", new { id = Model.OrgId })" class="follow-form" data-follow-form>
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnUrl" value="@here" />
+        <button type="submit" class="follow-btn @(Model.Following ? "is-following" : "")" aria-pressed="@(Model.Following ? "true" : "false")"
+                data-text-follow="@followText" data-text-following="@followingText"
+                title="@T("ستصلك فرص هذه المنظمة الجديدة في إشعاراتك", "You'll get this organization's new opportunities in your notifications", "Vous recevrez les nouvelles opportunités de cette organisation dans vos notifications")">
+            <i class="bi @(Model.Following ? "bi-bell-fill" : "bi-bell") " aria-hidden="true"></i>
+            <span>@(Model.Following ? followingText : followText)</span>
+        </button>
+    </form>
+}
+else if (User.Identity?.IsAuthenticated != true)
+{
+    <a class="follow-btn" href="@Url.Action("Login", "Account", new { returnUrl = here })"
+       title="@T("سجّل الدخول لتتابع المنظمة وتصلك فرصها الجديدة", "Sign in to follow this organization and get its new opportunities", "Connectez-vous pour suivre cette organisation")">
+        <i class="bi bi-bell" aria-hidden="true"></i> <span>@followText</span>
+    </a>
+}

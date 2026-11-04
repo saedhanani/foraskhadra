@@ -5,6 +5,18 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Foras_Khadra.Models
 {
+    /// <summary>
+    /// درجة توثيق المنظمة المعروضة للزوار (المرحلة 3.1): None = غير موثَّقة، Registered = حساب مؤكد،
+    /// Verified = وثّقها المدير (تنشر بلا مراجعة)، Partner = شريك. IsVerified يتبع الدرجة (≥ Verified).
+    /// </summary>
+    public enum OrganizationTier
+    {
+        None = 0,
+        Registered = 1,
+        Verified = 2,
+        Partner = 3
+    }
+
     public class Organization
     {
         public int Id { get; set; }
@@ -55,5 +67,11 @@ namespace Foras_Khadra.Models
         public bool IsVerified { get; set; }
         /// <summary>موقوفة: كل فرصها المنشورة تُخفى (Suspended) حتى يُرفع الإيقاف.</summary>
         public bool IsSuspended { get; set; }
+
+        /// <summary>درجة التوثيق المعروضة (شارة «منظمة موثَّقة» / «شريك») — يضبطها المدير؛ تُرفع تلقائيًا مع «اعتماد وتوثيق».</summary>
+        public OrganizationTier VerificationTier { get; set; }
+
+        [NotMapped]
+        public bool ShowsVerifiedBadge => VerificationTier >= OrganizationTier.Verified && !IsSuspended;
     }
 }

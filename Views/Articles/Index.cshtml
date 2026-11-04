@@ -51,6 +51,10 @@
     <!-- جدول المقالات -->
     <div class="table-container">
         <div class="table-responsive" style="overflow-x: visible;">
+            @if (!Model.Any())
+            {
+                <div class="fk-empty-state"><i class="bi bi-journal-text"></i><p>لا مقالات بعد — أضف أول مقال من زر الإضافة.</p></div>
+            }
             <table class="table articles-table" id="articlesTable">
                 <thead>
                     <tr class="text-muted">
@@ -120,7 +124,7 @@
                        asp-route-page="@(page - 1)"
                        asp-route-search="@search"
                        aria-label="Prev">
-                        <i class="fa-solid fa-chevron-right"></i>
+                        <i class="fa-solid fa-chevron-right dir-flip"></i>
                     </a>
                 </li>
 
@@ -148,7 +152,7 @@
                        asp-route-page="@(page + 1)"
                        asp-route-search="@search"
                        aria-label="Next">
-                        <i class="fa-solid fa-chevron-left"></i>
+                        <i class="fa-solid fa-chevron-left dir-flip"></i>
                     </a>
                 </li>
 

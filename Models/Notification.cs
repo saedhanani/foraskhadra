@@ -22,7 +22,11 @@ namespace Foras_Khadra.Models
         /// <summary>للمدير: فرصة من منظمة بانتظار المراجعة (OpportunityId = الفرصة).</summary>
         ReviewPending = 8,
         /// <summary>للمدير: طلب نشر جديد من بوابة المنظمات (LinkParams = رقم الطلب، Label = اسم الجهة).</summary>
-        PublishRequestNew = 9
+        PublishRequestNew = 9,
+        /// <summary>للمدير: بلاغات زوار أوقفت زر التقديم على فرصة (OpportunityId = الفرصة، Count = عدد المُبلِّغين).</summary>
+        OpportunityReported = 10,
+        /// <summary>للعضو: منظمة يتابعها نشرت فرصة جديدة (OpportunityId = الفرصة، Label = اسم المنظمة، LinkParams = رقمها).</summary>
+        OrganizationPublished = 11
     }
 
     /// <summary>إشعار داخل الموقع — يولّده NotificationSweeper ويظهر في جرس الهيدر.</summary>

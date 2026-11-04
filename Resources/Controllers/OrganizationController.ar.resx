@@ -147,4 +147,16 @@
   <data name="SiteName" xml:space="preserve">
     <value>فرص خضراء</value>
   </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>البريد الإلكتروني أو كلمة المرور غير صحيحة</value>
+  </data>
+  <data name="AccountLockedOut" xml:space="preserve">
+    <value>تم قفل الحساب مؤقتًا بسبب محاولات دخول فاشلة متكررة، حاول مجددًا بعد 15 دقيقة</value>
+  </data>
+  <data name="PasswordRules" xml:space="preserve">
+    <value>كلمة المرور يجب أن تحتوي على 8 أحرف على الأقل، حرف كبير، حرف صغير، رقم ورمز خاص</value>
+  </data>
+  <data name="PasswordMismatch" xml:space="preserve">
+    <value>كلمة المرور وتأكيدها غير متطابقين</value>
+  </data>
 </root>

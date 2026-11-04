@@ -174,4 +174,13 @@
   <data name="ProfileUpdatedSuccess" xml:space="preserve">
     <value>تم تحديث بياناتك بنجاح</value>
   </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>البريد الإلكتروني أو كلمة المرور غير صحيحة</value>
+  </data>
+  <data name="AccountLockedOut" xml:space="preserve">
+    <value>تم قفل الحساب مؤقتًا بسبب محاولات دخول فاشلة متكررة، حاول مجددًا بعد 15 دقيقة</value>
+  </data>
+  <data name="ChooseOneInterest" xml:space="preserve">
+    <value>اختر اهتمامًا واحدًا على الأقل</value>
+  </data>
 </root>

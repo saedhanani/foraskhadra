@@ -174,4 +174,13 @@
   <data name="ProfileUpdatedSuccess" xml:space="preserve">
     <value>Your profile has been updated successfully</value>
   </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>Incorrect email or password</value>
+  </data>
+  <data name="AccountLockedOut" xml:space="preserve">
+    <value>The account is temporarily locked after repeated failed sign-in attempts. Try again in 15 minutes.</value>
+  </data>
+  <data name="ChooseOneInterest" xml:space="preserve">
+    <value>Choose at least one interest</value>
+  </data>
 </root>

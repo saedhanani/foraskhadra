@@ -174,4 +174,13 @@
   <data name="ProfileUpdatedSuccess" xml:space="preserve">
     <value>Votre profil a été mis à jour avec succès</value>
   </data>
+  <data name="InvalidCredentials" xml:space="preserve">
+    <value>E-mail ou mot de passe incorrect</value>
+  </data>
+  <data name="AccountLockedOut" xml:space="preserve">
+    <value>Compte temporairement verrouillé après plusieurs tentatives échouées. Réessayez dans 15 minutes.</value>
+  </data>
+  <data name="ChooseOneInterest" xml:space="preserve">
+    <value>Choisissez au moins un centre d'intérêt</value>
+  </data>
 </root>

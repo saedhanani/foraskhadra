@@ -24,6 +24,15 @@
     var applyButtonClass = "apply-button " + (isExpired ? "expired-button" : "active-button");
     // الوظائف والتدريب والتطوع: Google for Jobs يرفض جدار الدخول، فرابط التقديم ظاهر للزائر (المرحلة 2.4)
     var isJobLike = Model.Type is OpportunityType.Jobs or OpportunityType.Internships or OpportunityType.Volunteering;
+    // الثقة (3.1): بلاغات الزوار توقف زر التقديم حتى مراجعة المدير (OpportunityController.Details يضبطها)
+    var applyHidden = (ViewBag.ApplyHidden as bool?) == true;
+    string TT(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    void PausedApply()
+    {
+        <span id="applyBtn" class="apply-button expired-button" aria-disabled="true" role="status">
+            <i class="bi bi-pause-circle" aria-hidden="true"></i> @TT("التقديم موقوف مؤقتًا للمراجعة", "Applying paused for review", "Candidature suspendue pour vérification")
+        </span>
+    }
 
     var isRtl = lang == "ar";
     var dir = isRtl ? "rtl" : "ltr";
@@ -146,6 +155,12 @@
         <div class="opp-actions">
             @if (User.IsInRole("Admin") || User.IsInRole("User") || User.IsInRole("Organization"))
             {
+                @if (applyHidden)
+                {
+                    PausedApply();
+                }
+                else
+                {
                 <a id="applyBtn"
                    href="@(isExpired ? "#" : Url.Action("Go", "Opportunity", new { id = Model.Id }))"
                    @(isExpired ? Html.Raw("onclick=\"return false\" aria-disabled=\"true\"") : null)
@@ -154,6 +169,7 @@
                    @(isExpired ? "title='الفرصة منتهية'" : "")>
                     @Localizer["ApplyNow"]
                 </a>
+                }
                 @await Html.PartialAsync("_SaveButton", (Model.Id, (ViewBag.IsSaved as bool?) == true))
                 @if (isExpired && !User.IsInRole("Organization"))
                 {
@@ -181,23 +197,40 @@
             else if (!User.Identity.IsAuthenticated && isJobLike && !isExpired)
             {
                 @* الزائر في الوظائف والتدريب والتطوع يقدّم مباشرة (النقرة تُعدّ في /go)؛ الحفظ يطلب الدخول ويعود إلى هنا *@
-                <a id="applyBtn" href="@Url.Action("Go", "Opportunity", new { id = Model.Id })" target="_blank" rel="noopener" class="@applyButtonClass">@Localizer["ApplyNow"]</a>
+                @if (applyHidden)
+                {
+                    PausedApply();
+                }
+                else
+                {
+                    <a id="applyBtn" href="@Url.Action("Go", "Opportunity", new { id = Model.Id })" target="_blank" rel="noopener" class="@applyButtonClass">@Localizer["ApplyNow"]</a>
+                }
                 <a class="save-btn" href="@Url.Action("Login", "Account", new { returnUrl = Context.Request.Path.Value })" title="@(lang == "en" ? "Save" : lang == "fr" ? "Enregistrer" : "حفظ الفرصة")"><i class="bi bi-bookmark"></i></a>
             }
             else if (!User.Identity.IsAuthenticated)
             {
+                @if (applyHidden)
+                {
+                    PausedApply();
+                }
+                else
+                {
                 <a id="applyBtn"
                    href="@Url.Action("Login", "Account", new { returnUrl = Context.Request.Path.Value })"
                    class="@applyButtonClass"
                    data-guest="1">
                     @Localizer["ApplyNow"]
                 </a>
+                }
                 @* للزائر: نفس نافذة "تسجيل الدخول مطلوب" الخاصة بزر التقديم *@
                 <button type="button" class="save-btn" id="saveGuestBtn" title="@(lang == "en" ? "Save" : lang == "fr" ? "Enregistrer" : "حفظ الفرصة")">
                     <i class="bi bi-bookmark"></i>
                 </button>
             }
         </div>
+
+        @* شريط الثقة (3.1): تاريخ التحقق، المصدر الرسمي، «التقديم مجاني»، تحذير الرسوم، «أبلغ عن مشكلة» *@
+        @await Html.PartialAsync("_TrustStrip", Model)
     </div>
 
     <!-- ===== Main Card (Image + Info side by side on desktop) ===== -->
@@ -300,6 +333,17 @@
                                       style="color:#25652C; font-size:20px; vertical-align:middle;">
                         </iconify-icon>
                     }
+                    @if (ViewBag.CreatorOrg is Organization creatorOrg)
+                    {
+                        @* منظمة الناشر (3.1/3.2): شارة التوثيق، صفحتها، وزر المتابعة *@
+                        if (creatorOrg.ShowsVerifiedBadge)
+                        {
+                            <iconify-icon icon="mdi:check-decagram" style="color:#25652C; font-size:20px; vertical-align:middle;"
+                                          title="@(creatorOrg.VerificationTier == OrganizationTier.Partner ? TT("منظمة شريكة", "Partner organization", "Organisation partenaire") : TT("منظمة موثَّقة", "Verified organization", "Organisation vérifiée"))"></iconify-icon>
+                        }
+                        <a class="org-inline-link" href="@Url.Action("DetailsOrganization", "Home", new { id = creatorOrg.Id })">@TT("صفحة المنظمة", "Organization page", "Page de l'organisation")</a>
+                        @await Html.PartialAsync("_FollowOrgButton", (creatorOrg.Id, (ViewBag.IsFollowing as bool?) == true))
+                    }
                 </span>
 
                 <span class="info-label">@Localizer["AvailableCountries"]</span>
@@ -370,6 +414,8 @@
     </div>
 
 </div>
+
+@await Html.PartialAsync("_ReportDialog", Model)
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

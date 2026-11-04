@@ -12,7 +12,7 @@
             <h2 id="myStripTitle"><i class="bi bi-bookmark-star-fill"></i> @T("فرصي", "My opportunities", "Mes opportunités")</h2>
             @if (Model.Total > 0)
             {
-                <a class="my-strip__all" href="@Url.Action("Saved", "Opportunity")">@T($"الكل ({Model.Total})", $"All ({Model.Total})", $"Tout ({Model.Total})") <i class="bi bi-chevron-left"></i></a>
+                <a class="my-strip__all" href="@Url.Action("Saved", "Opportunity")">@T($"الكل ({Model.Total})", $"All ({Model.Total})", $"Tout ({Model.Total})") <i class="bi bi-chevron-left dir-flip"></i></a>
             }
         </div>
 

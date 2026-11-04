@@ -54,7 +54,7 @@
                 <a class="vault-item" href="@href" target="_blank" rel="noopener">
                     <span class="ico"><i class="bi @(r.FilePath != null ? "bi-file-earmark-pdf" : "bi-link-45deg")"></i></span>
                     <span class="txt"><b>@title</b>@if (!string.IsNullOrWhiteSpace(desc)) { <small>@desc</small> }</span>
-                    <span class="kind">@(r.FilePath != null ? T("تحميل PDF", "Download PDF", "Télécharger le PDF") : T("فتح الرابط", "Open link", "Ouvrir le lien")) <i class="bi bi-arrow-left-short"></i></span>
+                    <span class="kind">@(r.FilePath != null ? T("تحميل PDF", "Download PDF", "Télécharger le PDF") : T("فتح الرابط", "Open link", "Ouvrir le lien")) <i class="bi bi-arrow-left-short dir-flip"></i></span>
                 </a>
             }
         </section>

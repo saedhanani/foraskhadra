@@ -97,5 +97,20 @@ else
                 <span>@T($"{n.Count} فرص جديدة في بحثك المحفوظ ", $"{n.Count} new matches for your saved search ", $"{n.Count} nouveaux résultats pour votre recherche ")<b>«@n.Label»</b></span>
             </a>
         }
+        else if (n.Kind == NotificationKind.OpportunityReported && n.Opportunity != null)
+        {
+            <a class="notif-item @unread" href="@Url.Action("Reports", "Admin")">
+                <i class="bi bi-flag notif-ico orange"></i>
+                <span>@T($"{n.Count} بلاغات أوقفت التقديم على: ", $"{n.Count} reports paused applying on: ", $"{n.Count} signalements ont suspendu : ")<b>@n.Opportunity.TitleAr</b></span>
+            </a>
+        }
+        else if (n.Kind == NotificationKind.OrganizationPublished && n.Opportunity != null)
+        {
+            var title = lang switch { "en" => n.Opportunity.TitleEn, "fr" => n.Opportunity.TitleFr, _ => n.Opportunity.TitleAr };
+            <a class="notif-item @unread" href="@Url.Action("Details", "Opportunity", new { id = n.OpportunityId, slug = SlugHelper.Make(title) })">
+                <i class="bi bi-building-check notif-ico green"></i>
+                <span>@T("جديد من ", "New from ", "Nouveau de ")<b>@n.Label</b>: @title</span>
+            </a>
+        }
     }
 }

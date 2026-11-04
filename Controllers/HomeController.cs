@@ -473,12 +473,28 @@ namespace Foras_Khadra.Controllers
         }
 
 
-        public IActionResult DetailsOrganization(int id)
+        public async Task<IActionResult> DetailsOrganization(int id, [FromServices] IOrganizationFollowService follows)
         {
-            var org = _context.Organizations.FirstOrDefault(o => o.Id == id);
+            var org = await _context.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.Id == id);
 
             if (org == null)
                 return NotFound();
+
+            // فرص المنظمة المنشورة (المفتوحة أولًا) وحالة المتابعة — المرحلة 3.2
+            var today = DateTime.Now.Date;
+            var opps = org.UserId == null
+                ? new List<Opportunity>()
+                : await _context.Opportunities.AsNoTracking()
+                    .Where(o => o.CreatedByUserId == org.UserId && o.Status == OpportunityStatus.Published)
+                    .OrderByDescending(o => o.DeadlineType != DeadlineType.SpecificDate || o.EndDate == null || o.EndDate >= today)
+                    .ThenByDescending(o => o.PublishDate)
+                    .Take(12)
+                    .ToListAsync();
+            var userId = _userManager.GetUserId(User);
+            ViewBag.OrgOpportunities = opps;
+            ViewBag.SavedIds = userId != null && opps.Count > 0 ? (await _saved.SavedIdsAsync(userId, opps.Select(o => o.Id))).ToHashSet() : new HashSet<int>();
+            ViewBag.IsFollowing = userId != null && User.IsInRole("User") && await follows.IsFollowingAsync(userId, org.Id);
+            ViewBag.FollowerCount = await follows.FollowerCountAsync(org.Id);
 
             return View(org);
         }

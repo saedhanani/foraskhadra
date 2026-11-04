@@ -108,6 +108,10 @@ builder.Services.AddScoped<IReferralService, ReferralService>();
 builder.Services.AddScoped<IWeeklySummaryService, WeeklySummaryService>();
 builder.Services.AddScoped<IOpportunityReviewService, OpportunityReviewService>();
 builder.Services.AddScoped<IApplyClickCounter, ApplyClickCounter>();
+// الثقة (3.1): بلاغات المشاكل على الفرص؛ متابعة المنظمات وتقرير الوصول (3.2)
+builder.Services.AddScoped<IOpportunityReportService, OpportunityReportService>();
+builder.Services.AddScoped<IOrganizationFollowService, OrganizationFollowService>();
+builder.Services.AddScoped<IOrgReachReport, OrgReachReport>();
 // بوابة المنظمات: طلبات النشر بلا حساب + تقدير الأعضاء المؤهَّلين (مخزَّن ساعة)
 builder.Services.AddScoped<IPublishRequestService, PublishRequestService>();
 builder.Services.AddScoped<IAudienceEstimator, AudienceEstimator>();
@@ -357,14 +361,21 @@ const string ContentSecurityPolicy =
     "object-src 'none'; " +
     "base-uri 'self'";
 
+// الودجت المضمَّن (3.3) /embed/opportunities يُعرض داخل iframe على مواقع الجامعات: بلا X-Frame-Options وبـframe-ancestors *
+const string EmbeddableCsp = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; frame-ancestors *; object-src 'none'; base-uri 'self'";
+static bool IsEmbeddable(PathString path) =>
+    path.StartsWithSegments("/embed/opportunities") || path.StartsWithSegments("/en/embed/opportunities") || path.StartsWithSegments("/fr/embed/opportunities");
+
 app.Use(async (context, next) =>
 {
     var headers = context.Response.Headers;
+    var embeddable = IsEmbeddable(context.Request.Path);
     headers["X-Content-Type-Options"] = "nosniff";
-    headers["X-Frame-Options"] = "SAMEORIGIN";
+    if (!embeddable) headers["X-Frame-Options"] = "SAMEORIGIN";
     headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
-    headers["Content-Security-Policy"] = ContentSecurityPolicy;
+    headers["Content-Security-Policy"] = embeddable ? EmbeddableCsp : ContentSecurityPolicy;
     await next();
 });
 

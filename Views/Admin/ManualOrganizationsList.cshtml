@@ -35,6 +35,10 @@
 
     <div class="table-container">
         <div class="table-responsive">
+            @if (!Model.Any())
+            {
+                <div class="fk-empty-state"><i class="bi bi-geo-alt"></i><p>لا منظمات مضافة يدويًا بعد.</p></div>
+            }
             <table class="table manual-org-table">
                 <thead>
                     <tr>

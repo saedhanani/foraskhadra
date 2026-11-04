@@ -69,6 +69,10 @@
 
     <div class="table-container mb-4">
         <div class="table-responsive" style="overflow-x:visible;">
+            @if (!Model.Any())
+            {
+                <div class="fk-empty-state"><i class="bi bi-people"></i><p>لا أعضاء فريق بعد — أضف أول عضو من زر الإضافة.</p></div>
+            }
             <table class="table articles-table">
                 <thead>
                     <tr class="text-muted">
@@ -143,7 +147,7 @@
                        asp-route-search="@search"
                        asp-route-department="@selectedDepartment"
                        aria-label="Prev">
-                        <i class="fa-solid fa-chevron-right"></i>
+                        <i class="fa-solid fa-chevron-right dir-flip"></i>
                     </a>
                 </li>
 
@@ -173,7 +177,7 @@
                        asp-route-search="@search"
                        asp-route-department="@selectedDepartment"
                        aria-label="Next">
-                        <i class="fa-solid fa-chevron-left"></i>
+                        <i class="fa-solid fa-chevron-left dir-flip"></i>
                     </a>
                 </li>
 

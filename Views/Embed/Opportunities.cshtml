@@ -1,0 +1,94 @@
+@* الودجت المضمَّن (3.3): صفحة مستقلة بلا تخطيط تُعرض داخل iframe على مواقع الجامعات؛ ترسل ارتفاعها للصفحة الأم *@
+@model List<Foras_Khadra.Controllers.EmbedItem>
+@using Foras_Khadra.Helpers
+@using Foras_Khadra.Models
+@{
+    Layout = null;
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    var theme = ViewBag.Theme as string ?? "light";
+    var site = $"{Context.Request.Scheme}://{Context.Request.Host}";
+    var prefix = lang == "ar" ? "" : "/" + lang;
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var today = DateTime.Now.Date;
+
+    string Deadline(Foras_Khadra.Controllers.EmbedItem it)
+    {
+        if (it.DeadlineType == DeadlineType.SpecificDate && it.EndDate.HasValue)
+        {
+            var days = (it.EndDate.Value.Date - today).Days;
+            if (days <= 0) return T("ينتهي اليوم", "Ends today", "Se termine aujourd'hui");
+            if (days <= 7) return T($"يبقى {days} أيام", $"{days} days left", $"{days} jours restants");
+            return T("حتى ", "Until ", "Jusqu'au ") + it.EndDate.Value.ToString("yyyy-MM-dd", inv);
+        }
+        return T("مفتوح الآن", "Open now", "Ouvert");
+    }
+}
+<!DOCTYPE html>
+<html lang="@lang" dir="@dir" data-theme="@theme">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>@T("فرص خضراء — فرص مفتوحة", "Foras Khadra — open opportunities", "Foras Khadra — opportunités ouvertes")</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet" />
+    <style>
+        :root { --bg: #ffffff; --card: #ffffff; --ink: #0d2910; --muted: #64748b; --line: #e2e8f0; --green: #1B6B23; --orange: #b45309; }
+        [data-theme="dark"] { --bg: #0f172a; --card: #1e293b; --ink: #f1f5f9; --muted: #94a3b8; --line: #334155; --green: #86efac; --orange: #fdba74; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: Cairo, system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+        .fk-w { padding: 8px; }
+        .fk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+        .fk-card { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; text-decoration: none; color: inherit; height: 100%; }
+        .fk-card:hover { border-color: var(--green); }
+        .fk-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: var(--line); display: block; }
+        .fk-body { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px 10px; }
+        .fk-type { font-size: .75rem; font-weight: 700; color: var(--green); }
+        .fk-title { font-weight: 700; font-size: .92rem; line-height: 1.4; }
+        .fk-deadline { font-size: .78rem; color: var(--orange); }
+        .fk-foot { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 10px; font-size: .82rem; color: var(--muted); text-decoration: none; }
+        .fk-foot b { color: var(--green); }
+        .fk-empty { text-align: center; color: var(--muted); padding: 18px; margin: 0; font-size: .9rem; }
+        a:focus-visible { outline: 3px solid #42BFDD; outline-offset: 2px; }
+    </style>
+</head>
+<body>
+    <div class="fk-w">
+        @if (Model.Count == 0)
+        {
+            <p class="fk-empty">@T("لا فرص مفتوحة تطابق هذا الاختيار الآن — تُحدَّث القائمة يوميًا.", "No open opportunities match this selection right now — the list is updated daily.", "Aucune opportunité ouverte ne correspond pour l'instant — la liste est mise à jour chaque jour.")</p>
+        }
+        else
+        {
+            <ul class="fk-list">
+                @foreach (var it in Model)
+                {
+                    var href = $"{site}{prefix}/Opportunity/Details/{it.Id}/{Uri.EscapeDataString(SlugHelper.Make(it.Title))}?utm_source=embed";
+                    var img = string.IsNullOrEmpty(it.Image) ? site + "/images/default.jpg" : (it.Image.StartsWith("http") ? it.Image : site + it.Image);
+                    <li>
+                        <a class="fk-card" href="@href" target="_blank" rel="noopener">
+                            <img class="fk-img" src="@img" alt="" loading="lazy" />
+                            <span class="fk-body">
+                                <span class="fk-type">@OpportunityTypeExtensions.GetDisplayName(it.Type, lang)@(it.IsRemote ? " · " + T("عن بُعد", "Remote", "À distance") : (CountryHelper.NameForIso(it.HostCountryIso, lang) is string cn ? " · " + cn : ""))</span>
+                                <span class="fk-title">@it.Title</span>
+                                <span class="fk-deadline">@Deadline(it)</span>
+                            </span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        }
+        <a class="fk-foot" href="@site@prefix/?utm_source=embed" target="_blank" rel="noopener">
+            @T("المزيد من الفرص على", "More opportunities on", "Plus d'opportunités sur") <b>@T("فرص خضراء", "Foras Khadra", "Foras Khadra")</b>
+        </a>
+    </div>
+    <script>
+        (function () {
+            function send() { try { parent.postMessage({ fkEmbedHeight: document.documentElement.scrollHeight }, '*'); } catch (e) { } }
+            send(); window.addEventListener('load', send); window.addEventListener('resize', send);
+        })();
+    </script>
+</body>
+</html>

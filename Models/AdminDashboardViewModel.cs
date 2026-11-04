@@ -18,6 +18,8 @@
         public int TotalManualOrganizations { get; set; }
         public int PendingReviewCount { get; set; }
         public int OpenPublishRequests { get; set; }
+        /// <summary>بلاغات الزوار المفتوحة على الفرص (3.1).</summary>
+        public int OpenReports { get; set; }
 
 
     }

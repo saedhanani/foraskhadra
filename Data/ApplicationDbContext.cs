@@ -40,6 +40,8 @@ namespace Foras_Khadra.Data
         public DbSet<SiteEventDailyStat> SiteEventDailyStats { get; set; }
         public DbSet<EligibilityProfile> EligibilityProfiles { get; set; }
         public DbSet<LandingPage> LandingPages { get; set; }
+        public DbSet<OpportunityReport> OpportunityReports { get; set; }
+        public DbSet<OrganizationFollow> OrganizationFollows { get; set; }
 
         // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -203,6 +205,30 @@ namespace Foras_Khadra.Data
             // الإحالات: فهرس على الرمز (التفرّد يضمنه ReferralService عند التوليد) وعلى الداعي
             // إحصاء يومي لكل فرصة (نقرات التقديم عبر /go/): صف واحد لكل (فرصة، يوم)
             modelBuilder.Entity<OpportunityDailyStat>().HasKey(s => new { s.OpportunityId, s.Day });
+
+            // بلاغات المشاكل (3.1): تُحذف مع الفرصة؛ فهرس (الفرصة، الحالة) لعدّ المفتوح عند عرض التفاصيل
+            modelBuilder.Entity<OpportunityReport>()
+                .HasIndex(r => new { r.OpportunityId, r.Status });
+            modelBuilder.Entity<OpportunityReport>()
+                .HasOne(r => r.Opportunity)
+                .WithMany()
+                .HasForeignKey(r => r.OpportunityId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // متابعة منظمة (3.2): صف واحد لكل (عضو، منظمة)؛ جهة المستخدم بلا cascade كالمعتاد
+            modelBuilder.Entity<OrganizationFollow>()
+                .HasIndex(f => new { f.UserId, f.OrganizationId })
+                .IsUnique();
+            modelBuilder.Entity<OrganizationFollow>()
+                .HasOne(f => f.User)
+                .WithMany()
+                .HasForeignKey(f => f.UserId)
+                .OnDelete(DeleteBehavior.ClientCascade);
+            modelBuilder.Entity<OrganizationFollow>()
+                .HasOne(f => f.Organization)
+                .WithMany()
+                .HasForeignKey(f => f.OrganizationId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<ApplicationUser>().HasIndex(u => u.ReferralCode);
             modelBuilder.Entity<ApplicationUser>().HasIndex(u => u.ReferredByUserId);

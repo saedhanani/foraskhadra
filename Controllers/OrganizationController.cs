@@ -127,13 +127,13 @@ namespace Foras_Khadra.Controllers
                 !model.Password.Any(char.IsDigit) ||
                 !model.Password.Any(ch => !char.IsLetterOrDigit(ch)))
             {
-                ModelState.AddModelError("Password", "كلمة المرور يجب أن تحتوي على 8 أحرف على الأقل، حرف كبير، حرف صغير، رقم ورمز خاص");
+                ModelState.AddModelError("Password", _localizer["PasswordRules"].Value);
                 return View(model);
             }
 
             if (model.Password != model.ConfirmPassword)
             {
-                ModelState.AddModelError("ConfirmPassword", "كلمة المرور وتأكيدها غير متطابقين");
+                ModelState.AddModelError("ConfirmPassword", _localizer["PasswordMismatch"].Value);
                 return View(model);
             }
 
@@ -215,7 +215,7 @@ namespace Foras_Khadra.Controllers
             var user = await _userManager.FindByEmailAsync(model.Email);
             if (user == null)
             {
-                ModelState.AddModelError("", "البريد الإلكتروني أو كلمة المرور غير صحيحة");
+                ModelState.AddModelError("", _localizer["InvalidCredentials"].Value);
                 return View(model);
             }
 
@@ -230,13 +230,13 @@ namespace Foras_Khadra.Controllers
 
             if (result.IsLockedOut)
             {
-                ModelState.AddModelError("", "تم قفل الحساب مؤقتًا بسبب محاولات دخول فاشلة متكررة، حاول مجددًا بعد 15 دقيقة");
+                ModelState.AddModelError("", _localizer["AccountLockedOut"].Value);
                 return View(model);
             }
 
             if (!result.Succeeded)
             {
-                ModelState.AddModelError("", "البريد الإلكتروني أو كلمة المرور غير صحيحة");
+                ModelState.AddModelError("", _localizer["InvalidCredentials"].Value);
                 return View(model);
             }
 
@@ -258,6 +258,49 @@ namespace Foras_Khadra.Controllers
         }
 
         public IActionResult Dashboard() => RedirectToAction("OrgOpportunities", "Opportunity"); // لوحة المنظمة هي قائمة فرصها
+
+        // ===== تقرير الوصول (3.2): مشاهدات فرص المنظمة ونقرات «قدّم الآن» خلال 7 أو 30 يومًا؛ CSV، والـPDF بطباعة المتصفح =====
+        [Authorize(Roles = "Organization")]
+        [HttpGet]
+        public async Task<IActionResult> Report([FromServices] Foras_Khadra.Services.IOrgReachReport reach, int days = 30, string? format = null)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Forbid();
+            var lang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            var report = await reach.BuildAsync(userId, days, lang);
+            if (report == null) return RedirectToAction("ProfileSetting");
+
+            if (format == "csv")
+            {
+                string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+                var sb = new System.Text.StringBuilder();
+                sb.Append('﻿');
+                sb.AppendLine(string.Join(",", T("الفرصة", "Opportunity", "Opportunité"), T("الحالة", "Status", "Statut"), T("الموعد النهائي", "Deadline", "Date limite"),
+                    T("المشاهدات", "Views", "Vues"), T("نقرات التقديم", "Apply clicks", "Clics"), T("نسبة النقر %", "Click rate %", "Taux de clic %"), T("محفوظة", "Saves", "Enregistrements")));
+                static string Csv(string? s) => "\"" + (s ?? "").Replace("\"", "\"\"") + "\"";
+                foreach (var r in report.Rows)
+                    sb.AppendLine(string.Join(",", Csv(r.Title), r.Status, r.EndDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "", r.Views, r.Clicks, r.ClickRatePercent, r.Saves));
+                sb.AppendLine();
+                sb.AppendLine(string.Join(",", Csv(T("المجموع", "Total", "Total")), "", "", report.Views, report.Clicks, report.ClickRatePercent, report.Saves));
+                var name = $"foraskhadra-reach-{report.From:yyyy-MM-dd}-{report.To:yyyy-MM-dd}.csv";
+                return File(System.Text.Encoding.UTF8.GetBytes(sb.ToString()), "text/csv; charset=utf-8", name);
+            }
+
+            return View(report);
+        }
+
+        /// <summary>«تابع هذه المنظمة» (3.2) — للأعضاء؛ يرد JSON لطلبات fetch وإلا يعود إلى الصفحة.</summary>
+        [Authorize(Roles = "User")]
+        [HttpPost]
+        public async Task<IActionResult> ToggleFollow(int id, string? returnUrl, [FromServices] Foras_Khadra.Services.IOrganizationFollowService follows)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Forbid();
+            var following = await follows.ToggleAsync(userId, id);
+            if (Request.Headers.XRequestedWith == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json"))
+                return Json(new { following, count = await follows.FollowerCountAsync(id) });
+            return LocalRedirect(!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) ? returnUrl : Url.Action("DetailsOrganization", "Home", new { id })!);
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]

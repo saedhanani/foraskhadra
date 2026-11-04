@@ -688,6 +688,10 @@
                             <i class="bi bi-building"></i>
                             <span>@(isArabic ? "طلبات النشر" : "Publishing requests")@(Model.OpenPublishRequests > 0 ? $" ({Model.OpenPublishRequests})" : "")</span>
                         </a>
+                        <a asp-controller="Admin" asp-action="Reports" class="nav-link-item">
+                            <i class="bi bi-flag"></i>
+                            <span>@(isArabic ? "بلاغات الزوار" : "Visitor reports")@(Model.OpenReports > 0 ? $" ({Model.OpenReports})" : "")</span>
+                        </a>
                         <a asp-controller="Admin" asp-action="Analytics" class="nav-link-item">
                             <i class="bi bi-graph-up"></i>
                             <span>@(isArabic ? "التحليلات" : "Analytics")</span>

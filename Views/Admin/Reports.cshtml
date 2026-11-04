@@ -1,0 +1,142 @@
+@model List<Foras_Khadra.Models.OpportunityReport>
+@using Foras_Khadra.Models
+@{
+    ViewData["Title"] = "بلاغات الزوار على الفرص";
+    var showingAll = (ViewBag.ShowingAll as bool?) == true;
+    string ReasonText(OpportunityReportReason r) => r switch
+    {
+        OpportunityReportReason.BrokenLink => "رابط التقديم لا يعمل",
+        OpportunityReportReason.Expired => "منتهية وتظهر مفتوحة",
+        OpportunityReportReason.AsksForMoney => "يُطلب دفع مال",
+        OpportunityReportReason.WrongInfo => "معلومات خاطئة",
+        _ => "أخرى"
+    };
+    string StatusText(OpportunityReportStatus s) => s switch
+    {
+        OpportunityReportStatus.Resolved => "عولج",
+        OpportunityReportStatus.Dismissed => "مرفوض",
+        _ => "مفتوح"
+    };
+    var groups = Model.GroupBy(r => r.OpportunityId).OrderByDescending(g => g.Max(r => r.CreatedAt)).ToList();
+}
+
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h2 class="m-0">بلاغات الزوار <span class="badge bg-secondary">@Model.Count</span></h2>
+        <div class="d-flex gap-2">
+            <a asp-controller="Admin" asp-action="Reports" class="btn @(showingAll ? "btn-outline-primary" : "btn-primary")">المفتوحة</a>
+            <a asp-controller="Admin" asp-action="Reports" asp-route-status="all" class="btn @(showingAll ? "btn-primary" : "btn-outline-primary")">الكل</a>
+            <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-secondary">لوحة التحكم</a>
+        </div>
+    </div>
+
+    @if (TempData["ReportMessage"] is string msg)
+    {
+        <div class="alert alert-success">@msg</div>
+    }
+
+    <p class="text-muted">
+        بلاغان مفتوحان من مُبلِّغَين مختلفَين يوقفان زر «قدّم الآن» على الفرصة («التقديم موقوف مؤقتًا للمراجعة»).
+        «عولج» = صُحّح الرابط أو أُغلقت الفرصة؛ «رفض البلاغ» = البلاغ غير صحيح. في الحالتين يعود الزر للعمل حين لا يبقى بلاغان.
+    </p>
+
+    @if (groups.Count == 0)
+    {
+        <div class="alert alert-light border text-center py-5">
+            <i class="bi bi-flag fs-2 d-block mb-2 text-muted"></i>
+            لا بلاغات @(showingAll ? "" : "مفتوحة") حاليًا.
+        </div>
+    }
+
+    @foreach (var g in groups)
+    {
+        var opp = g.First().Opportunity;
+        var openReporters = g.Where(r => r.Status == OpportunityReportStatus.Open).Select(r => r.ReporterKey).Distinct().Count();
+        var paused = openReporters >= OpportunityReport.HideThreshold;
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                    <div>
+                        <h5 class="mb-1">
+                            @if (opp != null)
+                            {
+                                <a asp-controller="Opportunity" asp-action="Details" asp-route-id="@g.Key" target="_blank">@opp.TitleAr</a>
+                            }
+                            else
+                            {
+                                <span>فرصة محذوفة (#@g.Key)</span>
+                            }
+                            @if (paused)
+                            {
+                                <span class="badge bg-danger ms-2">التقديم موقوف</span>
+                            }
+                        </h5>
+                        <div class="small text-muted">
+                            @if (opp != null)
+                            {
+                                <span class="me-3"><i class="bi bi-building"></i> @opp.PublishedBy</span>
+                                <span class="me-3"><i class="bi bi-link-45deg"></i> <a href="@(Foras_Khadra.Helpers.HttpUrl.Normalize(opp.ApplyLink) ?? "#")" target="_blank" rel="noopener nofollow">رابط التقديم</a></span>
+                                <a asp-controller="Opportunity" asp-action="Edit" asp-route-id="@g.Key" class="me-3">تعديل الفرصة</a>
+                            }
+                            <span>مُبلِّغون مختلفون ببلاغ مفتوح: <b>@openReporters</b></span>
+                        </div>
+                    </div>
+                    @if (g.Any(r => r.Status == OpportunityReportStatus.Open))
+                    {
+                        <div class="d-flex gap-2">
+                            <form asp-controller="Admin" asp-action="ResolveOpportunityReports" method="post">
+                                <input type="hidden" name="opportunityId" value="@g.Key" />
+                                <input type="hidden" name="status" value="resolved" />
+                                <button type="submit" class="btn btn-success btn-sm">عولجت كلها (أعد زر التقديم)</button>
+                            </form>
+                            <form asp-controller="Admin" asp-action="ResolveOpportunityReports" method="post">
+                                <input type="hidden" name="opportunityId" value="@g.Key" />
+                                <input type="hidden" name="status" value="dismissed" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm">رفض كل البلاغات</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+
+                <table class="table table-sm mt-3 mb-0 align-middle">
+                    <thead>
+                        <tr><th>السبب</th><th>التفاصيل</th><th>المُبلِّغ</th><th>التاريخ</th><th>الحالة</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in g.OrderByDescending(x => x.CreatedAt))
+                        {
+                            <tr>
+                                <td>@ReasonText(r.Reason)</td>
+                                <td class="small">@(string.IsNullOrEmpty(r.Details) ? "—" : r.Details)</td>
+                                <td class="small">
+                                    @(r.UserId != null ? "عضو" : "زائر")
+                                    @if (!string.IsNullOrEmpty(r.Email))
+                                    {
+                                        <span> · <a href="mailto:@r.Email">@r.Email</a></span>
+                                    }
+                                </td>
+                                <td class="small text-nowrap">@r.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td><span class="badge @(r.Status == OpportunityReportStatus.Open ? "bg-warning text-dark" : r.Status == OpportunityReportStatus.Resolved ? "bg-success" : "bg-secondary")">@StatusText(r.Status)</span></td>
+                                <td class="text-nowrap">
+                                    @if (r.Status == OpportunityReportStatus.Open)
+                                    {
+                                        <form asp-controller="Admin" asp-action="ResolveReport" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@r.Id" />
+                                            <input type="hidden" name="status" value="resolved" />
+                                            <button type="submit" class="btn btn-outline-success btn-sm">عولج</button>
+                                        </form>
+                                        <form asp-controller="Admin" asp-action="ResolveReport" method="post" class="d-inline">
+                                            <input type="hidden" name="id" value="@r.Id" />
+                                            <input type="hidden" name="status" value="dismissed" />
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm">رفض</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

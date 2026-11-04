@@ -1,0 +1,119 @@
+@model Foras_Khadra.Services.ReachReport
+@using Foras_Khadra.Models
+@using Foras_Khadra.Helpers
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    ViewData["Title"] = T("تقرير الوصول", "Reach report", "Rapport de portée") + " — " + Model.OrganizationName;
+    ViewData["Robots"] = "noindex";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var maxDay = Math.Max(1, Model.Series.Max(d => Math.Max(d.Views, d.Clicks)));
+    string StatusText(OpportunityStatus s) => s switch
+    {
+        OpportunityStatus.Published => T("منشورة", "Published", "Publiée"),
+        OpportunityStatus.PendingReview => T("بانتظار المراجعة", "Pending review", "En attente"),
+        OpportunityStatus.Rejected => T("مرفوضة", "Rejected", "Refusée"),
+        OpportunityStatus.Suspended => T("موقوفة", "Suspended", "Suspendue"),
+        _ => T("مسودة", "Draft", "Brouillon")
+    };
+}
+
+<div class="reach-page container py-4" dir="@dir">
+    <div class="reach-head d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <h1 class="reach-title">@T("تقرير الوصول", "Reach report", "Rapport de portée")</h1>
+            <p class="reach-sub">
+                <b>@Model.OrganizationName</b> ·
+                @Model.From.ToString("yyyy-MM-dd", inv) → @Model.To.ToString("yyyy-MM-dd", inv)
+                (@(Model.Days == 7 ? T("آخر 7 أيام", "last 7 days", "7 derniers jours") : T("آخر 30 يومًا", "last 30 days", "30 derniers jours")))
+            </p>
+        </div>
+        <div class="reach-tools no-print d-flex gap-2 flex-wrap">
+            <div class="btn-group" role="group" aria-label="@T("المدة", "Period", "Période")">
+                <a asp-action="Report" asp-route-days="7" class="btn btn-sm @(Model.Days == 7 ? "btn-success" : "btn-outline-success")">7 @T("أيام", "days", "jours")</a>
+                <a asp-action="Report" asp-route-days="30" class="btn btn-sm @(Model.Days == 30 ? "btn-success" : "btn-outline-success")">30 @T("يومًا", "days", "jours")</a>
+            </div>
+            <a asp-action="Report" asp-route-days="@Model.Days" asp-route-format="csv" class="btn btn-sm btn-outline-secondary"><i class="bi bi-filetype-csv"></i> CSV</a>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()"><i class="bi bi-file-earmark-pdf"></i> @T("تنزيل PDF", "Download PDF", "Télécharger le PDF")</button>
+            <a asp-controller="Opportunity" asp-action="OrgOpportunities" class="btn btn-sm btn-outline-secondary">@T("فرصي", "My opportunities", "Mes opportunités")</a>
+        </div>
+    </div>
+
+    <div class="reach-tiles">
+        <div class="reach-tile"><span class="reach-num">@Model.Views.ToString("N0", inv)</span><span class="reach-lbl">@T("مشاهدة لصفحات فرصك", "views of your opportunities", "vues de vos opportunités")</span></div>
+        <div class="reach-tile"><span class="reach-num">@Model.Clicks.ToString("N0", inv)</span><span class="reach-lbl">@T("نقرة «قدّم الآن»", "“Apply now” clicks", "clics « Postuler »")</span></div>
+        <div class="reach-tile"><span class="reach-num">@Model.ClickRatePercent%</span><span class="reach-lbl">@T("نسبة النقر من المشاهدات", "click rate from views", "taux de clic")</span></div>
+        <div class="reach-tile"><span class="reach-num">@Model.Saves.ToString("N0", inv)</span><span class="reach-lbl">@T("عضو حفظ فرصة لك", "members saved an opportunity", "enregistrements par des membres")</span></div>
+        <div class="reach-tile"><span class="reach-num">@Model.Followers.ToString("N0", inv)</span><span class="reach-lbl">@T("متابع لمنظمتك", "followers of your organization", "abonnés à votre organisation")</span></div>
+        <div class="reach-tile"><span class="reach-num">@Model.PublishedCount.ToString("N0", inv)</span><span class="reach-lbl">@T("فرصة منشورة الآن", "opportunities published now", "opportunités publiées")</span></div>
+    </div>
+
+    <section class="reach-card">
+        <h2 class="reach-h2">@T("يومًا بيوم", "Day by day", "Jour par jour")</h2>
+        <div class="reach-chart" role="img" aria-label="@T("مشاهدات ونقرات كل يوم", "Views and clicks per day", "Vues et clics par jour")">
+            @foreach (var d in Model.Series)
+            {
+                <div class="reach-col" title="@d.Day.ToString("yyyy-MM-dd", inv): @d.Views @T("مشاهدة", "views", "vues") · @d.Clicks @T("نقرة", "clicks", "clics")">
+                    <div class="reach-bars">
+                        <span class="reach-bar reach-bar-views" style="height:@(100 * d.Views / maxDay)%"></span>
+                        <span class="reach-bar reach-bar-clicks" style="height:@(100 * d.Clicks / maxDay)%"></span>
+                    </div>
+                    <span class="reach-day">@(Model.Days == 7 ? d.Day.ToString("dd/MM", inv) : d.Day.Day.ToString(inv))</span>
+                </div>
+            }
+        </div>
+        <div class="reach-legend"><span><i class="reach-sw reach-bar-views"></i> @T("مشاهدات", "Views", "Vues")</span> <span><i class="reach-sw reach-bar-clicks"></i> @T("نقرات التقديم", "Apply clicks", "Clics")</span></div>
+    </section>
+
+    <section class="reach-card">
+        <h2 class="reach-h2">@T("فرصك", "Your opportunities", "Vos opportunités")</h2>
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="reach-empty">
+                <i class="bi bi-megaphone" aria-hidden="true"></i>
+                <p>@T("لم تنشر فرصًا بعد. أول فرصة تنشرها تظهر هنا بمشاهداتها ونقراتها.", "You have not published any opportunities yet. Your first one will show here with its views and clicks.", "Vous n'avez pas encore publié d'opportunité. La première apparaîtra ici avec ses vues et clics.")</p>
+                <a asp-controller="Opportunity" asp-action="Create" class="btn btn-success btn-sm no-print">@T("أضف فرصة", "Add an opportunity", "Ajouter une opportunité")</a>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle reach-table">
+                    <thead>
+                        <tr>
+                            <th>@T("الفرصة", "Opportunity", "Opportunité")</th>
+                            <th>@T("الحالة", "Status", "Statut")</th>
+                            <th>@T("الموعد النهائي", "Deadline", "Date limite")</th>
+                            <th class="text-center">@T("المشاهدات", "Views", "Vues")</th>
+                            <th class="text-center">@T("نقرات التقديم", "Apply clicks", "Clics")</th>
+                            <th class="text-center">@T("نسبة النقر", "Click rate", "Taux de clic")</th>
+                            <th class="text-center">@T("محفوظة", "Saves", "Enregistrée")</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Rows)
+                        {
+                            <tr>
+                                <td><a asp-controller="Opportunity" asp-action="Details" asp-route-id="@r.Id" asp-route-slug="@SlugHelper.Make(r.Title)">@r.Title</a></td>
+                                <td><span class="badge @(r.Status == OpportunityStatus.Published ? "bg-success" : "bg-secondary")">@StatusText(r.Status)</span></td>
+                                <td class="text-nowrap">@(r.EndDate?.ToString("yyyy-MM-dd", inv) ?? T("مفتوحة", "Open", "Ouverte"))</td>
+                                <td class="text-center">@r.Views.ToString("N0", inv)</td>
+                                <td class="text-center">@r.Clicks.ToString("N0", inv)</td>
+                                <td class="text-center">@r.ClickRatePercent%</td>
+                                <td class="text-center">@r.Saves.ToString("N0", inv)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <p class="reach-note">
+                @T("المشاهدات = زيارات صفحة الفرصة بلا الزاحفات وبلا كوكيز. النقرات = ضغطات «قدّم الآن» التي حوّلناها إلى رابطك. محفوظة = أعضاء حفظوا الفرصة ليُذكَّروا قبل موعدها.",
+                   "Views = visits to the opportunity page, excluding bots, with no cookies. Clicks = “Apply now” presses we forwarded to your link. Saves = members who saved it to be reminded before the deadline.",
+                   "Vues = visites de la page, sans robots ni cookies. Clics = pressions sur « Postuler » redirigées vers votre lien. Enregistrée = membres qui l'ont sauvegardée pour être rappelés.")
+            </p>
+        }
+    </section>
+
+    <p class="reach-foot">@T("تقرير من فرص خضراء", "Report from Foras Khadra", "Rapport de Foras Khadra") · www.foraskhadra.com · @DateTime.Now.ToString("yyyy-MM-dd", inv)</p>
+</div>

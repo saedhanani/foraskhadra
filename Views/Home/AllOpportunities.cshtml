@@ -801,7 +801,7 @@
                         }
 
                         @{
-                            var plainDescription = System.Text.RegularExpressions.Regex.Replace(description, "<.*?>", "");
+                            var plainDescription = System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(description, "<.*?>", " ")).Trim(); // فك ترميز الكيانات (3.4)
                             var words = plainDescription.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                             var shortDescription = words.Length > 15 ? string.Join(' ', words.Take(10)) + "..." : plainDescription;
                         }
@@ -883,7 +883,7 @@
 
             <nav class="pagination-controls" aria-label="pagination">
                 <a href="@PageUrl(Model.Page - 1)" rel="prev" class="pagination-arrow prev-arrow @(Model.Page == 1 ? "disabled-link" : "")">
-                    <i class="bi bi-chevron-right"></i>
+                    <i class="bi bi-chevron-right dir-flip"></i>
                 </a>
                 @{ int? previousNumber = null; }
                 @foreach (var i in pageNumbers)
@@ -896,7 +896,7 @@
                     previousNumber = i;
                 }
                 <a href="@PageUrl(Model.Page + 1)" rel="next" class="pagination-arrow next-arrow @(Model.Page == Model.TotalPages ? "disabled-link" : "")">
-                    <i class="bi bi-chevron-left"></i>
+                    <i class="bi bi-chevron-left dir-flip"></i>
                 </a>
             </nav>
         </div>

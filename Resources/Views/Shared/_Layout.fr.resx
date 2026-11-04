@@ -180,8 +180,8 @@
   <data name="AllOpportunities" xml:space="preserve">
     <value>Toutes les opportunités</value>
   </data>
-  <data name="All rights reserved © 2025" xml:space="preserve">
-    <value>Tous droits réservés © 2025</value>
+  <data name="AllRightsReserved" xml:space="preserve">
+    <value>Tous droits réservés © {0}</value>
   </data>
   <data name="AboutUs" xml:space="preserve">
     <value>À propos</value>

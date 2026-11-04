@@ -67,6 +67,23 @@
         <input type="hidden" name="suspended" value="@(Model.IsSuspended ? "false" : "true")" />
         <button type="submit" class="btn @(Model.IsSuspended ? "btn-outline-danger" : "btn-danger")">@(Model.IsSuspended ? "رفع الإيقاف (إعادة نشر فرصها)" : "إيقاف المنظمة (إخفاء كل فرصها)")</button>
     </form>
+    <form asp-controller="Admin" asp-action="SetOrganizationTier" method="post" class="d-flex gap-2 align-items-center">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <label for="orgTier" class="m-0 small text-nowrap">درجة التوثيق المعروضة للزوار:</label>
+        <select id="orgTier" name="tier" class="form-select form-select-sm" style="width:auto">
+            @foreach (var t in Enum.GetValues<Foras_Khadra.Models.OrganizationTier>())
+            {
+                <option value="@t" selected="@(Model.VerificationTier == t)">@(t switch
+                {
+                    Foras_Khadra.Models.OrganizationTier.Registered => "مسجَّلة (حساب مؤكد)",
+                    Foras_Khadra.Models.OrganizationTier.Verified => "موثَّقة ✓ (تنشر بلا مراجعة)",
+                    Foras_Khadra.Models.OrganizationTier.Partner => "شريك ★ (تنشر بلا مراجعة)",
+                    _ => "غير موثَّقة"
+                })</option>
+            }
+        </select>
+        <button type="submit" class="btn btn-outline-primary btn-sm">حفظ الدرجة</button>
+    </form>
 </div>
 <a asp-controller="Admin" asp-action="OrganizationsList" class="btn btn-secondary mt-3">
     العودة للقائمة

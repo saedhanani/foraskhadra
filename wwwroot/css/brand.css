@@ -275,3 +275,126 @@ html:not(.fk-standalone) .fk-app-only { display: none !important; }
         border-radius: 12px;
     }
 }
+
+/* ===== نافذة حوار عامة (dialog أصلي) — «أبلغ عن مشكلة» وغيرها (المرحلة 3.1) ===== */
+.fk-dialog { border: 0; border-radius: 16px; padding: 0; max-width: 520px; width: calc(100% - 32px); box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+.fk-dialog::backdrop { background: rgba(13, 41, 16, .55); }
+.fk-dialog-form { padding: 22px 22px 18px; font-family: var(--fk-font-body, inherit); }
+.fk-dialog-title { font-size: 1.15rem; font-weight: 800; margin: 0 0 6px; color: var(--fk-ink, #0d2910); }
+.fk-dialog-hint { font-size: .88rem; color: #475569; margin: 0 0 14px; }
+.fk-dialog-label { display: block; font-weight: 700; font-size: .9rem; margin: 10px 0 4px; }
+.fk-dialog-input { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 9px 12px; font: inherit; background: #fff; }
+.fk-dialog-input:focus { outline: 3px solid var(--fk-sky, #42BFDD); outline-offset: 1px; border-color: var(--fk-green, #1B6B23); }
+.fk-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+.fk-dialog-result { margin: 12px 0 0; font-weight: 700; color: var(--fk-green, #1B6B23); }
+.fk-btn { border-radius: 10px; padding: 9px 18px; font: inherit; font-weight: 700; cursor: pointer; border: 1px solid transparent; }
+.fk-btn-primary { background: var(--fk-green, #1B6B23); color: #fff; }
+.fk-btn-primary:hover { background: var(--fk-green-dark, #14521b); }
+.fk-btn-ghost { background: #fff; color: #334155; border-color: #cbd5e1; }
+.fk-btn[aria-busy="true"] { opacity: .7; cursor: progress; }
+.fk-btn:focus-visible { outline: 3px solid var(--fk-sky, #42BFDD); outline-offset: 2px; }
+
+/* ===== «تابع هذه المنظمة» (المرحلة 3.2) ===== */
+.follow-form { display: inline-block; }
+.follow-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px;
+  border: 1px solid var(--fk-green, #1B6B23); background: #fff; color: var(--fk-green, #1B6B23);
+  font: inherit; font-size: .9rem; font-weight: 700; cursor: pointer; text-decoration: none; line-height: 1.2;
+}
+.follow-btn:hover { background: var(--fk-green-soft, #e9f4e6); }
+.follow-btn.is-following { background: var(--fk-green, #1B6B23); color: #fff; }
+.follow-btn:focus-visible { outline: 3px solid var(--fk-sky, #42BFDD); outline-offset: 2px; }
+.org-follow-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 10px 0 4px; }
+.org-follow-count { font-size: .9rem; color: #475569; }
+
+/* فرص المنظمة في صفحتها العامة */
+.org-opps { max-width: 1100px; margin: 28px auto 40px; padding: 0 16px; }
+.org-opps-title { font-size: 1.35rem; font-weight: 800; color: var(--fk-ink, #0d2910); margin: 0 0 14px; }
+.org-opps-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.org-opp { display: flex; flex-direction: column; background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; text-decoration: none; color: inherit; transition: box-shadow .2s, transform .2s; }
+.org-opp:hover { box-shadow: 0 10px 24px rgba(13,41,16,.12); transform: translateY(-2px); }
+.org-opp:focus-visible { outline: 3px solid var(--fk-sky, #42BFDD); outline-offset: 2px; }
+.org-opp-img { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #f1f5f9; }
+.org-opp-body { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px 12px; }
+.org-opp-type { font-size: .78rem; font-weight: 700; color: var(--fk-green, #1B6B23); }
+.org-opp-title { font-weight: 700; font-size: .98rem; line-height: 1.4; color: var(--fk-ink, #0d2910); }
+.org-opp-deadline { font-size: .82rem; color: #b45309; }
+.org-opp-deadline.is-expired { color: #64748b; }
+.org-opps-empty { text-align: center; padding: 28px 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 14px; color: #475569; }
+.org-opps-empty i { font-size: 2rem; display: block; margin-bottom: 6px; color: #94a3b8; }
+
+/* ===== تقرير الوصول للمنظمات (المرحلة 3.2) ===== */
+.reach-title { font-size: 1.6rem; font-weight: 800; color: var(--fk-ink, #0d2910); margin: 0; }
+.reach-sub { color: #475569; margin: 4px 0 0; }
+.reach-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 20px 0; }
+.reach-tile { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 2px; }
+.reach-num { font-size: 1.7rem; font-weight: 800; color: var(--fk-green, #1B6B23); line-height: 1.1; }
+.reach-lbl { font-size: .82rem; color: #475569; }
+.reach-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px; margin-bottom: 18px; }
+.reach-h2 { font-size: 1.1rem; font-weight: 800; margin: 0 0 12px; }
+.reach-chart { display: flex; align-items: flex-end; gap: 4px; height: 160px; padding-top: 8px; border-bottom: 1px solid #e2e8f0; }
+.reach-col { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+.reach-bars { display: flex; align-items: flex-end; gap: 2px; width: 100%; height: 100%; justify-content: center; }
+.reach-bar { display: block; width: 40%; max-width: 14px; min-height: 2px; border-radius: 3px 3px 0 0; }
+.reach-bar-views { background: var(--fk-sky, #42BFDD); }
+.reach-bar-clicks { background: var(--fk-green, #1B6B23); }
+.reach-day { font-size: .68rem; color: #64748b; margin-top: 4px; white-space: nowrap; }
+.reach-legend { display: flex; gap: 16px; font-size: .85rem; color: #475569; margin-top: 8px; }
+.reach-sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: middle; margin-inline-end: 4px; }
+.reach-note { font-size: .82rem; color: #64748b; margin: 10px 0 0; }
+.reach-empty { text-align: center; padding: 24px; color: #475569; }
+.reach-empty i { font-size: 2rem; display: block; margin-bottom: 6px; color: #94a3b8; }
+.reach-foot { font-size: .8rem; color: #94a3b8; text-align: center; }
+@media print {
+  .navbar-header, .custom-footer, .fk-tabbar, .no-print, #installBanner { display: none !important; }
+  .reach-page { padding: 0 !important; }
+  .reach-card, .reach-tile { break-inside: avoid; border-color: #cbd5e1; }
+  body { background: #fff !important; }
+}
+
+/* ===== إمكانية الوصول (المرحلة 3.4) ===== */
+/* 1) التباين: نص أبيض على البرتقالي #F99D27 = 2.1:1 فقط؛ النص الداكن عليه ≈ 7:1 (AA وAAA) — الأزرار والشارات البرتقالية كلها */
+.apply-button, .active-button, .nav-btn--yellow, .foras-btn-primary, .fk-compass-cta__btn, .cp-btn--orange, .btn-details, .search-btn,
+.custom-bg-orange, .auth-btn, .reg-btn, .hero-btn-primary, .activity-link-btn, .menu-mobile-cta, .contact-form .btn-primary,
+.btn-publish, .btn-filled, .form-panel .btn-primary, .btn-add-opportunity, .custom-swal-confirm, .flagship-badge, .activity-upcoming-badge,
+.program-badge, .new-tag, [style*="#f99d27"], [style*="#F99D27"], [style*="#FA9C28"], [style*="#fa9c28"] {
+    color: var(--fk-ink, #0d2910) !important;
+}
+.apply-button:hover, .active-button:hover, .nav-btn--yellow:hover, .foras-btn-primary:hover, .cp-btn--orange:hover, .btn-details:hover,
+.search-btn:hover, .auth-btn:hover, .reg-btn:hover, .hero-btn-primary:hover, .btn-publish:hover, .btn-add-opportunity:hover {
+    color: var(--fk-ink, #0d2910) !important;
+}
+/* الأزرار المنتهية رمادية: يبقى الأبيض مقروءًا على رمادي داكن */
+.expired-button { color: #fff !important; background: #6b7280 !important; }
+
+/* 2) رابط التخطي إلى المحتوى: يظهر عند التركيز بلوحة المفاتيح فقط */
+.skip-link {
+    position: absolute; inset-inline-start: 8px; top: -60px; z-index: 10000;
+    background: var(--fk-green, #1B6B23); color: #fff; padding: 10px 16px; border-radius: 10px; font-weight: 700; text-decoration: none;
+    transition: top .15s;
+}
+.skip-link:focus { top: 8px; outline: 3px solid var(--fk-sky, #42BFDD); outline-offset: 2px; }
+
+/* 3) الأسهم المرسومة للعربية تنعكس في الواجهتين الإنجليزية والفرنسية */
+html[dir="ltr"] .dir-flip { display: inline-block; transform: scaleX(-1); }
+
+/* 4) حالة التحميل للأزرار (data-submit-once) ومناطق التحميل */
+[aria-busy="true"].is-loading, .is-loading[aria-busy="true"] { position: relative; pointer-events: none; opacity: .75; }
+.is-loading[aria-busy="true"]::after {
+    content: ""; display: inline-block; width: 1em; height: 1em; margin-inline-start: .5em; vertical-align: -0.15em;
+    border: 2px solid currentColor; border-inline-end-color: transparent; border-radius: 50%; animation: fk-spin .7s linear infinite;
+}
+.fk-loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 18px; color: #64748b; font-size: .9rem; }
+.fk-loading::before {
+    content: ""; width: 18px; height: 18px; border: 2px solid #94a3b8; border-inline-end-color: transparent; border-radius: 50%; animation: fk-spin .7s linear infinite;
+}
+@keyframes fk-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .is-loading[aria-busy="true"]::after, .fk-loading::before { animation-duration: 2s; } }
+
+/* 5) حالة فارغة موحّدة */
+.fk-empty-state { text-align: center; padding: 36px 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 14px; color: #475569; margin: 16px 0; }
+.fk-empty-state i { font-size: 2.2rem; display: block; margin-bottom: 8px; color: #94a3b8; }
+.fk-empty-state p { margin: 0 0 10px; }
+
+/* 6) حلقة تركيز واضحة لعناصر القوائم */
+.nav-btn:focus-visible, .dropdown-list a:focus-visible, .dropdown-btn:focus-visible, .mobile-menu-btn:focus-visible { outline: 3px solid var(--fk-sky, #42BFDD); outline-offset: 2px; }

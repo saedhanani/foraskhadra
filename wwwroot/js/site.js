@@ -1,22 +1,56 @@
-﻿function toggleDropdown(id, event) {
+﻿// الزر الذي يفتح قائمة: aria-expanded وaria-controls تُضبط من هنا (3.4) فلا تحتاج كل قائمة إلى سمات يدوية
+function fkSyncExpanded(menuId, open) {
+  document.querySelectorAll('[onclick*="' + menuId + '"]').forEach((btn) => {
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (!btn.hasAttribute("aria-controls")) btn.setAttribute("aria-controls", menuId);
+  });
+}
+
+function toggleDropdown(id, event) {
   if (event) event.stopPropagation();
 
   const menu = document.getElementById(id);
   if (!menu) return;
 
   document.querySelectorAll(".dropdown-list").forEach((item) => {
-    if (item !== menu) item.classList.remove("show");
+    if (item !== menu && item.classList.contains("show")) { item.classList.remove("show"); if (item.id) fkSyncExpanded(item.id, false); }
   });
 
-  menu.classList.toggle("show");
+  const open = menu.classList.toggle("show");
+  fkSyncExpanded(id, open);
 }
 
 function toggleMobileMenu(event) {
   if (event) event.stopPropagation();
 
   const nav = document.getElementById("navContent");
-  if (nav) nav.classList.toggle("show");
+  if (!nav) return;
+  const open = nav.classList.toggle("show");
+  document.querySelectorAll(".mobile-menu-btn").forEach((b) => b.setAttribute("aria-expanded", open ? "true" : "false"));
 }
+
+// Escape يغلق أي قائمة مفتوحة ويعيد التركيز إلى زرها (3.4)
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  let closed = false;
+  document.querySelectorAll(".dropdown-list.show").forEach((item) => {
+    item.classList.remove("show");
+    if (item.id) { fkSyncExpanded(item.id, false); const btn = document.querySelector('[onclick*="' + item.id + '"]'); if (btn) btn.focus(); }
+    closed = true;
+  });
+  const nav = document.getElementById("navContent");
+  if (nav && nav.classList.contains("show")) { nav.classList.remove("show"); document.querySelectorAll(".mobile-menu-btn").forEach((b) => { b.setAttribute("aria-expanded", "false"); b.focus(); }); closed = true; }
+  if (closed) event.preventDefault();
+});
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll('[onclick*="toggleDropdown("]').forEach((btn) => {
+    const m = /toggleDropdown\('([^']+)'/.exec(btn.getAttribute("onclick") || "");
+    if (!m) return;
+    btn.setAttribute("aria-expanded", "false");
+    if (!btn.hasAttribute("aria-controls")) btn.setAttribute("aria-controls", m[1]);
+    if (!btn.hasAttribute("aria-haspopup")) btn.setAttribute("aria-haspopup", "true");
+  });
+});
 
 document.addEventListener("click", (event) => {
   if (!event.target.closest(".custom-dropdown")) {
@@ -271,12 +305,13 @@ document.addEventListener('submit', function (e) {
     if (e.defaultPrevented || !form.hasAttribute('data-submit-once')) return;
     if (form.dataset.submitting) { e.preventDefault(); return; }
     form.dataset.submitting = '1';
-    form.querySelectorAll('[type="submit"]').forEach(function (b) { b.disabled = true; });
+    // حالة تحميل مرئية ومعلَنة (3.5): الزر يتعطل ويظهر عليه مؤشر دوران
+    form.querySelectorAll('[type="submit"]').forEach(function (b) { b.disabled = true; b.setAttribute('aria-busy', 'true'); b.classList.add('is-loading'); });
 });
 window.addEventListener('pageshow', function () {
     document.querySelectorAll('form[data-submit-once]').forEach(function (form) {
         delete form.dataset.submitting;
-        form.querySelectorAll('[type="submit"]').forEach(function (b) { b.disabled = false; });
+        form.querySelectorAll('[type="submit"]').forEach(function (b) { b.disabled = false; b.removeAttribute('aria-busy'); b.classList.remove('is-loading'); });
     });
 });
 
@@ -286,4 +321,26 @@ document.addEventListener('click', function (e) {
     if (!nav || !nav.classList.contains('show')) return;
     if (e.target.closest('#navContent') || e.target.closest('.mobile-menu-btn')) return;
     nav.classList.remove('show');
+});
+
+
+// ===== «تابع هذه المنظمة» (3.2): إرسال بـfetch وتبديل الزر دون إعادة تحميل؛ بلا JS يُرسل النموذج عاديًا =====
+document.addEventListener('submit', function (e) {
+    var form = e.target.closest ? e.target.closest('[data-follow-form]') : null;
+    if (!form || !window.fetch || !window.FormData) return;
+    e.preventDefault();
+    var btn = form.querySelector('button');
+    if (!btn || btn.disabled) return;
+    btn.disabled = true;
+    fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+        .then(function (j) {
+            btn.classList.toggle('is-following', !!j.following);
+            btn.setAttribute('aria-pressed', j.following ? 'true' : 'false');
+            var icon = btn.querySelector('i'); if (icon) icon.className = 'bi ' + (j.following ? 'bi-bell-fill' : 'bi-bell');
+            var label = btn.querySelector('span'); if (label) label.textContent = btn.getAttribute(j.following ? 'data-text-following' : 'data-text-follow');
+            document.querySelectorAll('[data-follower-count]').forEach(function (c) { if (typeof j.count === 'number') c.textContent = j.count; });
+            btn.disabled = false;
+        })
+        .catch(function () { btn.disabled = false; form.submit(); });
 });

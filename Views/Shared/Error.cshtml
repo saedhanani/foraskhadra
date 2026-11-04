@@ -1,12 +1,28 @@
 ﻿@model Foras_Khadra.Models.ErrorViewModel
 @{
-    ViewData["Title"] = "الصفحة غير موجودة";
-    Layout = "_Layout"; 
+    // صفحة الاستثناءات (غير 404 — تلك في Home/StatusCodePage): خطأ غير متوقع، بثلاث لغات (3.5)
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    ViewData["Title"] = T("حدث خطأ غير متوقع", "Something went wrong", "Une erreur est survenue");
+    ViewData["Robots"] = "noindex";
+    Layout = "_Layout";
 }
 
 <link asp-append-version="true" rel="stylesheet" href="~/css/_Error.css" />
 
-<div class="container-404">
-    <img src="~/images/errors/404.svg" alt="404" />
-    <p class="text-container">الصفحة التي تبحث عنها غير متوفرة</p>
+<div class="container-404" dir="@(lang == "ar" ? "rtl" : "ltr")">
+    <img src="~/images/errors/404.svg" alt="" />
+    <h1 class="text-container">@T("حدث خطأ غير متوقع", "Something went wrong", "Une erreur est survenue")</h1>
+    <p class="text-container" style="font-size:1rem;">
+        @T("سُجّل الخطأ وسنصلحه. جرّب تحديث الصفحة أو عد إلى الرئيسية.", "The error was logged and we will fix it. Try reloading the page or go back home.", "L'erreur a été enregistrée et sera corrigée. Rechargez la page ou revenez à l'accueil.")
+    </p>
+    <p class="text-container" style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <a class="btn btn-success" href="@Url.Action("Index", "Home")">@T("الرئيسية", "Home", "Accueil")</a>
+        <a class="btn btn-outline-success" href="@Url.Action("AllOpportunities", "Home")">@T("كل الفرص", "All opportunities", "Toutes les opportunités")</a>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Index", "Contact")">@T("أبلغنا عن المشكلة", "Report the problem", "Signaler le problème")</a>
+    </p>
+    @if (Model?.ShowRequestId == true)
+    {
+        <p class="text-container" style="font-size:.8rem; color:#94a3b8;">Request ID: <code>@Model.RequestId</code></p>
+    }
 </div>

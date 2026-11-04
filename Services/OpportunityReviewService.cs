@@ -23,6 +23,9 @@ namespace Foras_Khadra.Services
 
         Task<bool> SetOrganizationVerifiedAsync(int organizationId, bool verified, CancellationToken ct = default);
 
+        /// <summary>درجة التوثيق المعروضة (3.1): Verified فأعلى تنشر بلا مراجعة (IsVerified يتبعها).</summary>
+        Task<bool> SetOrganizationTierAsync(int organizationId, OrganizationTier tier, CancellationToken ct = default);
+
         /// <summary>الإيقاف يحوّل فرصها المنشورة إلى Suspended فورًا؛ رفعه يعيدها Published.</summary>
         Task<bool> SetOrganizationSuspendedAsync(int organizationId, bool suspended, CancellationToken ct = default);
 
@@ -36,12 +39,15 @@ namespace Foras_Khadra.Services
         private readonly ApplicationDbContext _db;
 
         private readonly IPublishRequestService? _requests;
+        private readonly IOrganizationFollowService? _follows;
 
         /// <param name="requests">اختياري: يُغلق طلب النشر المرتبط ويراسل المنظمة عند الاعتماد (الاختبارات تمرّر null).</param>
-        public OpportunityReviewService(ApplicationDbContext db, IPublishRequestService? requests = null)
+        /// <param name="follows">اختياري: يُشعر متابعي المنظمة بالفرصة المنشورة (3.2).</param>
+        public OpportunityReviewService(ApplicationDbContext db, IPublishRequestService? requests = null, IOrganizationFollowService? follows = null)
         {
             _db = db;
             _requests = requests;
+            _follows = follows;
         }
 
         public OpportunityStatus StatusFor(Organization org) =>
@@ -89,12 +95,17 @@ namespace Foras_Khadra.Services
             if (verifyOrganization)
             {
                 var org = await _db.Organizations.FirstOrDefaultAsync(o => o.UserId == opp.CreatedByUserId, ct);
-                if (org != null) org.IsVerified = true;
+                if (org != null)
+                {
+                    org.IsVerified = true;
+                    if (org.VerificationTier < OrganizationTier.Verified) org.VerificationTier = OrganizationTier.Verified;
+                }
             }
 
             await MarkReviewNotificationsReadAsync(opportunityId, ct);
             await _db.SaveChangesAsync(ct);
             if (_requests != null) await _requests.MarkPublishedAsync(opportunityId, ct);
+            if (_follows != null) await _follows.NotifyFollowersAsync(opportunityId, ct);
             return true;
         }
 
@@ -120,6 +131,20 @@ namespace Foras_Khadra.Services
             var org = await _db.Organizations.FirstOrDefaultAsync(o => o.Id == organizationId, ct);
             if (org == null) return false;
             org.IsVerified = verified;
+            // الدرجة المعروضة تتبع التوثيق: التوثيق يرفعها إلى «موثَّقة» على الأقل، وإلغاؤه يعيد «موثَّقة» إلى «مسجَّلة» (الشريك يبقى شريكًا)
+            if (verified && org.VerificationTier < OrganizationTier.Verified) org.VerificationTier = OrganizationTier.Verified;
+            else if (!verified && org.VerificationTier == OrganizationTier.Verified) org.VerificationTier = OrganizationTier.Registered;
+            await _db.SaveChangesAsync(ct);
+            return true;
+        }
+
+        public async Task<bool> SetOrganizationTierAsync(int organizationId, OrganizationTier tier, CancellationToken ct = default)
+        {
+            if (!Enum.IsDefined(tier)) return false;
+            var org = await _db.Organizations.FirstOrDefaultAsync(o => o.Id == organizationId, ct);
+            if (org == null) return false;
+            org.VerificationTier = tier;
+            org.IsVerified = tier >= OrganizationTier.Verified;
             await _db.SaveChangesAsync(ct);
             return true;
         }
