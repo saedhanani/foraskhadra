@@ -88,6 +88,7 @@ public async Task<IActionResult> Create()
 
             if (await _userManager.IsInRoleAsync(currentUser, "Organization"))
             {
+                if (!currentUser.EmailConfirmed) return RedirectToAction("ConfirmRequired", "Account"); // المنظمة تنشر ببريد مؤكَّد فقط
                 var org = await _context.Organizations.FirstOrDefaultAsync(o => o.UserId == currentUser.Id);
                 if (org != null) model.PublishedBy = org.Name;
             }
@@ -190,6 +191,7 @@ public async Task<IActionResult> Create()
             var isAdminCreate = await _userManager.IsInRoleAsync(currentUser, "Admin");
             if (!isAdminCreate && org != null)
             {
+                if (!currentUser.EmailConfirmed) return RedirectToAction("ConfirmRequired", "Account");
                 // فرص المنظمات غير الموثَّقة تنتظر اعتماد المدير؛ المنظمة الموقوفة لا تنشر
                 if (org.IsSuspended) return Forbid();
                 opportunity.Status = review.StatusFor(org);
@@ -467,6 +469,11 @@ public async Task<IActionResult> Create()
             if (User.Identity?.IsAuthenticated != true)
                 return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Details", "Opportunity", new { id }) });
 
+            // التأكيد مطلوب عند «قدّم الآن» فقط (التصفح والحفظ بلا تأكيد)
+            var applicant = await _userManager.GetUserAsync(User);
+            if (applicant != null && !applicant.EmailConfirmed && !User.IsInRole("Admin"))
+                return RedirectToAction("ConfirmRequired", "Account", new { returnUrl = Url.Action("Details", "Opportunity", new { id }) });
+
             var opp = await _context.Opportunities.AsNoTracking()
                 .Where(o => o.Id == id)
                 .Select(o => new { o.Status, o.ApplyLink })
@@ -505,6 +512,7 @@ public async Task<IActionResult> Create()
 
             var userId = _userManager.GetUserId(User);
             ViewBag.IsSaved = userId != null && await _saved.IsSavedAsync(userId, opp.Id);
+            ViewBag.EmailUnconfirmed = userId != null && !User.IsInRole("Admin") && (await _userManager.FindByIdAsync(userId))?.EmailConfirmed == false;
             ViewBag.IsWatching = userId != null && await _tracker.IsWatchingAsync(userId, opp.Id);
             ViewBag.SaveCount = (await _saved.SaveCountsAsync(new[] { opp.Id })).GetValueOrDefault(opp.Id);
 

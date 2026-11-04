@@ -120,6 +120,10 @@
             </div>
         </div>
 
+        @if ((ViewBag.EmailUnconfirmed as bool?) == true)
+        {
+            @await Html.PartialAsync("_ConfirmEmailBanner")
+        }
         <div class="opp-actions">
             @if (User.IsInRole("Admin") || User.IsInRole("User") || User.IsInRole("Organization"))
             {

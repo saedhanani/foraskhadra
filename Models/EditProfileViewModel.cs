@@ -14,6 +14,10 @@ namespace Foras_Khadra.Models
         [EmailAddress(ErrorMessage = "البريد الإلكتروني غير صالح")]
         public string Email { get; set; }
 
+        /// <summary>مطلوبة فقط عند تغيير بريد الدخول (المرحلة 0.4).</summary>
+        [DataType(DataType.Password)]
+        public string? CurrentPassword { get; set; }
+
         [Required(ErrorMessage = "الدولة مطلوبة")]
         public string Country { get; set; }
 

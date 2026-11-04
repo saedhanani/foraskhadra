@@ -1,0 +1,35 @@
+@{
+    var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var dir = culture == "ar" ? "rtl" : "ltr";
+    string T(string ar, string en, string fr) => culture == "en" ? en : culture == "fr" ? fr : ar;
+    ViewData["Title"] = T("أكّد بريدك أولًا", "Confirm your email first", "Confirmez d'abord votre e-mail");
+    var email = ViewData["Email"] as string ?? "";
+    var returnUrl = ViewData["ReturnUrl"] as string;
+    var sent = TempData["ConfirmationSent"] as string;
+}
+<div class="auth-page" dir="@dir" style="min-height:calc(100vh - 120px);display:flex;align-items:center;justify-content:center;background:#F2FBF3;padding:24px 16px;">
+    <div class="auth-card" style="background:#fff;border-radius:20px;padding:40px 28px;max-width:560px;width:100%;text-align:center;box-shadow:0 10px 30px rgba(27,107,35,.08);">
+        <div style="font-size:64px;line-height:1;margin-bottom:12px;">📬</div>
+        <h1 style="font-size:1.6rem;color:#1B6B23;margin-bottom:10px;">@ViewData["Title"]</h1>
+        <p style="color:#444;">
+            @T("رابط التقديم يُفتح بعد تأكيد بريدك. أرسلنا رابط التأكيد إلى ", "The apply link opens after you confirm your email. We sent a confirmation link to ", "Le lien de candidature s'ouvre après confirmation de votre e-mail. Nous avons envoyé un lien à ")
+            <b dir="ltr">@email</b>
+            @T("؛ افتحه واضغط «تأكيد البريد». لم يصلك؟ راجع مجلد الرسائل غير المرغوبة أو أعد الإرسال.", ". Open it and click “Confirm email”. Nothing received? Check your spam folder or resend.", ". Ouvrez-le et cliquez sur « Confirmer l'e-mail ». Rien reçu ? Vérifiez vos indésirables ou renvoyez.")
+        </p>
+        @if (!string.IsNullOrEmpty(sent))
+        {
+            <div class="alert alert-success" style="margin-top:12px;">@sent</div>
+        }
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px;">
+            <form asp-controller="Account" asp-action="ResendConfirmation" method="post">
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <button type="submit" class="btn auth-btn" style="background:#1B6B23;color:#fff;border-radius:10px;padding:10px 22px;">@T("أعد إرسال رابط التأكيد", "Resend confirmation link", "Renvoyer le lien")</button>
+            </form>
+            @if (!string.IsNullOrEmpty(returnUrl))
+            {
+                <a href="@returnUrl" class="btn" style="border:1px solid #1B6B23;color:#1B6B23;border-radius:10px;padding:10px 22px;">@T("العودة إلى الفرصة", "Back to the opportunity", "Retour à l'opportunité")</a>
+            }
+            <a asp-controller="Account" asp-action="ProfileSettings" class="btn" style="border:1px solid #ccc;color:#444;border-radius:10px;padding:10px 22px;">@T("بريدك خطأ؟ عدّله", "Wrong email? Change it", "Mauvais e-mail ? Modifiez-le")</a>
+        </div>
+    </div>
+</div>

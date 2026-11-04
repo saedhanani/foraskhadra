@@ -580,6 +580,13 @@
                                         <input asp-for="Email" class="form-control profile-input" />
                                         <span asp-validation-for="Email" class="text-danger"></span>
                                     </div>
+                                    <div style="grid-column: 1 / -1;">
+                                        @{ var pwLang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName; }
+                                        <label asp-for="CurrentPassword" class="form-label">@(pwLang == "en" ? "Current password (only when changing the email)" : pwLang == "fr" ? "Mot de passe actuel (seulement pour changer l'e-mail)" : "كلمة المرور الحالية (فقط عند تغيير البريد)")</label>
+                                        <input asp-for="CurrentPassword" class="form-control profile-input" autocomplete="current-password" />
+                                        <span asp-validation-for="CurrentPassword" class="text-danger"></span>
+                                        <small class="text-muted">@(pwLang == "en" ? "A confirmation link goes to the new address; your current email stays until you confirm it." : pwLang == "fr" ? "Un lien de confirmation est envoyé à la nouvelle adresse ; l'actuelle reste active jusqu'à confirmation." : "يصل رابط تأكيد إلى البريد الجديد؛ يبقى بريدك الحالي حتى تؤكده.")</small>
+                                    </div>
                                 </div>
 
                                 <!-- Country & Nationality -->

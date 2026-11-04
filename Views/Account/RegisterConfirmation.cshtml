@@ -7,6 +7,7 @@
     ViewData["Title"] = Localizer["PageTitle"];
     var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
     var dir = culture == "ar" ? "rtl" : "ltr";
+    string T(string ar, string en, string fr) => culture == "en" ? en : culture == "fr" ? fr : ar;
 }
 
 <div class="auth-page" dir="@dir">
@@ -25,17 +26,14 @@
             </svg>
         </div>
 
-        <h1 class="auth-title"> @Localizer["SuccessTitle"]</h1>
-
+        <h1 class="auth-title">@T("تم إنشاء حسابك 🎉", "Your account is ready 🎉", "Votre compte est prêt 🎉")</h1>
         <p class="auth-subtitle">
-            @Localizer["SuccessSubtitle"]
+            @T("أنت مسجَّل الدخول الآن. أرسلنا رابط تأكيد إلى ", "You are signed in. We sent a confirmation link to ", "Vous êtes connecté. Nous avons envoyé un lien de confirmation à ")<b dir="ltr">@ViewData["Email"]</b>@T("؛ التأكيد مطلوب قبل التقديم على الفرص، وتستطيع تصفحها وحفظها الآن.", ". Confirmation is required before applying; you can browse and save opportunities right away.", ". La confirmation est requise avant de postuler ; vous pouvez déjà parcourir et enregistrer les opportunités.")
         </p>
-
-        <a asp-controller="Account"
-           asp-action="Login"
-           class="btn auth-btn w-100 mt-4">
-            @Localizer["GoToLogin"]
-        </a>
+        <a asp-controller="Home" asp-action="AllOpportunities" class="btn auth-btn w-100 mt-4">@T("تصفح الفرص", "Browse opportunities", "Parcourir les opportunités")</a>
+        <form asp-controller="Account" asp-action="ResendConfirmation" method="post" class="mt-2">
+            <button type="submit" class="btn w-100" style="border:1px solid #1B6B23;color:#1B6B23;border-radius:10px;">@T("لم يصلك؟ أعد إرسال رابط التأكيد", "Nothing received? Resend the link", "Rien reçu ? Renvoyer le lien")</button>
+        </form>
     </div>
 </div>
 

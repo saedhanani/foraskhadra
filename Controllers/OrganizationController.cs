@@ -100,7 +100,7 @@ namespace Foras_Khadra.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("auth")]
-        public async Task<IActionResult> Register(RegisterOrganizationViewModel model)
+        public async Task<IActionResult> Register(RegisterOrganizationViewModel model, [FromServices] Foras_Khadra.Services.IEmailQueue emails)
         {
             model.Countries = GetCountries();
 
@@ -159,6 +159,14 @@ namespace Foras_Khadra.Controllers
                 await _userManager.AddToRoleAsync(identityUser, "Organization");
             }
 
+            // رابط تأكيد البريد: إنشاء الفرص يتطلب بريدًا مؤكَّدًا (OpportunityController.Create)
+            {
+                var code = await _userManager.GenerateEmailConfirmationTokenAsync(identityUser);
+                var link = Url.Action("ConfirmEmail", "Account", new { userId = identityUser.Id, code = TokenCodec.Encode(code) }, Request.Scheme)!;
+                var mail = Foras_Khadra.Services.AccountEmails.ConfirmEmail(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName, link, model.ContactName);
+                emails.Enqueue(identityUser.Email!, mail.Subject, mail.Html);
+            }
+
             // إنشاء Organization بدون لمس الباسورد (Password يُخزن hashed في IdentityUser)
             var organization = new Organization
             {
@@ -212,21 +220,8 @@ namespace Foras_Khadra.Controllers
             var isNormalUser = await _userManager.IsInRoleAsync(user, "User"); // المستخدم العادي
 
 
-            if (await _userManager.IsInRoleAsync(user, "User")) // المستخدم العادي
-            {
-                TempData["UserLoginAlert"] = _localizer["UserLoginAlert"].Value; // النص العربي/الإنجليزي/الفرنسي
-                TempData["UserLoginRedirectText"] = _localizer["UserLoginRedirectText"].Value; // نص الزر
-                TempData["UserLoginRedirect"] = Url.Action("Login", "Account"); // صفحة تسجيل دخول المستخدمين
-                return RedirectToAction("Login");
-            }
-
-            // تحقق كلمة المرور
-            var result = await _signInManager.PasswordSignInAsync(
-                user,
-                model.Password,
-                isPersistent: false,
-                lockoutOnFailure: true // يُقفل الحساب مؤقتًا بعد محاولات فاشلة متكررة
-            );
+            // كلمة المرور قبل الدور: لا نكشف نوع الحساب لمن لا يعرف كلمة المرور
+            var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, lockoutOnFailure: true);
 
             if (result.IsLockedOut)
             {
@@ -240,6 +235,14 @@ namespace Foras_Khadra.Controllers
                 return View(model);
             }
 
+            if (isNormalUser)
+            {
+                TempData["UserLoginAlert"] = _localizer["UserLoginAlert"].Value;
+                TempData["UserLoginRedirectText"] = _localizer["UserLoginRedirectText"].Value;
+                TempData["UserLoginRedirect"] = Url.Action("Login", "Account");
+                return RedirectToAction("Login");
+            }
+            await _signInManager.SignInAsync(user, isPersistent: false);
             // توجيه الادمن للوحة الإدارة والمنظمة للوحة التحكم الخاصة بها
             if (isAdmin)
                 return RedirectToAction("Dashboard", "Admin");
@@ -311,20 +314,7 @@ namespace Foras_Khadra.Controllers
             if (user == null)
                 return RedirectToAction("Login");
 
-            // ✨ تحديث الإيميل (الدخول + التواصل)
-            if (!string.IsNullOrWhiteSpace(model.ContactEmail) &&
-                model.ContactEmail != user.Email)
-            {
-                user.Email = model.ContactEmail;
-                user.UserName = model.ContactEmail;
-                user.NormalizedEmail = _userManager.NormalizeEmail(model.ContactEmail);
-                user.NormalizedUserName = _userManager.NormalizeName(model.ContactEmail);
-
-                await _userManager.UpdateAsync(user);
-                organization.ContactEmail = model.ContactEmail;
-
-                await _signInManager.RefreshSignInAsync(user);
-            }
+            // بريد الدخول لا يتغير من هنا (كان يُغيَّر بلا كلمة مرور ولا تأكيد ويكسر فهرس الاسم الفريد)؛ المدير يعدّله من لوحة الإدارة
 
             // باقي البيانات
             organization.Name = model.Name ?? organization.Name;
@@ -349,27 +339,21 @@ namespace Foras_Khadra.Controllers
         [HttpPost]
         [ValidateAntiForgeryToken]
         [EnableRateLimiting("auth")]
-        public async Task<IActionResult> ForgotPassword(string email)
+        public async Task<IActionResult> ForgotPassword(string email, [FromServices] Foras_Khadra.Services.IEmailQueue emails)
         {
-            if (string.IsNullOrEmpty(email))
+            if (string.IsNullOrWhiteSpace(email))
                 return View();
 
-            var organization = await _context.Organizations.FirstOrDefaultAsync(o => o.ContactEmail == email);
-            if (organization == null)
-                return View("ForgotPasswordConfirmation");
+            // رمز Identity القياسي (مُوقَّع ومحدود الصلاحية) بدل الرمز النصي القديم في جدول المنظمات
+            var user = await _userManager.FindByEmailAsync(email.Trim());
+            if (user == null || !await _userManager.IsInRoleAsync(user, "Organization"))
+                return View("ForgotPasswordConfirmation"); // لا نكشف وجود الحساب
 
-            organization.PasswordResetToken = Guid.NewGuid().ToString();
-            organization.TokenExpiry = DateTime.Now.AddMinutes(30);
-            await _context.SaveChangesAsync();
+            var organization = await _context.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.UserId == user.Id);
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetLink = Url.Action("ResetPassword", "Organization",
+                new { email = user.Email, token = TokenCodec.Encode(token) }, Request.Scheme);
 
-            var resetLink = Url.Action(
-                "ResetPassword",
-                "Organization",
-                new { email = organization.ContactEmail, token = organization.PasswordResetToken },
-                Request.Scheme
-            );
-
-            // رسالة الإيميل
             string emailBody = $@"
 <!DOCTYPE html>
 <html lang='{CultureInfo.CurrentCulture.TwoLetterISOLanguageName}' dir='{(CultureInfo.CurrentCulture.TwoLetterISOLanguageName == "ar" ? "rtl" : "ltr")}'>
@@ -381,9 +365,9 @@ namespace Foras_Khadra.Controllers
     <div style='max-width:600px;margin:auto;background:#fff;padding:30px;border-radius:8px;'>
         <h2 style='text-align:center;'>Foras Khadra</h2>
         <p>{_localizer["ResetPasswordGreeting"]}</p>
-        <p>{string.Format(_localizer["ResetPasswordBodyOrg"], organization.Name)}</p>
+        <p>{string.Format(_localizer["ResetPasswordBodyOrg"], System.Net.WebUtility.HtmlEncode(organization?.Name ?? user.Email))}</p>
         <p style='text-align:center;margin:30px 0;'>
-            <a href='{resetLink}' 
+            <a href='{resetLink}'
                style='background:#28a745; color:#fff; padding:12px 30px;
                       text-decoration:none; border-radius:6px; font-weight:bold;'>
                 {_localizer["ResetPasswordButton"]}
@@ -394,33 +378,17 @@ namespace Foras_Khadra.Controllers
     </div>
 </body>
 </html>";
-
-
             string emailSubject = $"{_localizer["SiteName"]} - {_localizer["ResetPasswordSubject"]}";
-
-            await _emailSender.SendEmailAsync(
-    organization.ContactEmail,
-    emailSubject,
-    emailBody
-); 
+            emails.Enqueue(user.Email!, emailSubject, emailBody);
             return View("ForgotPasswordConfirmation");
-
-
-
         }
 
         [HttpGet]
         public IActionResult ResetPassword(string email, string token)
         {
-            var org = _context.Organizations.FirstOrDefault(o => o.ContactEmail == email);
-            if (org == null || org.PasswordResetToken != token || org.TokenExpiry < DateTime.Now)
+            if (string.IsNullOrWhiteSpace(email) || TokenCodec.Decode(token) == null)
                 return BadRequest("الرابط غير صالح أو منتهي الصلاحية.");
-
-            return View(new OrganizationResetPasswordViewModel
-            {
-                Email = email,
-                Token = token
-            });
+            return View(new OrganizationResetPasswordViewModel { Email = email, Token = token });
         }
 
         [HttpPost]
@@ -430,38 +398,22 @@ namespace Foras_Khadra.Controllers
             if (!ModelState.IsValid)
                 return View(model);
 
-            // احصل على المستخدم من Identity وليس من Organization
             var user = await _userManager.FindByEmailAsync(model.Email);
-            if (user == null || !await _userManager.IsInRoleAsync(user, "Organization"))
+            var rawToken = TokenCodec.Decode(model.Token);
+            if (user == null || rawToken == null || !await _userManager.IsInRoleAsync(user, "Organization"))
             {
-                await _signInManager.SignOutAsync();
-                ModelState.AddModelError("", "يجب تسجيل الدخول كمنظمة للوصول لهذه الصفحة.");
+                ModelState.AddModelError("", "الرابط غير صالح أو منتهي الصلاحية.");
                 return View(model);
             }
 
-            var org = await _context.Organizations.FirstOrDefaultAsync(o => o.ContactEmail == model.Email);
-            if (org == null || org.PasswordResetToken != model.Token || org.TokenExpiry < DateTime.Now)
-                return BadRequest("الرابط غير صالح أو منتهي الصلاحية.");
-
-            // إعادة تعيين كلمة المرور باستخدام UserManager
-            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-            var resetResult = await _userManager.ResetPasswordAsync(user, resetToken, model.Password);
-
+            var resetResult = await _userManager.ResetPasswordAsync(user, rawToken, model.Password);
             if (!resetResult.Succeeded)
             {
                 foreach (var error in resetResult.Errors)
                     ModelState.AddModelError("", error.Description);
                 return View(model);
             }
-
-            // مسح التوكن من Organization بعد النجاح
-            org.PasswordResetToken = null;
-            org.TokenExpiry = null;
-            await _context.SaveChangesAsync();
-
             return View("ResetPasswordConfirmation");
         }
-
-
     }
 }

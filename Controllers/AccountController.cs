@@ -20,6 +20,7 @@ namespace Foras_Khadra.Controllers
         private readonly Microsoft.AspNetCore.Identity.UI.Services.IEmailSender _emailSender;
         private readonly IStringLocalizer<AccountController> _localizer;
         private readonly Foras_Khadra.Services.IReferralService _referrals;
+        private readonly Foras_Khadra.Services.IEmailQueue _emails;
 
         /// <summary>كعكة رمز الإحالة (5-3): تُضبط من ?ref=CODE على صفحة التسجيل وتُستهلك عند إنشاء الحساب.</summary>
         private const string ReferralCookie = "fk_ref";
@@ -28,9 +29,11 @@ namespace Foras_Khadra.Controllers
             Microsoft.AspNetCore.Identity.UI.Services.IEmailSender emailSender,
             SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager, IStringLocalizer<AccountController> localizer,
-            Foras_Khadra.Services.IReferralService referrals)
+            Foras_Khadra.Services.IReferralService referrals,
+            Foras_Khadra.Services.IEmailQueue emails)
         {
             _signInManager = signInManager;
+            _emails = emails;
             _userManager = userManager;
             _emailSender = emailSender;
             _localizer = localizer;
@@ -113,11 +116,103 @@ namespace Foras_Khadra.Controllers
                 Response.Cookies.Delete(ReferralCookie);
             }
 
+            await SendConfirmationEmailAsync(user);
+            // دخول فوري: يتصفح ويحفظ قبل التأكيد؛ التأكيد يلزم عند «قدّم الآن» فقط
+            await _signInManager.SignInAsync(user, isPersistent: true);
             return RedirectToAction("RegisterConfirmation");
         }
 
         [HttpGet]
-        public IActionResult RegisterConfirmation() => View();
+        public async Task<IActionResult> RegisterConfirmation()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            ViewData["Email"] = user?.Email;
+            return View();
+        }
+
+        // ===== تأكيد البريد (المرحلة 0.4): التسجيل يرسل الرابط ويُدخل المستخدم؛ رابط «قدّم الآن» (/go/) يتطلب التأكيد =====
+        [HttpGet]
+        public async Task<IActionResult> ConfirmEmail(string? userId, string? code)
+        {
+            var token = TokenCodec.Decode(code);
+            var user = string.IsNullOrEmpty(userId) ? null : await _userManager.FindByIdAsync(userId);
+            if (user == null || token == null)
+                return ConfirmView(false, T("الرابط غير صالح.", "This link is not valid.", "Ce lien n'est pas valide."));
+            if (user.EmailConfirmed)
+                return ConfirmView(true, T("بريدك مؤكَّد من قبل.", "Your email was already confirmed.", "Votre e-mail était déjà confirmé."));
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (!result.Succeeded)
+                return ConfirmView(false, T("انتهت صلاحية الرابط أو استُعمل من قبل. أعد الإرسال من حسابك.",
+                    "The link expired or was already used. Resend it from your account.",
+                    "Le lien a expiré ou a déjà été utilisé. Renvoyez-le depuis votre compte."));
+            if (_userManager.GetUserId(User) == user.Id) await _signInManager.RefreshSignInAsync(user);
+            return ConfirmView(true, T("شكرًا! بريدك مؤكَّد وروابط التقديم مفتوحة لك الآن.",
+                "Thank you! Your email is confirmed and apply links are now open to you.",
+                "Merci ! Votre e-mail est confirmé et les liens de candidature vous sont ouverts."));
+        }
+
+        /// <summary>تأكيد تغيير بريد الدخول من ProfileSettings — البريد القديم يبقى حتى هنا.</summary>
+        [HttpGet]
+        public async Task<IActionResult> ConfirmEmailChange(string? userId, string? email, string? code)
+        {
+            var token = TokenCodec.Decode(code);
+            var user = string.IsNullOrEmpty(userId) ? null : await _userManager.FindByIdAsync(userId);
+            if (user == null || token == null || string.IsNullOrWhiteSpace(email))
+                return ConfirmView(false, T("الرابط غير صالح.", "This link is not valid.", "Ce lien n'est pas valide."));
+            var result = await _userManager.ChangeEmailAsync(user, email, token);
+            if (result.Succeeded) result = await _userManager.SetUserNameAsync(user, email);
+            if (!result.Succeeded)
+                return ConfirmView(false, T("انتهت صلاحية الرابط أو البريد مستخدم من قبل.",
+                    "The link expired or the email is already in use.",
+                    "Le lien a expiré ou l'e-mail est déjà utilisé."));
+            if (_userManager.GetUserId(User) == user.Id) await _signInManager.RefreshSignInAsync(user);
+            return ConfirmView(true, T("تم تغيير بريد الدخول إلى " + email, "Your sign-in email is now " + email, "Votre e-mail de connexion est maintenant " + email));
+        }
+
+        /// <summary>صفحة «أكّد بريدك أولًا» — يصل إليها من /go/ أو من إنشاء فرصة لمنظمة غير مؤكَّدة.</summary>
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> ConfirmRequired(string? returnUrl)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login");
+            if (user.EmailConfirmed) return Url.IsLocalUrl(returnUrl) ? LocalRedirect(returnUrl!) : RedirectToAction("Index", "Home");
+            ViewData["Email"] = user.Email;
+            ViewData["ReturnUrl"] = Url.IsLocalUrl(returnUrl) ? returnUrl : null;
+            return View();
+        }
+
+        [Authorize]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
+        public async Task<IActionResult> ResendConfirmation(string? returnUrl)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login");
+            if (!user.EmailConfirmed) await SendConfirmationEmailAsync(user);
+            TempData["ConfirmationSent"] = T("أُعيد إرسال رابط التأكيد إلى " + user.Email, "Confirmation link resent to " + user.Email, "Lien de confirmation renvoyé à " + user.Email);
+            return RedirectToAction("ConfirmRequired", new { returnUrl = Url.IsLocalUrl(returnUrl) ? returnUrl : null });
+        }
+
+        private async Task SendConfirmationEmailAsync(ApplicationUser user)
+        {
+            var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var link = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = TokenCodec.Encode(code) }, Request.Scheme)!;
+            var mail = Foras_Khadra.Services.AccountEmails.ConfirmEmail(Lang, link, user.FirstName);
+            _emails.Enqueue(user.Email!, mail.Subject, mail.Html);
+        }
+
+        private IActionResult ConfirmView(bool success, string message)
+        {
+            ViewData["Success"] = success;
+            ViewData["Message"] = message;
+            return View("ConfirmEmail");
+        }
+
+        private static string Lang => CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+        private static string T(string ar, string en, string fr) => Lang == "en" ? en : Lang == "fr" ? fr : ar;
+
 
         // ===== GET: Login =====
         [HttpGet]
@@ -140,20 +235,9 @@ namespace Foras_Khadra.Controllers
                 return View(model);
             }
 
-            if (await _userManager.IsInRoleAsync(user, "Organization"))
-            {
-                TempData["OrgLoginAlert"] = _localizer["OrgLoginAlert"].Value;
-                TempData["OrgLoginRedirectText"] = _localizer["OrgLoginRedirectText"].Value;
-                TempData["OrgLoginRedirect"] = Url.Action("Login", "Organization");
-                return RedirectToAction("Login");
-            }
+            // كلمة المرور قبل الدور: لا نكشف نوع الحساب لمن لا يعرف كلمة المرور
 
-            var result = await _signInManager.PasswordSignInAsync(
-                user,
-                model.Password,
-                isPersistent: false,
-                lockoutOnFailure: true // يُقفل الحساب مؤقتًا بعد محاولات فاشلة متكررة
-            );
+            var result = await _signInManager.CheckPasswordSignInAsync(user, model.Password, lockoutOnFailure: true);
 
             if (result.IsLockedOut)
             {
@@ -167,6 +251,14 @@ namespace Foras_Khadra.Controllers
                 return View(model);
             }
 
+            if (await _userManager.IsInRoleAsync(user, "Organization"))
+            {
+                TempData["OrgLoginAlert"] = _localizer["OrgLoginAlert"].Value;
+                TempData["OrgLoginRedirectText"] = _localizer["OrgLoginRedirectText"].Value;
+                TempData["OrgLoginRedirect"] = Url.Action("Login", "Organization");
+                return RedirectToAction("Login");
+            }
+            await _signInManager.SignInAsync(user, isPersistent: model.RememberMe);
             if (await _userManager.IsInRoleAsync(user, "Admin"))
             {
                 return RedirectToAction("Dashboard", "Admin");
@@ -307,11 +399,7 @@ namespace Foras_Khadra.Controllers
             //  إرسال الإيميل
             string emailSubject = $"{_localizer["SiteName"]} - {_localizer["ResetPasswordSubject"]}";
 
-            await _emailSender.SendEmailAsync(
-                user.Email,
-                emailSubject,
-                emailBody
-            );
+            _emails.Enqueue(user.Email!, emailSubject, emailBody); // في الخلفية: لا يكشف زمن الرد وجود الحساب ولا يفشل الطلب بتعطّل SMTP
 
             //  صفحة تأكيد الإرسال
             return View("ForgotPasswordConfirmation");
@@ -412,18 +500,39 @@ namespace Foras_Khadra.Controllers
             user.Nationality = model.Nationality;
             user.Interests = model.Interests;
 
-            if (user.Email != model.Email)
+            var emailChangeRequested = !string.Equals(user.Email, model.Email?.Trim(), StringComparison.OrdinalIgnoreCase);
+            if (emailChangeRequested)
             {
-                user.Email = model.Email;
-                user.UserName = model.Email;
-                user.NormalizedEmail = _userManager.NormalizeEmail(model.Email);
-                user.NormalizedUserName = _userManager.NormalizeName(model.Email);
+                // تغيير بريد الدخول: كلمة المرور الحالية + رابط تأكيد إلى العنوان الجديد؛ البريد الحالي يبقى حتى التأكيد
+                if (string.IsNullOrEmpty(model.CurrentPassword) || !await _userManager.CheckPasswordAsync(user, model.CurrentPassword))
+                {
+                    ModelState.AddModelError("CurrentPassword", T("أدخل كلمة المرور الحالية لتغيير البريد", "Enter your current password to change the email", "Saisissez votre mot de passe actuel pour changer l'e-mail"));
+                    model.Email = user.Email!;
+                    return View(model);
+                }
+                var newEmail = model.Email!.Trim();
+                if (await _userManager.FindByEmailAsync(newEmail) != null)
+                {
+                    ModelState.AddModelError("Email", _localizer["EmailAlreadyUsed"]);
+                    model.Email = user.Email!;
+                    return View(model);
+                }
+                var code = await _userManager.GenerateChangeEmailTokenAsync(user, newEmail);
+                var link = Url.Action("ConfirmEmailChange", "Account", new { userId = user.Id, email = newEmail, code = TokenCodec.Encode(code) }, Request.Scheme)!;
+                var mail = Foras_Khadra.Services.AccountEmails.ChangeEmail(Lang, link, newEmail);
+                _emails.Enqueue(newEmail, mail.Subject, mail.Html);
             }
-
-            await _userManager.UpdateAsync(user);
+            var update = await _userManager.UpdateAsync(user);
+            if (!update.Succeeded)
+            {
+                foreach (var e in update.Errors) ModelState.AddModelError("", e.Description);
+                model.Email = user.Email!;
+                return View(model);
+            }
             await _signInManager.RefreshSignInAsync(user);
-
-            TempData["Success"] = _localizer["ProfileUpdatedSuccess"].Value;
+            TempData["Success"] = emailChangeRequested
+                ? T("حُفظت بياناتك. أرسلنا رابط تأكيد إلى البريد الجديد؛ يبقى بريدك الحالي حتى تؤكده.", "Saved. We sent a confirmation link to the new email; your current email stays until you confirm it.", "Enregistré. Un lien de confirmation a été envoyé au nouvel e-mail ; l'actuel reste actif jusqu'à confirmation.")
+                : _localizer["ProfileUpdatedSuccess"].Value;
             return RedirectToAction("ProfileSettings");
         }
 

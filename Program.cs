@@ -64,6 +64,10 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 // ===== إعداد خدمات البريد =====
 builder.Services.AddTransient<IEmailSender, EmailSender>();
+// البريد يُرسل في الخلفية (تأكيد البريد، الاستعادة): الطلب لا ينتظر SMTP
+builder.Services.AddSingleton<EmailQueue>();
+builder.Services.AddSingleton<IEmailQueue>(sp => sp.GetRequiredService<EmailQueue>());
+builder.Services.AddHostedService(sp => sp.GetRequiredService<EmailQueue>());
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
