@@ -1,0 +1,28 @@
+@{
+    var code = (int)(ViewData["Code"] ?? 404);
+    var culture = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var dir = culture == "ar" ? "rtl" : "ltr";
+    string T(string ar, string en, string fr) => culture == "en" ? en : culture == "fr" ? fr : ar;
+    var is404 = code == 404;
+    ViewData["Title"] = is404 ? T("الصفحة غير موجودة", "Page not found", "Page introuvable") : T("حدث خطأ", "Something went wrong", "Une erreur est survenue");
+    ViewData["Robots"] = "noindex";
+}
+<link asp-append-version="true" rel="stylesheet" href="~/css/_Error.css" />
+<div class="container-404" dir="@dir" style="text-align:center;padding:40px 16px 60px;">
+    <img src="~/images/errors/404.svg" alt="" style="max-width:320px;width:100%;" />
+    <h1 style="font-size:1.6rem;color:#1B6B23;margin:18px 0 8px;">@ViewData["Title"] <span style="color:#999;font-size:.9rem;">(@code)</span></h1>
+    <p class="text-container" style="color:#555;">
+        @(is404
+            ? T("ربما انتهت الفرصة أو تغيّر رابطها. جرّب البحث أو تصفّح الفرص المفتوحة الآن.", "The opportunity may have closed or its link changed. Try a search or browse what's open now.", "L'opportunité est peut-être close ou son lien a changé. Essayez une recherche ou parcourez les opportunités ouvertes.")
+            : T("نعمل على إصلاح المشكلة. عد للرئيسية أو حاول بعد قليل.", "We're fixing it. Go back home or try again shortly.", "Nous corrigeons le problème. Revenez à l'accueil ou réessayez bientôt."))
+    </p>
+    <form asp-controller="Home" asp-action="AllOpportunities" method="get" style="display:flex;gap:8px;justify-content:center;max-width:520px;margin:18px auto;">
+        <input type="search" name="search" class="form-control" placeholder="@T("ابحث عن منحة، وظيفة، زمالة…", "Search scholarships, jobs, fellowships…", "Rechercher bourses, emplois, bourses de recherche…")" style="border-radius:10px;" />
+        <button type="submit" class="btn" style="background:#1B6B23;color:#fff;border-radius:10px;">@T("بحث", "Search", "Rechercher")</button>
+    </form>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <a asp-controller="Home" asp-action="Index" class="btn" style="border:1px solid #1B6B23;color:#1B6B23;border-radius:10px;">@T("الرئيسية", "Home", "Accueil")</a>
+        <a asp-controller="Home" asp-action="AllOpportunities" class="btn" style="border:1px solid #1B6B23;color:#1B6B23;border-radius:10px;">@T("كل الفرص", "All opportunities", "Toutes les opportunités")</a>
+        <a asp-controller="contact" asp-action="Index" class="btn" style="border:1px solid #ccc;color:#444;border-radius:10px;">@T("أبلغنا عن المشكلة", "Report the problem", "Signaler le problème")</a>
+    </div>
+</div>

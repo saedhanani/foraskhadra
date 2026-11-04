@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -77,12 +78,12 @@ namespace Foras_Khadra.Controllers.Api
             titleAr = o.TitleAr,
             titleEn = o.TitleEn,
             type = o.Type?.ToString(),
-            endDate = o.EndDate?.ToString("yyyy-MM-dd"),
+            endDate = o.EndDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
             applyLink = o.ApplyLink,
             hasImage = !string.IsNullOrEmpty(o.ImagePath),
             pipeId = o.PipeId,
             aiGenerated = o.AiGenerated,
-            publishDate = o.PublishDate.ToString("yyyy-MM-dd"),
+            publishDate = o.PublishDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
             detailsUrl = $"{BaseUrl}/Opportunity/Details/{o.Id}",
             editUrl = $"{BaseUrl}/Opportunity/Edit/{o.Id}",
             fundingType = o.FundingType.ToString(),
@@ -91,7 +92,7 @@ namespace Foras_Khadra.Controllers.Api
             eligibleCountries = FacetParser.EligibleCodes(o).ToArray(),
             hostCountry = o.HostCountryIso,
             programKey = o.ProgramKey,
-            lastCheckedAt = o.LastCheckedAt?.ToString("yyyy-MM-dd"),
+            lastCheckedAt = o.LastCheckedAt?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
         };
 
         private static string[] DegreeNames(DegreeLevels levels) =>
@@ -235,7 +236,7 @@ namespace Foras_Khadra.Controllers.Api
             DateTime? end = null;
             if (dt == Models.DeadlineType.SpecificDate)
             {
-                if (!DateTime.TryParse(d.EndDate, out var e)) return BadRequest(new { error = "bad_end_date" });
+                if (!DateTime.TryParse(d.EndDate, CultureInfo.InvariantCulture, DateTimeStyles.None, out var e)) return BadRequest(new { error = "bad_end_date" });
                 end = e.Date;
             }
             // تعقيم HTML المولّد آليًا قبل التخزين (يُعرض لاحقًا بـ Html.Raw)
@@ -434,9 +435,10 @@ namespace Foras_Khadra.Controllers.Api
     }
 
     /// <summary>يرفض كل طلب لا يحمل X-Team-Key مطابقًا لـ TeamApi:Key (مقارنة ثابتة الزمن).</summary>
-    public class TeamApiKeyAttribute : Attribute, IAsyncActionFilter
+    public class TeamApiKeyAttribute : Attribute, IAsyncAuthorizationFilter
     {
-        public async Task OnActionExecutionAsync(ActionExecutingContext ctx, ActionExecutionDelegate next)
+        // فلتر تفويض لا فلتر إجراء: يعمل قبل ربط النموذج، فلا يُقرأ جسم JSON (حتى 20 ميغابايت) لطلب بلا مفتاح
+        public Task OnAuthorizationAsync(AuthorizationFilterContext ctx)
         {
             var cfg = ctx.HttpContext.RequestServices.GetRequiredService<IConfiguration>();
             var expected = cfg["TeamApi:Key"] ?? "";
@@ -444,9 +446,8 @@ namespace Foras_Khadra.Controllers.Api
             if (expected.Length < 24 || given.Length == 0 || !CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(expected), Encoding.UTF8.GetBytes(given)))
             {
                 ctx.Result = new UnauthorizedObjectResult(new { error = "unauthorized" });
-                return;
             }
-            await next();
+            return Task.CompletedTask;
         }
     }
 }

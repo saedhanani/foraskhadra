@@ -96,14 +96,6 @@ builder.Services.AddHostedService<NotificationSweepHostedService>();
 builder.Services.AddCors(options => options.AddPolicy("public-api", policy =>
     policy.AllowAnyOrigin().WithMethods("GET").WithHeaders("Accept", "Accept-Language")));
 
-// ===== Session & Cache =====
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddSession(options =>
-{
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-});
 
 builder.Services
     // التحقق من رمز CSRF تلقائيًا في كل POST/PUT/DELETE (واجهة المنصة مستثناة بـ IgnoreAntiforgeryToken)
@@ -303,7 +295,7 @@ app.UseSerilogRequestLogging(options => options.GetLevel = (ctx, _, ex) =>
     : LogEventLevel.Information);
 
 // ❗ خليها بعد exception handling مباشرة
-app.UseStatusCodePages();
+app.UseStatusCodePagesWithReExecute("/Home/StatusCodePage", "?code={0}"); // صفحة 404 بالعلامة (Views/Home/StatusCodePage.cshtml)
 
 if (!app.Environment.IsDevelopment())
 {
@@ -356,7 +348,6 @@ app.UseRequestLocalization(localizationOptions);
 app.UseRouting();
 app.UseCors();
 app.UseRateLimiter();
-app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 

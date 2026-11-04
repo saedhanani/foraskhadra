@@ -42,7 +42,7 @@ namespace Foras_Khadra.Controllers
         public async Task<IActionResult> Weekly()
         {
             if (User.IsInRole("Organization"))
-                return RedirectToAction("Dashboard", "Organization");
+                return RedirectToAction("OrgOpportunities", "Opportunity");
 
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login", "Account");
@@ -62,7 +62,7 @@ namespace Foras_Khadra.Controllers
         {
             // للمنظمات والإدارة لوحاتهما الخاصة
             if (User.IsInRole("Organization"))
-                return RedirectToAction("Dashboard", "Organization");
+                return RedirectToAction("OrgOpportunities", "Opportunity");
 
             var user = await _userManager.GetUserAsync(User);
             if (user == null)

@@ -33,7 +33,7 @@ namespace Foras_Khadra.Controllers
             {
                 var url = new XElement(ns + "url", new XElement(ns + "loc", BaseUrl + path));
                 if (lastModified.HasValue)
-                    url.Add(new XElement(ns + "lastmod", lastModified.Value.ToString("yyyy-MM-dd")));
+                    url.Add(new XElement(ns + "lastmod", lastModified.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
                 url.Add(new XElement(ns + "changefreq", changeFrequency), new XElement(ns + "priority", priority));
                 urls.Add(url);
             }

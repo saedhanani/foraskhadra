@@ -22,13 +22,14 @@ namespace Foras_Khadra.Services
             email.From.Add(new MailboxAddress(_mailSettings.DisplayName, _mailSettings.Mail));
             email.To.Add(MailboxAddress.Parse("suppforaskhadra@gmail.com")); // البريد المستلم
             email.ReplyTo.Add(MailboxAddress.Parse(contact.Email));
-            email.Subject = $"New Contact Message from {contact.FirstName} {contact.LastName}";
+            email.Subject = $"New Contact Message from {contact.FirstName} {contact.LastName}".Replace("\r", " ").Replace("\n", " ");
 
             var builder = new BodyBuilder
             {
                 HtmlBody = $@"
-                    <p><strong>Phone:</strong> {contact.Phone}</p>
-                    <p><strong>Message:</strong><br />{contact.MessageContent}</p>"
+                    <p><strong>From:</strong> {System.Net.WebUtility.HtmlEncode(contact.FirstName + " " + contact.LastName)} &lt;{System.Net.WebUtility.HtmlEncode(contact.Email)}&gt;</p>
+                    <p><strong>Phone:</strong> {System.Net.WebUtility.HtmlEncode(contact.Phone)}</p>
+                    <p><strong>Message:</strong><br />{System.Net.WebUtility.HtmlEncode(contact.MessageContent ?? "").Replace("\n", "<br />")}</p>"
             };
             email.Body = builder.ToMessageBody();
             email.MessageId = MimeUtils.GenerateMessageId();

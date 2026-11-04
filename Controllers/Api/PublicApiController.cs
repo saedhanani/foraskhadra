@@ -61,7 +61,7 @@ namespace Foras_Khadra.Controllers.Api
         [HttpGet("opportunities")]
         public async Task<IActionResult> Opportunities(string? type, string? country, string? q, int page = 1, int pageSize = 20)
         {
-            page = Math.Max(1, page);
+            page = Math.Clamp(page, 1, 100000); // رقم ضخم كان يفيض إلى OFFSET سالب → 500
             pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
 
             var query = _db.Opportunities
@@ -126,7 +126,7 @@ namespace Foras_Khadra.Controllers.Api
         [HttpGet("articles")]
         public async Task<IActionResult> Articles(int page = 1, int pageSize = 20)
         {
-            page = Math.Max(1, page);
+            page = Math.Clamp(page, 1, 100000); // رقم ضخم كان يفيض إلى OFFSET سالب → 500
             pageSize = Math.Clamp(pageSize, 1, MaxPageSize);
 
             var query = _db.Articles.AsNoTracking();

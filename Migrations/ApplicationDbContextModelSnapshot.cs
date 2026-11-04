@@ -1540,9 +1540,6 @@ namespace Foras_Khadra.Migrations
                     b.Property<int>("OpportunityId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("OpportunityId1")
-                        .HasColumnType("int");
-
                     b.Property<int>("OrganizationId")
                         .HasColumnType("int");
 
@@ -1555,8 +1552,6 @@ namespace Foras_Khadra.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("OpportunityId");
-
-                    b.HasIndex("OpportunityId1");
 
                     b.HasIndex("OrganizationId");
 
@@ -2048,14 +2043,10 @@ namespace Foras_Khadra.Migrations
             modelBuilder.Entity("Foras_Khadra.Models.ReelsRequest", b =>
                 {
                     b.HasOne("Foras_Khadra.Models.Opportunity", "Opportunity")
-                        .WithMany()
+                        .WithMany("ReelsRequests")
                         .HasForeignKey("OpportunityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Foras_Khadra.Models.Opportunity", null)
-                        .WithMany("ReelsRequests")
-                        .HasForeignKey("OpportunityId1");
 
                     b.HasOne("Foras_Khadra.Models.Organization", "Organization")
                         .WithMany()

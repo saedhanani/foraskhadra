@@ -26,6 +26,9 @@ namespace Foras_Khadra.Controllers
         {
             if (!string.IsNullOrEmpty(contact.Honeypot))
                 return Json(new { success = false, message = "Bot detected" });
+            ModelState.Remove(nameof(contact.Honeypot));
+            if (!ModelState.IsValid)
+                return Json(new { success = false, message = "تحقق من الحقول المطلوبة (الاسم، البريد، الرسالة)." });
 
             // var recaptchaToken = Request.Form["g-recaptcha-response"].FirstOrDefault();
             // if (string.IsNullOrEmpty(recaptchaToken))
@@ -54,7 +57,8 @@ namespace Foras_Khadra.Controllers
             }
             catch (Exception ex)
             {
-                return Json(new { success = false, message = $"خطأ في الإرسال: {ex.Message}" });
+                Serilog.Log.Error(ex, "Contact form email failed");
+                return Json(new { success = false, message = "تعذّر إرسال الرسالة الآن، حاول بعد قليل." }); // لا تفاصيل SMTP للمتصفح
             }
         }
     }

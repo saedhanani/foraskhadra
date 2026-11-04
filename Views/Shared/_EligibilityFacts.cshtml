@@ -52,7 +52,7 @@
         if (countryName != null) facts.Add(("bi-geo-alt", countryName, ""));
     }
     if (Model.ForWomenOnly) facts.Add(("bi-gender-female", T("للنساء فقط", "Women only", "Femmes uniquement"), ""));
-    if (Model.StartDate.HasValue) facts.Add(("bi-calendar-event", T("يبدأ ", "Starts ", "Début ") + Model.StartDate.Value.ToString("yyyy-MM-dd") + (string.IsNullOrEmpty(Model.Venue) ? "" : " · " + Model.Venue), ""));
+    if (Model.StartDate.HasValue) facts.Add(("bi-calendar-event", T("يبدأ ", "Starts ", "Début ") + Model.StartDate.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) + (string.IsNullOrEmpty(Model.Venue) ? "" : " · " + Model.Venue), ""));
     if (Model.HasApplicationFee) facts.Add(("bi-exclamation-triangle", T("فيها رسوم تقديم", "Has an application fee", "Frais de candidature"), "fact-warn"));
 }
 

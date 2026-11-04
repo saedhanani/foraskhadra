@@ -137,6 +137,20 @@ namespace Foras_Khadra.Services
         }
 
         /// <summary>المسار على القرص ومسار الويب لملف جديد باسم عشوائي داخل wwwroot/{subfolder}.</summary>
+        public void Delete(string? webPath)
+        {
+            if (string.IsNullOrWhiteSpace(webPath)) return;
+            var rel = webPath.Trim().Replace('\\', '/').TrimStart('/');
+            if (!(rel.StartsWith("uploads/", StringComparison.OrdinalIgnoreCase) || rel.StartsWith("logos/", StringComparison.OrdinalIgnoreCase)) || rel.Contains("..")) return;
+            try
+            {
+                var full = Path.Combine(_env.WebRootPath, rel.Replace('/', Path.DirectorySeparatorChar));
+                if (File.Exists(full)) File.Delete(full);
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+
         private (string FullPath, string WebPath) NewTarget(string subfolder, string ext)
         {
             subfolder = subfolder.Trim('/', '\\').Replace('\\', '/');

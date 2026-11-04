@@ -300,7 +300,9 @@ public async Task<IActionResult> Create()
             // تحديث الصورة فقط إذا تم رفعها
             if (model.Image != null)
             {
+                var oldImage = opportunity.ImagePath;
                 opportunity.ImagePath = await _images.SaveAsync(model.Image, "uploads/opportunities");
+                _images.Delete(oldImage); // الصورة المستبدلة لا تبقى على القرص
             }
 
             // تحديث الدول المتاحة
@@ -451,6 +453,7 @@ public async Task<IActionResult> Create()
             if (opp.CreatedByUserId != currentUser.Id && !await _userManager.IsInRoleAsync(currentUser, "Admin"))
                 return Forbid();
 
+            _images.Delete(opp.ImagePath);
             _context.Opportunities.Remove(opp);
             await _context.SaveChangesAsync();
 
@@ -567,18 +570,6 @@ public async Task<IActionResult> Create()
             return View(MyOpportunitiesViewModel.Build(opportunities, cards, lang));
         }
 
-        // ================= FILTER BY TYPE =================
-        [Route("Opportunities/{type}")]
-        public IActionResult ByType(OpportunityType type)
-        {
-            var data = _context.Opportunities
-                .Where(x => x.Status == OpportunityStatus.Published && x.Type == type)
-                .ToList();
-
-            ViewBag.Type = type;
-            return View(data);
-        }
-
         // ================= ORG OPPORTUNITIES =================
         [Authorize(Roles = "Organization")]
         public async Task<IActionResult> OrgOpportunities()
@@ -647,6 +638,8 @@ public async Task<IActionResult> Create()
 
             var org = await _context.Organizations.FirstOrDefaultAsync(o => o.UserId == user.Id);
             if (org == null) return BadRequest();
+            // المنظمة تطلب الريلز لفرصها فقط
+            if (!await _context.Opportunities.AnyAsync(o => o.Id == id && o.CreatedByUserId == user.Id)) return NotFound();
 
             var request = await _context.ReelsRequests
                 .FirstOrDefaultAsync(r => r.OpportunityId == id && r.OrganizationId == org.Id);

@@ -249,7 +249,7 @@ namespace Foras_Khadra.Controllers
                 return RedirectToAction("Index", "Home");
         }
 
-        public IActionResult Dashboard() => View();
+        public IActionResult Dashboard() => RedirectToAction("OrgOpportunities", "Opportunity"); // لوحة المنظمة هي قائمة فرصها
 
         [HttpPost]
         [ValidateAntiForgeryToken]

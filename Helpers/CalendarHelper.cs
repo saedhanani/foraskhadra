@@ -7,7 +7,7 @@ namespace Foras_Khadra.Helpers
     {
         public static string BuildDeadlineEvent(int opportunityId, string title, DateTime deadline, string url, DateTime? now = null)
         {
-            var stamp = (now ?? DateTime.UtcNow).ToString("yyyyMMdd'T'HHmmss'Z'");
+            var stamp = (now ?? DateTime.UtcNow).ToString("yyyyMMdd'T'HHmmss'Z'", System.Globalization.CultureInfo.InvariantCulture);
             var day = deadline.Date;
 
             var sb = new StringBuilder();

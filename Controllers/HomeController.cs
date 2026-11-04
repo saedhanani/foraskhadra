@@ -168,14 +168,11 @@ namespace Foras_Khadra.Controllers
             return View(new ErrorViewModel { RequestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
-        public IActionResult StatusCode(int code)
+        /// <summary>صفحة 404/403/… بالعلامة (UseStatusCodePagesWithReExecute)؛ رمز الحالة الأصلي يبقى في الرد.</summary>
+        public IActionResult StatusCodePage(int code)
         {
-            var model = new ErrorViewModel
-            {
-                RequestId = System.Diagnostics.Activity.Current?.Id ?? HttpContext.TraceIdentifier
-            };
-
-            return View("Error", model);
+            ViewData["Code"] = code;
+            return View("StatusCodePage");
         }
 
         /// <summary>"حمّل التطبيق": خطوات تثبيت فرص خضراء على iPhone (من Safari) وAndroid والحاسوب، وتفعيل التنبيهات.
@@ -216,6 +213,7 @@ namespace Foras_Khadra.Controllers
         /// <summary>يقطع الاستعلام إلى صفحة واحدة ويحسب حالة الانتهاء لعناصرها.</summary>
         private static List<Opportunity> PageOf(IQueryable<Opportunity> query, int page, out int totalCount)
         {
+            page = Math.Clamp(page, 1, 10000); // رقم سالب أو ضخم كان يصير OFFSET سالبًا → 500
             totalCount = query.Count();
             var items = query
                 .OrderByDescending(o => o.PublishDate)   // من الأحدث للأقدم
@@ -368,6 +366,7 @@ namespace Foras_Khadra.Controllers
         public IActionResult OrganizationsMap(string country = null, string sector = null, int page = 1)
         {
             int pageSize = 24;
+            page = Math.Clamp(page, 1, 10000);
 
             var registeredOrganizations = _context.Organizations
     .Where(o => !string.IsNullOrEmpty(o.LogoPath))

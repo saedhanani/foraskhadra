@@ -26,6 +26,7 @@ public class ArticlesController : Controller
     public async Task<IActionResult> Index(string search, int page = 1)
     {
         const int pageSize = 10;
+        page = Math.Clamp(page, 1, 10000);
 
         var query = _context.Articles.AsQueryable();
 

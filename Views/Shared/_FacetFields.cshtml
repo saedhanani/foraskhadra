@@ -86,7 +86,7 @@
         </div>
         <div class="field">
             <label for="@Id("StartDate")">@T("بدء الحدث (مؤتمر/مسابقة)", "Event start (conference/competition)", "Début de l'événement")</label>
-            <input type="date" name="@Name("StartDate")" id="@Id("StartDate")" value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
+            <input type="date" name="@Name("StartDate")" id="@Id("StartDate")" value="@(Model.StartDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture))" />
         </div>
         <div class="field">
             <label for="@Id("Venue")">@T("المكان", "Venue", "Lieu")</label>

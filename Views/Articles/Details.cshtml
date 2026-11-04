@@ -47,7 +47,7 @@
         ["@type"] = "Article",
         ["headline"] = articleTitle,
         ["description"] = ViewData["Description"],
-        ["datePublished"] = Model.PublishDate.ToString("yyyy-MM-dd"),
+        ["datePublished"] = Model.PublishDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
         ["author"] = new Dictionary<string, object?> { ["@type"] = "Person", ["name"] = string.IsNullOrWhiteSpace(Model.Author) ? "فرص خضراء" : Model.Author },
         ["publisher"] = new Dictionary<string, object?>
         {

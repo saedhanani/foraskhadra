@@ -3,6 +3,9 @@ namespace Foras_Khadra.Services
     /// <summary>رفع الصور (شعارات، صور الفرص، المقالات، الفريق) مع التحقق من الامتداد والحجم والمحتوى.</summary>
     public interface IImageUploadService
     {
+        /// <summary>يحذف ملفًا مرفوعًا سابقًا (مسار ويب داخل /uploads أو /logos فقط)؛ يتجاهل الأخطاء.</summary>
+        void Delete(string? webPath);
+
         /// <summary>يتحقق من الملف؛ يعيد رسالة الخطأ أو null إن كان صالحًا.</summary>
         string? Validate(IFormFile? file);
 

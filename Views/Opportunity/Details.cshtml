@@ -67,9 +67,9 @@
             ["@type"] = "JobPosting",
             ["title"] = title,
             ["description"] = string.Join("\n\n", new[] { plainDescription, Plain(seoDetailsHtml) }.Where(s => s.Length > 0)),
-            ["datePosted"] = Model.PublishDate.ToString("yyyy-MM-dd"),
+            ["datePosted"] = Model.PublishDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
             ["validThrough"] = Model.DeadlineType == DeadlineType.SpecificDate && Model.EndDate.HasValue
-                ? Model.EndDate.Value.ToString("yyyy-MM-dd") : null,
+                ? Model.EndDate.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : null,
             ["employmentType"] = Model.Type == OpportunityType.Internships ? "INTERN" : null,
             ["hiringOrganization"] = new Dictionary<string, object?> { ["@type"] = "Organization", ["name"] = publisherName },
             ["jobLocation"] = countryNames.Select(n => new Dictionary<string, object?>
@@ -229,7 +229,7 @@
                     {
                         @* عدّاد تنازلي حيّ (4-5): الموعد = نهاية ذلك اليوم بتوقيت المتصفح *@
                         <span class="deadline-countdown" id="deadlineCountdown"
-                              data-deadline="@Model.EndDate.Value.ToString("yyyy-MM-dd")T23:59:59"
+                              data-deadline="@Model.EndDate.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)T23:59:59"
                               data-left="@(lang == "en" ? "left" : lang == "fr" ? "restant" : "تبقى")"
                               data-d="@(lang == "en" ? "d" : lang == "fr" ? "j" : "يوم")"
                               data-h="@(lang == "en" ? "h" : lang == "fr" ? "h" : "ساعة")"

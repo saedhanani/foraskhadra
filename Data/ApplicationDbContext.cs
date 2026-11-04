@@ -236,7 +236,7 @@ namespace Foras_Khadra.Data
 
             modelBuilder.Entity<ReelsRequest>()
                 .HasOne(r => r.Opportunity)
-                .WithMany()
+                .WithMany(o => o.ReelsRequests) // كانت WithMany() فأنشأ EF عمود ظل OpportunityId1
                 .HasForeignKey(r => r.OpportunityId)
                 .OnDelete(DeleteBehavior.Cascade); // OK
 
