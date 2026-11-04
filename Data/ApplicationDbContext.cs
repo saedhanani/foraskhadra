@@ -34,6 +34,7 @@ namespace Foras_Khadra.Data
         public DbSet<PushSubscription> PushSubscriptions { get; set; }
         public DbSet<OpportunityDailyStat> OpportunityDailyStats { get; set; }
         public DbSet<Field> Fields { get; set; }
+        public DbSet<PublishRequest> PublishRequests { get; set; }
 
         // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -73,6 +74,14 @@ namespace Foras_Khadra.Data
             // فهارس مسار منصة الفريق (أُنشئت في هجرة TeamPipeline اليدوية؛ تُعلن هنا حتى لا تحذفها الهجرات التالية)
             modelBuilder.Entity<Opportunity>().HasIndex(o => o.PipeId);
             modelBuilder.Entity<Opportunity>().HasIndex(o => o.Status);
+
+            // طلبات النشر من بوابة المنظمات: حذف الفرصة يفكّ الربط ولا يحذف الطلب
+            modelBuilder.Entity<PublishRequest>().HasIndex(r => r.Status);
+            modelBuilder.Entity<PublishRequest>()
+                .HasOne(r => r.Opportunity)
+                .WithMany()
+                .HasForeignKey(r => r.OpportunityId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // الفرص المحفوظة: لا تكرار لنفس الفرصة عند نفس المستخدم، وتُحذف مع حذف الفرصة.
             // جهة المستخدم بلا cascade في القاعدة (SQL Server يرفض مسارين: المستخدم → المحفوظات والمستخدم → فرصه → المحفوظات)؛

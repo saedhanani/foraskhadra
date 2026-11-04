@@ -74,6 +74,11 @@ namespace Foras_Khadra.Helpers
                           $"“{opp.TitleEn}” from {opp.PublishedBy} — approve or reject it.",
                           $"« {opp.TitleFr} » de {opp.PublishedBy} — à valider ou refuser."),
                         "/Admin/Review", $"review{opp.Id}", lang);
+                case NotificationKind.PublishRequestNew:
+                    return new PushMessage(
+                        T("طلب نشر جديد من منظمة", "New publishing request", "Nouvelle demande de publication"),
+                        T($"{n.Label} أرسلت رابط فرصة لنشرها.", $"{n.Label} sent an opportunity link to publish.", $"{n.Label} a envoyé un lien d'opportunité à publier."),
+                        "/Admin/PublishRequests", $"request{n.LinkParams}", lang);
                 case NotificationKind.InterestMatches:
                     return new PushMessage(
                         T("فرص جديدة لك", "New opportunities for you", "Nouvelles opportunités pour vous"),

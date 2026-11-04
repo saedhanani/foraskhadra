@@ -35,7 +35,14 @@ namespace Foras_Khadra.Services
 
         private readonly ApplicationDbContext _db;
 
-        public OpportunityReviewService(ApplicationDbContext db) => _db = db;
+        private readonly IPublishRequestService? _requests;
+
+        /// <param name="requests">اختياري: يُغلق طلب النشر المرتبط ويراسل المنظمة عند الاعتماد (الاختبارات تمرّر null).</param>
+        public OpportunityReviewService(ApplicationDbContext db, IPublishRequestService? requests = null)
+        {
+            _db = db;
+            _requests = requests;
+        }
 
         public OpportunityStatus StatusFor(Organization org) =>
             org.IsVerified ? OpportunityStatus.Published : OpportunityStatus.PendingReview;
@@ -87,6 +94,7 @@ namespace Foras_Khadra.Services
 
             await MarkReviewNotificationsReadAsync(opportunityId, ct);
             await _db.SaveChangesAsync(ct);
+            if (_requests != null) await _requests.MarkPublishedAsync(opportunityId, ct);
             return true;
         }
 

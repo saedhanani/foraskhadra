@@ -1,0 +1,243 @@
+@* بوابة المنظمات (/for-organizations): الوعد + الأرقام + طلب نشر بلا حساب مع تقدير حيّ للأعضاء المؤهَّلين *@
+@model Foras_Khadra.Models.PartnersPageVM
+@using Foras_Khadra.Models
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    ViewData["Title"] = T("للمنظمات: انشر فرصتك مجانًا خلال 48 ساعة", "For organizations: publish your opportunity free within 48 hours", "Pour les organisations : publiez votre opportunité gratuitement sous 48 h");
+    ViewData["Description"] = T("أرسل رابط فرصتك فقط. نكتبها بثلاث لغات مع شروط الأهلية، وننشرها خلال 48 ساعة، وتصل إلى شباب الوطن العربي المؤهَّلين لها فقط.",
+        "Send only the link to your opportunity. We write it in three languages with eligibility criteria, publish within 48 hours, and reach only the eligible youth in the Arab world.",
+        "Envoyez seulement le lien de votre opportunité. Nous la rédigeons en trois langues avec les critères d'éligibilité, la publions sous 48 heures, et touchons uniquement les jeunes éligibles du monde arabe.");
+
+    var sent = Context.Request.Query["sent"] == "1";
+    var sentTo = TempData["RequestSentTo"] as string;
+    var sentReach = TempData["RequestReach"] as int?;
+    var f = Model.Form;
+    string N(int n) => n.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+    var typeNames = new (OpportunityType Type, string Name)[]
+    {
+        (OpportunityType.Scholarships, T("منحة دراسية", "Scholarship", "Bourse d'études")),
+        (OpportunityType.Fellowships, T("زمالة", "Fellowship", "Fellowship")),
+        (OpportunityType.Jobs, T("وظيفة", "Job", "Emploi")),
+        (OpportunityType.Internships, T("تدريب", "Internship / training", "Stage / formation")),
+        (OpportunityType.Volunteering, T("تطوع", "Volunteering", "Bénévolat")),
+        (OpportunityType.Conferences, T("مؤتمر أو ورشة", "Conference or workshop", "Conférence ou atelier")),
+        (OpportunityType.Competitions, T("مسابقة أو جائزة", "Competition or award", "Concours ou prix")),
+    };
+}
+
+<style>
+    .org-page { max-width: 1040px; margin: 0 auto; padding: 24px 16px 48px; }
+    .org-hero { text-align: center; padding: 28px 12px 10px; }
+    .org-hero .kicker { display: inline-block; background: #E8F5E9; color: var(--fk-green, #1B6B23); font-weight: 700; border-radius: 999px; padding: 6px 14px; font-size: .9rem; }
+    .org-hero h1 { font-size: clamp(1.5rem, 3.4vw, 2.3rem); font-weight: 800; color: var(--fk-green, #1B6B23); margin: 14px 0 10px; line-height: 1.45; }
+    .org-hero p { color: #475569; font-size: 1.05rem; line-height: 1.9; max-width: 760px; margin: 0 auto; }
+    .org-numbers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px auto 0; max-width: 720px; }
+    .org-num { background: #fff; border: 1px solid #DCEFDD; border-radius: 16px; padding: 14px 10px; text-align: center; }
+    .org-num b { display: block; font-size: 1.6rem; color: var(--fk-green, #1B6B23); }
+    .org-num span { color: #64748B; font-size: .9rem; }
+    .org-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 30px 0; }
+    .org-step { background: #F2FBF3; border-radius: 16px; padding: 18px; }
+    .org-step .n { width: 34px; height: 34px; border-radius: 50%; background: var(--fk-green, #1B6B23); color: #fff; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+    .org-step h3 { font-size: 1.05rem; font-weight: 800; margin: 0 0 6px; color: #0F3D14; }
+    .org-step p { margin: 0; color: #475569; line-height: 1.7; font-size: .95rem; }
+    .org-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 22px; align-items: start; }
+    .org-card { background: #fff; border: 1px solid #DCEFDD; border-radius: 20px; padding: 24px; box-shadow: 0 10px 30px rgba(27,107,35,.06); }
+    .org-card h2 { font-size: 1.3rem; font-weight: 800; color: var(--fk-green, #1B6B23); margin: 0 0 6px; }
+    .org-card .hint { color: #64748B; margin-bottom: 16px; line-height: 1.7; }
+    .org-field { margin-bottom: 14px; }
+    .org-field label { display: block; font-weight: 700; margin-bottom: 6px; color: #0F3D14; }
+    .org-field input, .org-field select, .org-field textarea { width: 100%; border: 1px solid #CBD5E1; border-radius: 10px; padding: 10px 12px; font: inherit; }
+    .org-field input:focus, .org-field select:focus, .org-field textarea:focus { outline: 2px solid #A5D6A7; border-color: var(--fk-green, #1B6B23); }
+    .org-field .err { color: #B91C1C; font-size: .9rem; margin-top: 4px; }
+    .org-two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .org-reach { background: #FFF7E6; border: 1px solid #FFE0A3; border-radius: 12px; padding: 12px 14px; margin: 6px 0 16px; color: #7C4A03; line-height: 1.6; }
+    .org-reach b { font-size: 1.25rem; color: #C77E1F; }
+    .org-submit { background: var(--fk-green, #1B6B23); color: #fff; border: 0; border-radius: 12px; padding: 12px 22px; font-weight: 800; font-size: 1.05rem; width: 100%; cursor: pointer; }
+    .org-submit:hover { background: #155A1C; }
+    .org-perks { list-style: none; padding: 0; margin: 0; }
+    .org-perks li { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px dashed #DCEFDD; line-height: 1.6; }
+    .org-perks li:last-child { border-bottom: 0; }
+    .org-perks i { color: var(--fk-green, #1B6B23); font-size: 1.2rem; margin-top: 2px; }
+    .org-perks small { display: block; color: #64748B; }
+    .org-sent { background: #E8F5E9; border: 1px solid #A5D6A7; border-radius: 16px; padding: 20px; margin: 10px 0 22px; text-align: center; }
+    .org-sent h2 { color: var(--fk-green, #1B6B23); font-weight: 800; font-size: 1.3rem; margin: 6px 0; }
+    .org-faq details { border-bottom: 1px solid #E5E7EB; padding: 10px 0; }
+    .org-faq summary { cursor: pointer; font-weight: 700; color: #0F3D14; }
+    .org-faq p { margin: 8px 0 0; color: #475569; line-height: 1.7; }
+    .org-alt { text-align: center; color: #64748B; margin-top: 18px; }
+    @@media (max-width: 860px) { .org-grid { grid-template-columns: 1fr; } .org-steps { grid-template-columns: 1fr; } }
+    @@media (max-width: 560px) { .org-numbers { grid-template-columns: 1fr 1fr 1fr; gap: 8px; } .org-num b { font-size: 1.25rem; } .org-two { grid-template-columns: 1fr; } }
+</style>
+
+<div class="org-page" dir="@dir">
+    <section class="org-hero">
+        <span class="kicker"><i class="bi bi-building"></i> @T("للمنظمات والجامعات والشركات", "For organizations, universities and companies", "Pour les organisations, universités et entreprises")</span>
+        <h1>@T("انشر فرصتك مجانًا خلال 48 ساعة، بثلاث لغات، وتصل إلى الشباب المؤهَّلين لها فقط.",
+               "Publish your opportunity free within 48 hours, in three languages, reaching only the youth who qualify.",
+               "Publiez votre opportunité gratuitement sous 48 heures, en trois langues, auprès des seuls jeunes éligibles.")</h1>
+        <p>@T("لا تكتب شيئًا: أرسل رابط الفرصة فقط. فريقنا يكتبها بالعربية والإنجليزية والفرنسية مع شروط الأهلية، ثم تصل إشعاراتها للأعضاء الذين تنطبق عليهم، وتُفهرس في Google بثلاث لغات.",
+              "You write nothing: send only the link. Our team writes it in Arabic, English and French with the eligibility criteria; members who qualify get notified, and it is indexed by Google in three languages.",
+              "Vous n'écrivez rien : envoyez seulement le lien. Notre équipe la rédige en arabe, anglais et français avec les critères d'éligibilité ; les membres éligibles sont notifiés et elle est indexée par Google en trois langues.")</p>
+        <div class="org-numbers">
+            <div class="org-num"><b>@N(Model.Numbers.Members)</b><span>@T("عضو مسجَّل", "registered members", "membres inscrits")</span></div>
+            <div class="org-num"><b>@N(Model.Numbers.OpenOpportunities)</b><span>@T("فرصة مفتوحة الآن", "open opportunities now", "opportunités ouvertes")</span></div>
+            <div class="org-num"><b>@N(Model.Numbers.MemberCountries)</b><span>@T("دولة يأتي منها أعضاؤنا", "countries our members come from", "pays d'origine des membres")</span></div>
+        </div>
+    </section>
+
+    @if (sent)
+    {
+        <div class="org-sent" id="sent">
+            <div style="font-size:2.2rem;line-height:1;">✅</div>
+            <h2>@T("وصل طلبكم", "We received your request", "Nous avons reçu votre demande")</h2>
+            <p style="margin:0;color:#1F4D24;line-height:1.8;">
+                @T("سنراجع الرابط ونكتب الفرصة وننشرها عادةً خلال 48 ساعة، ثم نرسل رابطها إلى", "We will review the link, write the opportunity and usually publish it within 48 hours, then send its link to", "Nous examinerons le lien, rédigerons l'opportunité et la publierons généralement sous 48 heures, puis enverrons son lien à")
+                @if (!string.IsNullOrEmpty(sentTo)) { <b>@sentTo</b> } else { <span>@T("بريدكم", "your email", "votre e-mail")</span> }@(".")
+                @if (sentReach is > 0)
+                {
+                    <br /><span>@T("تقديريًا ستصل إلى نحو", "It should reach about", "Elle devrait atteindre environ") <b>@N(sentReach.Value)</b> @T("عضو مؤهَّل.", "eligible members.", "membres éligibles.")</span>
+                }
+            </p>
+        </div>
+    }
+
+    <section class="org-steps" aria-label="@T("كيف يعمل", "How it works", "Comment ça marche")">
+        <div class="org-step"><span class="n">1</span><h3>@T("أرسل الرابط", "Send the link", "Envoyez le lien")</h3><p>@T("اسم الجهة، بريد للتواصل، ورابط الفرصة في موقعكم. دقيقة واحدة وبلا حساب.", "Organization name, a contact email, and the link to the opportunity on your site. One minute, no account.", "Nom de l'organisation, un e-mail de contact et le lien de l'opportunité sur votre site. Une minute, sans compte.")</p></div>
+        <div class="org-step"><span class="n">2</span><h3>@T("نكتب ونراجع", "We write and review", "Nous rédigeons et validons")</h3><p>@T("فريقنا يكتب الفرصة بثلاث لغات مع شروط الأهلية (الدول، المرحلة، التمويل، اللغة)، ويراجعها محرر قبل النشر.", "Our team writes it in three languages with eligibility criteria (countries, level, funding, language); an editor reviews it before publishing.", "Notre équipe la rédige en trois langues avec les critères d'éligibilité (pays, niveau, financement, langue) ; un éditeur la valide avant publication.")</p></div>
+        <div class="org-step"><span class="n">3</span><h3>@T("تصل للمؤهَّلين", "It reaches those who qualify", "Elle atteint les éligibles")</h3><p>@T("إشعار للأعضاء الذين تنطبق عليهم الشروط، وفهرسة في Google بثلاث لغات، ورابطها يصلكم بالبريد لمشاركته.", "A notification to the members who qualify, Google indexing in three languages, and the link emailed to you to share.", "Une notification aux membres éligibles, l'indexation Google en trois langues, et le lien envoyé par e-mail pour le partager.")</p></div>
+    </section>
+
+    <div class="org-grid">
+        <div class="org-card" id="request">
+            <h2>@T("طلب نشر فرصة", "Request to publish an opportunity", "Demande de publication")</h2>
+            <p class="hint">@T("مجانًا، بلا حساب. الحقول المعلَّمة بـ * مطلوبة.", "Free, no account needed. Fields marked * are required.", "Gratuit, sans compte. Les champs marqués * sont obligatoires.")</p>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger py-2">@T("تحقق من الحقول المعلَّمة.", "Please check the highlighted fields.", "Vérifiez les champs signalés.")</div>
+            }
+
+            <form method="post" action="@Url.Action("Index", "Partners")" data-submit-once>
+                @Html.AntiForgeryToken()
+                <div class="org-two">
+                    <div class="org-field">
+                        <label for="Form_OrganizationName">@T("اسم الجهة *", "Organization name *", "Nom de l'organisation *")</label>
+                        <input id="Form_OrganizationName" name="Form.OrganizationName" value="@f.OrganizationName" maxlength="200" required autocomplete="organization" />
+                        <span asp-validation-for="Form.OrganizationName" class="err"></span>
+                    </div>
+                    <div class="org-field">
+                        <label for="Form_ContactName">@T("اسم الشخص للتواصل", "Contact person", "Personne de contact")</label>
+                        <input id="Form_ContactName" name="Form.ContactName" value="@f.ContactName" maxlength="120" autocomplete="name" />
+                    </div>
+                </div>
+                <div class="org-two">
+                    <div class="org-field">
+                        <label for="Form_ContactEmail">@T("البريد الإلكتروني *", "Email *", "E-mail *")</label>
+                        <input id="Form_ContactEmail" name="Form.ContactEmail" type="email" value="@f.ContactEmail" maxlength="256" required autocomplete="email" dir="ltr" />
+                        <span asp-validation-for="Form.ContactEmail" class="err"></span>
+                    </div>
+                    <div class="org-field">
+                        <label for="Form_Website">@T("موقع الجهة", "Organization website", "Site de l'organisation")</label>
+                        <input id="Form_Website" name="Form.Website" type="url" value="@f.Website" maxlength="500" placeholder="https://" dir="ltr" />
+                        <span asp-validation-for="Form.Website" class="err"></span>
+                    </div>
+                </div>
+                <div class="org-field">
+                    <label for="Form_SourceUrl">@T("رابط الفرصة *", "Opportunity link *", "Lien de l'opportunité *")</label>
+                    <input id="Form_SourceUrl" name="Form.SourceUrl" type="url" value="@f.SourceUrl" maxlength="1000" required placeholder="https://" dir="ltr" />
+                    <span asp-validation-for="Form.SourceUrl" class="err"></span>
+                </div>
+                <div class="org-two">
+                    <div class="org-field">
+                        <label for="Form_Type">@T("نوع الفرصة", "Type of opportunity", "Type d'opportunité")</label>
+                        <select id="Form_Type" name="Form.Type" data-estimate>
+                            <option value="">@T("لم أحدد بعد", "Not sure yet", "Pas encore défini")</option>
+                            @foreach (var (type, name) in typeNames)
+                            {
+                                <option value="@type" selected="@(string.Equals(f.Type, type.ToString(), StringComparison.OrdinalIgnoreCase))">@name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="org-field">
+                        <label for="Form_Country">@T("لمن هي؟", "Who is it for?", "Pour qui ?")</label>
+                        <select id="Form_Country" name="Form.Country" data-estimate>
+                            <option value="">@T("لم أحدد بعد", "Not sure yet", "Pas encore défini")</option>
+                            @foreach (var c in Model.Countries)
+                            {
+                                <option value="@c.Iso" selected="@(string.Equals(f.Country, c.Iso, StringComparison.OrdinalIgnoreCase))">@c.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="org-reach" aria-live="polite">
+                    <i class="bi bi-people-fill"></i>
+                    @T("ستصل فرصتك إلى نحو", "Your opportunity should reach about", "Votre opportunité devrait atteindre environ")
+                    <b id="reachNumber" data-initial="@Model.Estimate">@N(Model.Estimate)</b>
+                    @T("عضو مؤهَّل من المسجَّلين لدينا، عدا الزوار ومحركات البحث.", "eligible registered members, besides visitors and search engines.", "membres inscrits éligibles, sans compter les visiteurs et les moteurs de recherche.")
+                </div>
+                <div class="org-field">
+                    <label for="Form_Notes">@T("ملاحظات (اختياري)", "Notes (optional)", "Remarques (facultatif)")</label>
+                    <textarea id="Form_Notes" name="Form.Notes" rows="3" maxlength="2000" placeholder="@T("موعد نهائي، شروط خاصة، أو ما تريد إبرازه…", "Deadline, special conditions, or what to highlight…", "Date limite, conditions particulières, ou ce qu'il faut mettre en avant…")">@f.Notes</textarea>
+                </div>
+                @* فخ الروبوتات: مخفي عن البشر، يملؤه المرسل الآلي *@
+                <div style="position:absolute;left:-9999px;top:-9999px;" aria-hidden="true">
+                    <label for="Form_Fax">Fax</label>
+                    <input id="Form_Fax" name="Form.Fax" type="text" tabindex="-1" autocomplete="off" />
+                </div>
+                <button type="submit" class="org-submit"><i class="bi bi-send"></i> @T("أرسل طلب النشر", "Send the publishing request", "Envoyer la demande")</button>
+            </form>
+            <p class="org-alt">
+                @T("لديكم فرص كثيرة أو تريدون إدارة صفحتكم بأنفسكم؟", "Many opportunities, or want to manage your own page?", "Beaucoup d'opportunités, ou envie de gérer votre page ?")
+                <a href="@Url.Action("Register", "Organization")">@T("أنشئوا حساب منظمة", "Create an organization account", "Créez un compte organisation")</a>
+            </p>
+        </div>
+
+        <aside>
+            <div class="org-card">
+                <h2>@T("ما تحصلون عليه", "What you get", "Ce que vous obtenez")</h2>
+                <ul class="org-perks">
+                    <li><i class="bi bi-translate"></i><div>@T("صفحة بثلاث لغات", "A page in three languages", "Une page en trois langues")<small>@T("عربي وإنجليزي وفرنسي، كلٌّ برابط يفهرسه Google.", "Arabic, English and French, each on its own Google-indexed URL.", "Arabe, anglais et français, chacune sur une URL indexée par Google.")</small></div></li>
+                    <li><i class="bi bi-bullseye"></i><div>@T("توزيع للمؤهَّلين فقط", "Distribution to those who qualify", "Diffusion aux seuls éligibles")<small>@T("إشعار جرس ودفع للأعضاء المطابقين لشروط فرصتكم.", "Bell and push notifications to members matching your criteria.", "Notifications aux membres correspondant à vos critères.")</small></div></li>
+                    <li><i class="bi bi-shield-check"></i><div>@T("مراجعة بشرية قبل النشر", "Human review before publishing", "Validation humaine avant publication")<small>@T("محرر يتحقق من الرابط والشروط والمواعيد.", "An editor checks the link, criteria and dates.", "Un éditeur vérifie le lien, les critères et les dates.")</small></div></li>
+                    <li><i class="bi bi-envelope-check"></i><div>@T("رابط الفرصة في بريدكم", "The link in your inbox", "Le lien dans votre boîte")<small>@T("فور النشر، لمشاركته في قنواتكم.", "As soon as it is live, to share on your channels.", "Dès la mise en ligne, pour le partager.")</small></div></li>
+                    <li><i class="bi bi-graph-up"></i><div>@T("تقرير وصول (قريبًا)", "Reach report (soon)", "Rapport de portée (bientôt)")<small>@T("مشاهدات ونقرات تقديم وتوزيع الدول بعد 7 و30 يومًا.", "Views, apply clicks and country breakdown after 7 and 30 days.", "Vues, clics et répartition par pays après 7 et 30 jours.")</small></div></li>
+                </ul>
+            </div>
+            <div class="org-card org-faq" style="margin-top:16px;">
+                <h2>@T("أسئلة شائعة", "FAQ", "Questions fréquentes")</h2>
+                <details><summary>@T("هل النشر مجاني فعلًا؟", "Is publishing really free?", "La publication est-elle vraiment gratuite ?")</summary><p>@T("نعم. الفرص المفتوحة لشباب الوطن العربي في البيئة والمناخ والتنمية تُنشر مجانًا. لاحقًا قد نقدّم خيار «إبراز» مدفوعًا بعلامة واضحة، ولن يؤثر على النشر المجاني.", "Yes. Open opportunities for youth in the Arab world in environment, climate and development are published free. A clearly labelled paid “boost” may come later and will not affect free publishing.", "Oui. Les opportunités ouvertes aux jeunes du monde arabe dans l'environnement, le climat et le développement sont publiées gratuitement. Une option « mise en avant » payante et clairement signalée pourra venir plus tard, sans affecter la publication gratuite.")</p></details>
+                <details><summary>@T("ما الذي لا تنشرونه؟", "What do you not publish?", "Que ne publiez-vous pas ?")</summary><p>@T("الفرص المنتهية، وما يطلب رسومًا غير مبرَّرة، وما لا يخص شباب الوطن العربي، والإعلانات التجارية البحتة.", "Expired opportunities, anything with unjustified fees, anything not open to youth in the Arab world, and pure commercial ads.", "Les opportunités expirées, celles aux frais injustifiés, celles non ouvertes aux jeunes du monde arabe, et les publicités purement commerciales.")</p></details>
+                <details><summary>@T("كيف تحسبون عدد المؤهَّلين؟", "How do you estimate who qualifies?", "Comment estimez-vous les éligibles ?")</summary><p>@T("من بيانات تسجيل الأعضاء: اهتماماتهم (نوع الفرصة) وجنسيتهم وبلد إقامتهم. الرقم تقديري ويصبح أدق مع ملف الأهلية الذي نعمل عليه.", "From members’ registration data: their interests (type of opportunity), nationality and country of residence. It is an estimate and gets more precise with the eligibility profile we are building.", "À partir des données d'inscription : intérêts (type d'opportunité), nationalité et pays de résidence. C'est une estimation, affinée avec le profil d'éligibilité en cours.")</p></details>
+            </div>
+        </aside>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (function () {
+            // تقدير حيّ: يتغيّر مع النوع والجمهور؛ الرقم الأولي من الخادم
+            const number = document.getElementById('reachNumber');
+            const selects = document.querySelectorAll('select[data-estimate]');
+            const url = '@Url.Action("Estimate", "Partners")';
+            let timer = null;
+            function refresh() {
+                clearTimeout(timer);
+                timer = setTimeout(function () {
+                    const type = document.getElementById('Form_Type').value;
+                    const country = document.getElementById('Form_Country').value;
+                    fetch(url + '?type=' + encodeURIComponent(type) + '&country=' + encodeURIComponent(country), { headers: { 'Accept': 'application/json' } })
+                        .then(function (r) { return r.ok ? r.json() : null; })
+                        .then(function (d) { if (d && typeof d.members === 'number') number.textContent = d.members.toLocaleString('en-US'); })
+                        .catch(function () { });
+                }, 150);
+            }
+            selects.forEach(function (s) { s.addEventListener('change', refresh); });
+            if (document.getElementById('Form_Type').value || document.getElementById('Form_Country').value) refresh();
+            const sent = document.getElementById('sent');
+            if (sent) sent.scrollIntoView({ block: 'center' });
+        })();
+    </script>
+}

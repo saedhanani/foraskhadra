@@ -40,7 +40,7 @@ namespace Foras_Khadra.Services
         private static string Name(string? first, string lang) =>
             string.IsNullOrWhiteSpace(first) ? T(lang, "بك", "there", "à vous") : WebUtility.HtmlEncode(first.Trim());
 
-        private static Message Build(string lang, string subject, string greeting, string body, string button, string link, string footer)
+        internal static Message Build(string lang, string subject, string greeting, string body, string button, string link, string footer)
         {
             var dir = lang == "ar" ? "rtl" : "ltr";
             var html = $@"<!DOCTYPE html>

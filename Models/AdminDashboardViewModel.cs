@@ -17,6 +17,7 @@
 
         public int TotalManualOrganizations { get; set; }
         public int PendingReviewCount { get; set; }
+        public int OpenPublishRequests { get; set; }
 
 
     }

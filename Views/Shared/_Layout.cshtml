@@ -676,6 +676,7 @@
                             <div class="dropdown-list" id="registerMenu">
                                 <a asp-controller="Account" asp-action="RegisterUser" data-close-menu>@Localizer["Individual"]</a>
                                 <a asp-controller="Organization" asp-action="Register" data-close-menu>@Localizer["Organization"]</a>
+                                <a asp-controller="Partners" asp-action="Index" data-close-menu>@(culture == "en" ? "Publish an opportunity (no account)" : culture == "fr" ? "Publier une opportunité (sans compte)" : "انشر فرصتك (بلا حساب)")</a>
                             </div>
                         </div>
                     }
@@ -903,6 +904,7 @@ else
                         <li><a href="@Url.Action("Articles", "Home")">@Localizer["Articles"]</a></li>
                         <li><a href="@Url.Action("AboutUs", "Home")">@Localizer["AboutUs"]</a></li>
                         <li><a href="@Url.Action("Index", "contact")">@Localizer["ContactUs"]</a></li>
+                        <li><a href="@Url.Action("Index", "Partners")">@(culture == "en" ? "For organizations: publish free" : culture == "fr" ? "Organisations : publiez gratuitement" : "للمنظمات: انشر فرصتك مجانًا")</a></li>
                         @* شرح التثبيت لكل جهاز (Views/Home/App.cshtml)؛ يختفي داخل التطبيق المثبّت *@
                         <li class="fk-hide-standalone"><a href="@Url.Action("App", "Home")"><i class="bi bi-phone" aria-hidden="true"></i> @(culture == "en" ? "Get the app" : culture == "fr" ? "Installer l'application" : "حمّل التطبيق")</a></li>
                     </ul>

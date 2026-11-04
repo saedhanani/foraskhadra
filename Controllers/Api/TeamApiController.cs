@@ -33,14 +33,16 @@ namespace Foras_Khadra.Controllers.Api
         private readonly IConfiguration _cfg;
         private readonly IImageUploadService _images;
         private readonly ILogger<TeamApiController> _log;
+        private readonly IPublishRequestService _requests;
 
-        public TeamApiController(ApplicationDbContext db, UserManager<ApplicationUser> users, IConfiguration cfg, IImageUploadService images, ILogger<TeamApiController> log)
+        public TeamApiController(ApplicationDbContext db, UserManager<ApplicationUser> users, IConfiguration cfg, IImageUploadService images, ILogger<TeamApiController> log, IPublishRequestService requests)
         {
             _db = db;
             _users = users;
             _cfg = cfg;
             _images = images;
             _log = log;
+            _requests = requests;
         }
 
         /// <summary>حد جسم طلب صورة الغلاف: 10 ميغابايت بعد الفك ≈ 14 بترميز base64، مع هامش للحقول الأخرى.</summary>
@@ -200,6 +202,8 @@ namespace Foras_Khadra.Controllers.Api
             public bool AiGenerated { get; set; } = true;
             /// <summary>true = ينشر مباشرة (يتطلب صورة)، الافتراضي مسودة.</summary>
             public bool Publish { get; set; } = false;
+            /// <summary>رقم طلب النشر من بوابة المنظمات (GET requests): يربط الفرصة بالطلب، وعند نشرها تصل المنظمة رسالة بالرابط.</summary>
+            public int? RequestId { get; set; }
         }
 
         /// <summary>إنشاء فرصة (مسودة افتراضيًا) من منصة الفريق.</summary>
@@ -280,6 +284,7 @@ namespace Foras_Khadra.Controllers.Api
             }
             _db.Opportunities.Add(o);
             await _db.SaveChangesAsync();
+            if (d.RequestId != null) await _requests.LinkOpportunityAsync(d.RequestId.Value, o.Id);
             return Ok(Shape(o));
         }
 
@@ -319,9 +324,69 @@ namespace Foras_Khadra.Controllers.Api
                 o.Status = OpportunityStatus.Published;
                 o.PublishDate = DateTime.Now;
                 await _db.SaveChangesAsync();
+                await _requests.MarkPublishedAsync(o.Id); // طلب نشر مرتبط؟ يُغلق وتُراسَل المنظمة
             }
             return Ok(Shape(o));
         }
+
+        // ------------------------------------------------------------------ طلبات المنظمات (بوابة /for-organizations)
+
+        /// <summary>الطلبات المفتوحة: status=new (الافتراضي) أو inprogress أو all. اكتب الفرصة من sourceUrl وأرسلها مع requestId.</summary>
+        [HttpGet("requests")]
+        public async Task<IActionResult> Requests([FromQuery] string? status = "new", [FromQuery] int limit = 50)
+        {
+            var q = _db.PublishRequests.AsNoTracking();
+            q = (status ?? "new").Trim().ToLowerInvariant() switch
+            {
+                "inprogress" => q.Where(r => r.Status == PublishRequestStatus.InProgress),
+                "all" => q.Where(r => r.Status == PublishRequestStatus.New || r.Status == PublishRequestStatus.InProgress),
+                _ => q.Where(r => r.Status == PublishRequestStatus.New),
+            };
+            var list = await q.OrderBy(r => r.CreatedAt).Take(Math.Clamp(limit, 1, 200)).ToListAsync();
+            return Ok(new { count = list.Count, items = list.Select(ShapeRequest) });
+        }
+
+        public class RequestStatusDto
+        {
+            /// <summary>inprogress (أخذته المنصة) أو rejected (ليس فرصة/منتهية؛ تصل المنظمة رسالة بالسبب).</summary>
+            public string Status { get; set; } = "";
+            public string? Note { get; set; }
+        }
+
+        /// <summary>أخذ طلب أو رفضه. "نُشر" لا يُعلَّم هنا: يحدث تلقائيًا عند نشر الفرصة المرتبطة بـrequestId.</summary>
+        [HttpPost("requests/{id:int}/status")]
+        public async Task<IActionResult> RequestStatus(int id, [FromBody] RequestStatusDto d)
+        {
+            var request = await _db.PublishRequests.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+            if (request == null) return NotFound(new { error = "not_found" });
+            bool? ok = (d.Status ?? "").Trim().ToLowerInvariant() switch
+            {
+                "inprogress" => await _requests.TakeAsync(id),
+                "rejected" => await _requests.RejectAsync(id, d.Note, spam: false),
+                _ => null
+            };
+            if (ok == null) return BadRequest(new { error = "bad_status", allowed = new[] { "inprogress", "rejected" } });
+            if (ok == false) return Conflict(new { error = "not_open", status = request.Status.ToString().ToLowerInvariant() });
+            return Ok(ShapeRequest(await _db.PublishRequests.AsNoTracking().FirstAsync(r => r.Id == id)));
+        }
+
+        private static object ShapeRequest(PublishRequest r) => new
+        {
+            id = r.Id,
+            status = r.Status.ToString().ToLowerInvariant(),
+            organizationName = r.OrganizationName,
+            contactName = r.ContactName,
+            contactEmail = r.ContactEmail,
+            website = r.Website,
+            sourceUrl = r.SourceUrl,
+            notes = r.Notes,
+            typeHint = r.TypeHint?.ToString(),
+            countryIso = r.CountryIso,
+            language = r.Language,
+            estimatedReach = r.EstimatedReach,
+            createdAt = r.CreatedAt.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture),
+            opportunityId = r.OpportunityId,
+        };
 
         public class ImageDto
         {

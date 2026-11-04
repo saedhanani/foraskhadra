@@ -1,0 +1,113 @@
+@model List<Foras_Khadra.Models.PublishRequest>
+@using Foras_Khadra.Models
+@{
+    ViewData["Title"] = "طلبات النشر من المنظمات";
+    var showingClosed = ViewContext.HttpContext.Request.Query["status"].ToString().ToLower() == "closed";
+    string StatusName(PublishRequestStatus s) => s switch
+    {
+        PublishRequestStatus.New => "جديد",
+        PublishRequestStatus.InProgress => "قيد الكتابة",
+        PublishRequestStatus.Published => "نُشر",
+        PublishRequestStatus.Rejected => "مرفوض",
+        _ => "مزعج"
+    };
+    string StatusClass(PublishRequestStatus s) => s switch
+    {
+        PublishRequestStatus.New => "bg-warning text-dark",
+        PublishRequestStatus.InProgress => "bg-info text-dark",
+        PublishRequestStatus.Published => "bg-success",
+        _ => "bg-secondary"
+    };
+}
+
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h2 class="m-0">@(showingClosed ? "طلبات النشر المغلقة" : "طلبات النشر المفتوحة") <span class="badge bg-secondary">@Model.Count</span></h2>
+        <div class="d-flex gap-2">
+            <a asp-controller="Admin" asp-action="PublishRequests" class="btn @(showingClosed ? "btn-outline-primary" : "btn-primary")">المفتوحة</a>
+            <a asp-controller="Admin" asp-action="PublishRequests" asp-route-status="closed" class="btn @(showingClosed ? "btn-primary" : "btn-outline-primary")">المغلقة</a>
+            <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-secondary">لوحة التحكم</a>
+        </div>
+    </div>
+
+    @if (TempData["RequestMessage"] is string msg)
+    {
+        <div class="alert alert-success">@msg</div>
+    }
+
+    <p class="text-muted">
+        الطلبات تأتي من <a asp-controller="Partners" asp-action="Index" target="_blank">بوابة المنظمات</a> بلا حساب. منصة الكتابة تجلب الجديدة من
+        <code>GET /api/team/requests</code> وتكتب الفرصة وتربطها بالطلب، وعند نشرها يُغلق الطلب وتصل المنظمةَ رسالةٌ بالرابط تلقائيًا.
+        إن كتبت الفرصة يدويًا، اربط رقمها هنا.
+    </p>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-light border text-center py-5">لا توجد طلبات @(showingClosed ? "مغلقة" : "مفتوحة") حاليًا.</div>
+    }
+
+    @foreach (var r in Model)
+    {
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                    <div>
+                        <h5 class="mb-1">@r.OrganizationName <span class="badge @StatusClass(r.Status)">@StatusName(r.Status)</span></h5>
+                        <div class="text-muted small">
+                            <span class="me-3"><i class="bi bi-hash"></i> @r.Id</span>
+                            <span class="me-3"><i class="bi bi-envelope"></i> <a href="mailto:@r.ContactEmail">@r.ContactEmail</a>@(string.IsNullOrEmpty(r.ContactName) ? "" : $" ({r.ContactName})")</span>
+                            <span class="me-3"><i class="bi bi-calendar"></i> @r.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span>
+                            <span class="me-3"><i class="bi bi-translate"></i> @r.Language</span>
+                            @if (r.TypeHint.HasValue) { <span class="me-3"><i class="bi bi-tag"></i> @r.TypeHint</span> }
+                            @if (!string.IsNullOrEmpty(r.CountryIso)) { <span class="me-3"><i class="bi bi-geo"></i> @r.CountryIso</span> }
+                            <span class="me-3"><i class="bi bi-people"></i> تقدير @r.EstimatedReach عضو</span>
+                        </div>
+                        <div class="small mt-1">
+                            <a href="@(Foras_Khadra.Helpers.HttpUrl.Normalize(r.SourceUrl) ?? "#")" target="_blank" rel="noopener nofollow">رابط الفرصة</a>
+                            @if (!string.IsNullOrEmpty(r.Website))
+                            {
+                                <span> · </span><a href="@(Foras_Khadra.Helpers.HttpUrl.Normalize(r.Website) ?? "#")" target="_blank" rel="noopener nofollow">موقع الجهة</a>
+                            }
+                            @if (r.OpportunityId.HasValue)
+                            {
+                                <span> · </span><a asp-controller="Opportunity" asp-action="Edit" asp-route-id="@r.OpportunityId">الفرصة #@r.OpportunityId</a>
+                            }
+                        </div>
+                        @if (!string.IsNullOrEmpty(r.Notes))
+                        {
+                            <div class="mt-2 small" style="white-space:pre-wrap;">@r.Notes</div>
+                        }
+                        @if (!string.IsNullOrEmpty(r.AdminNote))
+                        {
+                            <div class="alert alert-warning py-1 px-2 mt-2 mb-0 small">ملاحظة: @r.AdminNote</div>
+                        }
+                    </div>
+
+                    @if (r.Status == PublishRequestStatus.New || r.Status == PublishRequestStatus.InProgress)
+                    {
+                        <div class="d-flex flex-column gap-2" style="min-width:260px;">
+                            <form asp-controller="Admin" asp-action="LinkPublishRequest" method="post" class="d-flex gap-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@r.Id" />
+                                <input type="number" name="opportunityId" class="form-control form-control-sm" placeholder="رقم الفرصة" value="@r.OpportunityId" required />
+                                <button type="submit" class="btn btn-sm btn-success text-nowrap">ربط بالفرصة</button>
+                            </form>
+                            <form asp-controller="Admin" asp-action="RejectPublishRequest" method="post" class="d-flex gap-2">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@r.Id" />
+                                <input type="text" name="note" class="form-control form-control-sm" placeholder="سبب الرفض (يصل المنظمة)" maxlength="500" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger text-nowrap">رفض</button>
+                            </form>
+                            <form asp-controller="Admin" asp-action="RejectPublishRequest" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="id" value="@r.Id" />
+                                <input type="hidden" name="spam" value="true" />
+                                <button type="submit" class="btn btn-sm btn-outline-secondary w-100">مزعج (بلا رسالة)</button>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

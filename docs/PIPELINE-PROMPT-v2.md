@@ -79,7 +79,7 @@
 > - إن كانت الفرصة منتهية في المصدر، لا ترسلها.
 > - قبل الكتابة استدعِ `GET /api/team/opportunities/search?url=...` لتجنّب التكرار (موجود).
 > - **إعادة معالجة الفرص القديمة:** لتحديث الحقول المهيكلة لفرصة موجودة (من `SourceUrl`) دون إعادة كتابة نصوصها، أرسل الحقول وحدها إلى `POST /api/team/opportunities/{id}/facets` بالجسم نفسه (كل حقل اختياري؛ ما لا تُرسله لا يتغير). الرد `200` بالفرصة، أو `400` باسم الحقل الخاطئ وقائمة القيم المسموحة (`bad_funding`, `bad_degree`, `bad_field`, `bad_theme`, `bad_country`, `bad_host_country`, `bad_language`, `bad_employment`, `bad_start_date`, `bad_program_key`, `bad_host_url`, `bad_age`).
-> - **طلبات المنظمات:** استدعِ `GET /api/team/requests` دورياً؛ كل طلب فيه `id`, `organizationName`, `contactEmail`, `sourceUrl`, `notes`. اكتب الفرصة من `sourceUrl` وأرسلها مع `"requestId": <id>` في الجسم ليربطها الموقع بالطلب ويُبلغ المنظمة. *(هذه النقطة تُفعَّل في المرحلة 1؛ حتى حينها ترد 404.)*
+> - **طلبات المنظمات (مفعَّلة منذ 5 نوفمبر 2026):** استدعِ `GET /api/team/requests` دورياً (كل ساعة يكفي)؛ كل طلب فيه `id`, `organizationName`, `contactName`, `contactEmail`, `website`, `sourceUrl`, `notes`, `typeHint`, `countryIso`, `language`. عند أخذه أرسل `POST /api/team/requests/{id}/status` بالجسم `{"status":"inprogress"}`. اكتب الفرصة من `sourceUrl` (و`notes` تلميح من المنظمة لا نص يُنسخ) وأرسلها مع `"requestId": <id>` في جسم `POST opportunities`؛ عند `publish` يُغلق الموقع الطلب ويرسل للمنظمة رابط الفرصة بلغتها تلقائياً. إن لم يكن الرابط فرصة أو كانت منتهية: `{"status":"rejected","note":"السبب بالعربية"}` وتصل المنظمة رسالة اعتذار بالسبب. *(كان النص السابق: حتى حينها ترد 404.)*
 >
 > #### 5. مثال كامل (منحة)
 >

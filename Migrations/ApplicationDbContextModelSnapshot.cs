@@ -34,7 +34,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasIndex("OpportunitiesId");
 
-                    b.ToTable("CountryOpportunity");
+                    b.ToTable("CountryOpportunity", (string)null);
                 });
 
             modelBuilder.Entity("FieldOpportunity", b =>
@@ -112,7 +112,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasIndex("ProgramId");
 
-                    b.ToTable("Activities");
+                    b.ToTable("Activities", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.ApplicationUser", b =>
@@ -295,7 +295,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Articles");
+                    b.ToTable("Articles", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.ChecklistItem", b =>
@@ -327,7 +327,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasIndex("SavedOpportunityId");
 
-                    b.ToTable("ChecklistItems");
+                    b.ToTable("ChecklistItems", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.Country", b =>
@@ -356,7 +356,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Countries");
+                    b.ToTable("Countries", (string)null);
 
                     b.HasData(
                         new
@@ -581,7 +581,7 @@ namespace Foras_Khadra.Migrations
                     b.HasIndex("UserId", "OpportunityId")
                         .IsUnique();
 
-                    b.ToTable("CycleWatches");
+                    b.ToTable("CycleWatches", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.Field", b =>
@@ -617,7 +617,7 @@ namespace Foras_Khadra.Migrations
                     b.HasIndex("Key")
                         .IsUnique();
 
-                    b.ToTable("Fields");
+                    b.ToTable("Fields", (string)null);
 
                     b.HasData(
                         new
@@ -978,7 +978,7 @@ namespace Foras_Khadra.Migrations
                     b.HasIndex("Slug")
                         .IsUnique();
 
-                    b.ToTable("FlagshipPrograms");
+                    b.ToTable("FlagshipPrograms", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.ImpactStat", b =>
@@ -1013,7 +1013,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ImpactStats");
+                    b.ToTable("ImpactStats", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.ManualOrganization", b =>
@@ -1063,7 +1063,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ManualOrganizations");
+                    b.ToTable("ManualOrganizations", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.Notification", b =>
@@ -1110,7 +1110,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasIndex("UserId", "ReadAt");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.Opportunity", b =>
@@ -1315,7 +1315,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("Opportunities");
+                    b.ToTable("Opportunities", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.OpportunityDailyStat", b =>
@@ -1334,7 +1334,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasKey("OpportunityId", "Day");
 
-                    b.ToTable("OpportunityDailyStats");
+                    b.ToTable("OpportunityDailyStats", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.Organization", b =>
@@ -1409,7 +1409,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Organizations");
+                    b.ToTable("Organizations", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.ProgramInterest", b =>
@@ -1440,7 +1440,85 @@ namespace Foras_Khadra.Migrations
                     b.HasIndex("UserId", "ProgramId")
                         .IsUnique();
 
-                    b.ToTable("ProgramInterests");
+                    b.ToTable("ProgramInterests", (string)null);
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.PublishRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ContactEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("ContactName")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("CountryIso")
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EstimatedReach")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasMaxLength(2)
+                        .HasColumnType("nvarchar(2)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int?>("OpportunityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("OrganizationName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("TakenAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("TypeHint")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Website")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OpportunityId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("PublishRequests", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.PushSubscription", b =>
@@ -1489,7 +1567,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("PushSubscriptions");
+                    b.ToTable("PushSubscriptions", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.RecentView", b =>
@@ -1517,7 +1595,7 @@ namespace Foras_Khadra.Migrations
                     b.HasIndex("UserId", "OpportunityId")
                         .IsUnique();
 
-                    b.ToTable("RecentViews");
+                    b.ToTable("RecentViews", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.ReelsRequest", b =>
@@ -1555,7 +1633,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasIndex("OrganizationId");
 
-                    b.ToTable("ReelsRequests");
+                    b.ToTable("ReelsRequests", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.Resource", b =>
@@ -1608,7 +1686,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Resources");
+                    b.ToTable("Resources", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.SavedOpportunity", b =>
@@ -1642,7 +1720,7 @@ namespace Foras_Khadra.Migrations
                     b.HasIndex("UserId", "OpportunityId")
                         .IsUnique();
 
-                    b.ToTable("SavedOpportunities");
+                    b.ToTable("SavedOpportunities", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.SavedSearch", b =>
@@ -1682,7 +1760,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("SavedSearches");
+                    b.ToTable("SavedSearches", (string)null);
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.TeamMember", b =>
@@ -1735,7 +1813,7 @@ namespace Foras_Khadra.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("TeamMember");
+                    b.ToTable("TeamMember", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -2008,6 +2086,16 @@ namespace Foras_Khadra.Migrations
                     b.Navigation("Program");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Foras_Khadra.Models.PublishRequest", b =>
+                {
+                    b.HasOne("Foras_Khadra.Models.Opportunity", "Opportunity")
+                        .WithMany()
+                        .HasForeignKey("OpportunityId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Opportunity");
                 });
 
             modelBuilder.Entity("Foras_Khadra.Models.PushSubscription", b =>

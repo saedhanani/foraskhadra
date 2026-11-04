@@ -684,6 +684,10 @@
                             <i class="bi bi-ui-checks"></i>
                             <span>@(isArabic ? "تعبئة بيانات الأهلية" : "Fill eligibility data")</span>
                         </a>
+                        <a asp-controller="Admin" asp-action="PublishRequests" class="nav-link-item">
+                            <i class="bi bi-building"></i>
+                            <span>@(isArabic ? "طلبات النشر" : "Publishing requests")@(Model.OpenPublishRequests > 0 ? $" ({Model.OpenPublishRequests})" : "")</span>
+                        </a>
                     }
                     
                 </div>

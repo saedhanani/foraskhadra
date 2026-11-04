@@ -57,6 +57,7 @@ namespace Foras_Khadra.Controllers
             Add("/Home/Articles", null, "weekly", "0.7");
             Add("/Home/News", null, "weekly", "0.7");
             Add("/Home/OrganizationsMap", null, "weekly", "0.6");
+            Add("/for-organizations", null, "monthly", "0.7");
             Add("/Home/AboutUs", null, "monthly", "0.4");
             Add("/contact/Index", null, "monthly", "0.4");
             foreach (var policyPage in new[] { "PolicyPrivacy", "UsagePolicy", "TermsAndConditions" })

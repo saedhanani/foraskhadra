@@ -49,6 +49,13 @@ else
                 <span>@T("فرصة بانتظار المراجعة: ", "Opportunity awaiting review: ", "Opportunité en attente de validation : ")<b>@n.Opportunity.TitleAr</b> — @n.Opportunity.PublishedBy</span>
             </a>
         }
+        else if (n.Kind == NotificationKind.PublishRequestNew)
+        {
+            <a class="notif-item @unread" href="@Url.Action("PublishRequests", "Admin")">
+                <i class="bi bi-building notif-ico orange"></i>
+                <span>@T("طلب نشر جديد من ", "New publishing request from ", "Nouvelle demande de publication de ")<b>@n.Label</b></span>
+            </a>
+        }
         else if (n.Kind == NotificationKind.InterestMatches)
         {
             <a class="notif-item @unread" href="@Url.Action("AllOpportunities", "Home")">

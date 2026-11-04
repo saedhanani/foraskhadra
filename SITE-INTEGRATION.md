@@ -39,6 +39,9 @@
 | POST | `opportunities/{id}/discard` | حذف مسودة لم تُنشر |
 | GET | `fields` | المجالات الثابتة `{key, nameAr, nameEn, nameFr}` التي يقبلها حقل `fields` |
 | POST | `opportunities/{id}/facets` | تحديث الحقول المهيكلة لفرصة موجودة (كل حقل اختياري) — انظر `docs/PIPELINE-PROMPT-v2.md` |
+| GET | `requests?status=new` | طلبات النشر من بوابة المنظمات (`/for-organizations`): `{id, status, organizationName, contactName, contactEmail, website, sourceUrl, notes, typeHint, countryIso, language, estimatedReach, createdAt, opportunityId}`؛ `status` = `new` (الافتراضي) أو `inprogress` أو `all` |
+| POST | `requests/{id}/status` | `{"status": "inprogress"}` عند أخذ الطلب، أو `{"status": "rejected", "note": "..."}` (تصل المنظمة رسالة بالسبب). يرد `409 not_open` إن كان مغلقًا |
+| — | `opportunities` + `requestId` | أرسل `"requestId": <id>` في جسم `POST opportunities` ليُربط الطلب بالمسودة؛ عند `publish` يُغلق الطلب وتصل المنظمة رسالة برابط الفرصة تلقائيًا |
 
 ### الحقول المهيكلة (منذ 4 نوفمبر 2026)
 جسم `POST opportunities` يقبل إضافةً إلى الحقول القديمة: `fundingType`, `degreeLevels[]`, `fields[]`, `greenThemes[]`, `eligibleCountries[]` (ISO-2 أو `XA`/`XW`؛ يستبدل `countryIds`)، `hostCountry`, `isRemote`, `isOnline`, `minAge`, `maxAge`, `languageRequirement`, `languageScore`, `hasApplicationFee`, `forWomenOnly`, `startDate`, `venue`, `hostOrganization{name,url,logoUrl}`, `employmentType`, `programKey`, `benefitsSummary{ar[],en[],fr[]}`. القيم المسموحة وقواعد الاستخراج في `docs/PIPELINE-PROMPT-v2.md`. قيمة غير معروفة → `400 {"error":"bad_<field>","allowed":[...]}`. الروابط (`applyLink`, `sourceUrl`, `hostOrganization.url`) يجب أن تكون http/https (`bad_link` / `bad_source` / `bad_host_url`).

@@ -19,12 +19,14 @@ namespace Foras_Khadra.Controllers
         private readonly ApplicationDbContext _context;
         private readonly IImageUploadService _images;
         private readonly IOpportunityReviewService _review;
+        private readonly IPublishRequestService _requests;
 
-        public AdminController(ApplicationDbContext context, IImageUploadService images, IOpportunityReviewService review)
+        public AdminController(ApplicationDbContext context, IImageUploadService images, IOpportunityReviewService review, IPublishRequestService requests)
         {
             _context = context;
             _images = images;
             _review = review;
+            _requests = requests;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -46,7 +48,8 @@ namespace Foras_Khadra.Controllers
                 CompletedReelsRequests = completedReelsRequests,
                 RejectReelsRequests = rejectedReelsRequests,
                 TotalManualOrganizations = await _context.ManualOrganizations.CountAsync(),
-                PendingReviewCount = await _review.PendingCountAsync()
+                PendingReviewCount = await _review.PendingCountAsync(),
+                OpenPublishRequests = await _requests.OpenCountAsync()
             };
 
             return View(model);
@@ -80,6 +83,41 @@ namespace Foras_Khadra.Controllers
                 ? "رُفضت الفرصة؛ السبب يظهر للمنظمة في قائمة فرصها."
                 : "تعذّر رفض هذه الفرصة.";
             return RedirectToAction(nameof(Review));
+        }
+
+        // ===== طلبات النشر من بوابة المنظمات (Services/PublishRequestService) =====
+        [HttpGet]
+        public async Task<IActionResult> PublishRequests(string? status = null)
+        {
+            var closed = status == "closed";
+            var list = await _context.PublishRequests.AsNoTracking()
+                .Where(r => closed
+                    ? r.Status == PublishRequestStatus.Published || r.Status == PublishRequestStatus.Rejected || r.Status == PublishRequestStatus.Spam
+                    : r.Status == PublishRequestStatus.New || r.Status == PublishRequestStatus.InProgress)
+                .OrderByDescending(r => r.CreatedAt)
+                .Take(200)
+                .ToListAsync();
+            return View(list);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> LinkPublishRequest(int id, int opportunityId)
+        {
+            TempData["RequestMessage"] = await _requests.LinkOpportunityAsync(id, opportunityId)
+                ? "رُبط الطلب بالفرصة؛ إن كانت منشورة فقد أُغلق وأُرسل رابطها للمنظمة، وإلا يُغلق عند نشرها."
+                : "تعذّر الربط: تحقق من رقم الفرصة وحالة الطلب.";
+            return RedirectToAction(nameof(PublishRequests));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RejectPublishRequest(int id, string? note, bool spam = false)
+        {
+            TempData["RequestMessage"] = await _requests.RejectAsync(id, note, spam)
+                ? (spam ? "عُلِّم الطلب كمزعج." : "رُفض الطلب وأُرسل السبب للمنظمة.")
+                : "تعذّر رفض هذا الطلب.";
+            return RedirectToAction(nameof(PublishRequests));
         }
 
         [HttpPost]

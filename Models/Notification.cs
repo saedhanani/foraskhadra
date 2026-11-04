@@ -20,7 +20,9 @@ namespace Foras_Khadra.Models
         /// <summary>فرصة محفوظة ينتهي موعدها اليوم أو غدًا — التذكير الأخير بعد تذكير الأيام السبعة.</summary>
         SavedDeadlineLastDay = 7,
         /// <summary>للمدير: فرصة من منظمة بانتظار المراجعة (OpportunityId = الفرصة).</summary>
-        ReviewPending = 8
+        ReviewPending = 8,
+        /// <summary>للمدير: طلب نشر جديد من بوابة المنظمات (LinkParams = رقم الطلب، Label = اسم الجهة).</summary>
+        PublishRequestNew = 9
     }
 
     /// <summary>إشعار داخل الموقع — يولّده NotificationSweeper ويظهر في جرس الهيدر.</summary>

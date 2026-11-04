@@ -209,7 +209,7 @@ public async Task<IActionResult> Create()
         }
         [HttpPost]
         [Authorize(Roles = "Admin,Organization")]
-        public async Task<IActionResult> Edit(OpportunityEditVM model, [FromServices] IOpportunityReviewService review)
+        public async Task<IActionResult> Edit(OpportunityEditVM model, [FromServices] IOpportunityReviewService review, [FromServices] IPublishRequestService requests)
         {
             if (model.Facets.Validate() is string facetError) ModelState.AddModelError("Facets", facetError);
             if (model.Image != null && _images.Validate(model.Image) is string imageError)
@@ -358,6 +358,8 @@ public async Task<IActionResult> Create()
             // حفظ التغييرات
             _context.Opportunities.Update(opportunity);
             await _context.SaveChangesAsync();
+            // طلب نشر من بوابة المنظمات مرتبط بهذه الفرصة؟ يُغلق وتُراسَل المنظمة بالرابط
+            if (opportunity.Status == OpportunityStatus.Published) await requests.MarkPublishedAsync(opportunity.Id);
             if (opportunity.Status == OpportunityStatus.PendingReview)
             {
                 await review.NotifyAdminsAsync(opportunity.Id);
