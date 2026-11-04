@@ -59,7 +59,7 @@ namespace Foras_Khadra.Helpers
         public static readonly string[] FundingNames = Enum.GetNames<FundingType>();
         public static readonly string[] DegreeNames = { "HighSchool", "Bachelor", "Master", "PhD", "Postdoc", "Professional", "Any" };
         public static readonly string[] ThemeNames = Enum.GetNames<GreenThemes>();
-        public static readonly string[] LanguageNames = { "None", "IELTS", "TOEFL", "Either", "French", "Other" };
+        public static readonly string[] LanguageNames = { "Unknown", "None", "IELTS", "TOEFL", "Either", "French", "Other" };
         public static readonly string[] EmploymentNames = { "FULL_TIME", "PART_TIME", "CONTRACTOR", "TEMPORARY", "INTERN", "VOLUNTEER" };
 
         public sealed record Error(string Code, object? Allowed = null);
@@ -159,7 +159,8 @@ namespace Foras_Khadra.Helpers
             if (f.LanguageRequirement != null)
             {
                 var name = f.LanguageRequirement.Trim();
-                if (!Enum.TryParse<LanguageRequirement>(name, true, out var lr) || lr == LanguageRequirement.Unknown)
+                // Unknown = المصدر لم يذكر اللغة (وهي الافتراضي عند حذف الحقل)؛ None = قال صراحةً إنها غير مطلوبة.
+                if (!Enum.TryParse<LanguageRequirement>(name, true, out var lr))
                     return new("bad_language", LanguageNames);
                 o.LanguageRequirement = lr;
             }

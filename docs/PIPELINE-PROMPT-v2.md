@@ -35,7 +35,7 @@
 >   "isOnline": false,
 >   "minAge": null,
 >   "maxAge": 30,
->   "languageRequirement": "None | IELTS | TOEFL | Either | French | Other",
+>   "languageRequirement": "Unknown | None | IELTS | TOEFL | Either | French | Other",
 >   "languageScore": "IELTS 6.5",
 >   "hasApplicationFee": false,
 >   "forWomenOnly": false,
@@ -64,7 +64,7 @@
 > | `hostCountry` | بلد الدراسة أو العمل أو الحدث (ISO-2). للفرص عن بُعد → `null` مع `isRemote: true`. |
 > | `isRemote` / `isOnline` | `isRemote` للوظائف والتدريب الذي يُؤدَّى من أي مكان. `isOnline` للمؤتمرات والدورات والمسابقات الإلكترونية. |
 > | `minAge` / `maxAge` | فقط إن ذُكر عمر صريح. "تحت 35" → `maxAge: 35`. |
-> | `languageRequirement` | `IELTS` أو `TOEFL` أو `Either` إن طُلبت شهادة إنجليزية؛ `French` لشهادة فرنسية؛ `Other` لغير ذلك؛ `None` إن قال المصدر صراحةً إنها غير مطلوبة أو لم يذكرها. ضع الدرجة في `languageScore` نصاً كما وردت. |
+> | `languageRequirement` | `IELTS` أو `TOEFL` أو `Either` إن طُلبت شهادة إنجليزية؛ `French` لشهادة فرنسية؛ `Other` لغير ذلك؛ `None` **فقط** إن قال المصدر صراحةً إن الشهادة غير مطلوبة؛ `Unknown` (أو احذف الحقل) إن لم يذكر المصدر اللغة أصلاً — لا تستنتج `None` من الصمت، لأن صفحة «بدون آيلتس» تعتمد عليها. ضع الدرجة في `languageScore` نصاً كما وردت. |
 > | `hasApplicationFee` | `true` فقط إن ذُكرت رسوم تقديم أو تسجيل. |
 > | `forWomenOnly` | `true` إن كانت الفرصة مخصصة للنساء. |
 > | `startDate` / `venue` | للمؤتمرات والمسابقات والدورات: تاريخ بدء الحدث (ليس الموعد النهائي للتقديم) ومكانه. `EndDate` القديم يبقى **الموعد النهائي للتقديم**. |

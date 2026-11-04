@@ -89,6 +89,26 @@ namespace Foras_Khadra.Tests
         }
 
         [Theory]
+        [InlineData("Unknown", LanguageRequirement.Unknown)]
+        [InlineData("none", LanguageRequirement.None)]
+        public void Language_UnknownAndNoneAreDistinct(string value, LanguageRequirement expected)
+        {
+            var o = NewOpp();
+            o.LanguageRequirement = LanguageRequirement.IELTS;
+            var err = FacetParser.Apply(o, new FacetDto { LanguageRequirement = value }, Countries, FieldSeed.All);
+            Assert.Null(err);
+            Assert.Equal(expected, o.LanguageRequirement);
+        }
+
+        [Fact]
+        public void Language_Omitted_StaysUnknown()
+        {
+            var o = NewOpp();
+            Assert.Null(FacetParser.Apply(o, new FacetDto(), Countries, FieldSeed.All));
+            Assert.Equal(LanguageRequirement.Unknown, o.LanguageRequirement);
+        }
+
+        [Theory]
         [InlineData("fundingType", "Free", "bad_funding")]
         [InlineData("degree", "Kindergarten", "bad_degree")]
         [InlineData("field", "astrology", "bad_field")]
