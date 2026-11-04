@@ -1,6 +1,14 @@
 # نشر المرحلة 3 (الثقة وتقرير المنظمات: 3.1 → 3.5) — قائمة التحقق
 
-**الإصدار الحي قبل النشر:** `16fa043` (المرحلة 2) · **هذا الإصدار:** آخر commit على `main` · لا تغيير في الإطار.
+**الإصدار الحي قبل النشر:** `16fa043` (المرحلة 2) · **هذا الإصدار:** `d41b125` (+ إصلاح `a87cfef`) · لا تغيير في الإطار.
+
+## ✅ نُشر — 5 نوفمبر 2026 (الإصدار الحي `d41b125`؛ الإصلاح `a87cfef` بانتظار الرفع)
+
+- نسخة احتياطية من القاعدة، ثم `2026-11-trust.sql` (has_tier/has_reports/has_follows كلها موجودة) ثم `2026-11-trust-data.sql` في تنفيذ منفصل (58 منظمة بدرجة «مسجَّلة»، لا موثَّقة بعد).
+- حزمة الفرق: 27 ملفًا (DLL + PDB + ملفات الموارد ×3 + brand.css + opportunity-deatails.css + site.js + embed.js + الشارات ×3 مع نسخ gz/br) مع `app_offline.htm` → فك إلى `/site1` → إعادة تسمية `app_offline` إلى `app_offline-used-2026-11-05.txt`. `publish/site-files-current` مُحدَّث إلى `d41b125`.
+- **التحقق على الإنتاج (كله ناجح):** `/health` Healthy · الفرصة 338 فيها شريط الثقة الأربعة ونافذة البلاغ ورابط التخطي و`main#main` · `/embed/opportunities?type=Jobs&limit=3` 200 بثلاثة عناصر بلا `X-Frame-Options` وبـ`Cache-Control: public,max-age=600` · `/embed` و`/en/embed` و`/js/embed.js` والشارات 200 · `/Admin/Reports` و`/Organization/Report` تحوّل إلى الدخول · `/en/Home/Articles`: «All rights reserved © 2026» و5 أسهم `dir-flip` وbrand.css يحمل كتلة الوصول · صفحة المنظمة 19 فيها زر المتابعة وقسم فرصها · دخول خاطئ بالإنجليزية: «Incorrect email or password».
+- **خلل اكتُشف بعد النشر:** معاينة `/embed` لا تحمّل الودجت لأن CSP الموقع كان `frame-src https://www.google.com` فقط (يمنع الموقع من تضمين نفسه). الإصلاح `a87cfef` (`frame-src 'self' …` + إزالة `loading="lazy"` من المعاينة) مدفوع إلى GitHub، وحزمته `publish/deploy-a87cfef/update-a87cfef.zip` (DLL + PDB) جاهزة؛ رفعها إلى `/site1` تعذّر لأن نظام الأذونات رفض الرفع — يُستأنف بموافقة المالك. الودجت نفسه على مواقع الجامعات غير متأثر (المشكلة في صفحة المعاينة فقط).
+- **ما بقي للمالك:** رفع الإصلاح أعلاه؛ تجربة Rich Results على فرصة؛ ضبط درجات التوثيق للمنظمات الحقيقية من `/Admin/OrganizationDetails/{id}`؛ حذف `update-part1.zip` و`app_offline-used-*` من `/site1`.
 
 ## ما في هذه الدفعة
 
