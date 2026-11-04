@@ -81,8 +81,12 @@ namespace Foras_Khadra.Controllers
             var existingUser = await _userManager.FindByEmailAsync(model.Email);
             if (existingUser != null)
             {
-                ModelState.AddModelError("Email", _localizer["EmailAlreadyUsed"]);
-                return View(model);
+                // لا نكشف وجود الحساب لمن في المتصفح: الصفحة نفسها، ورسالة لصاحب البريد (دخول/استعادة)
+                var exists = Foras_Khadra.Services.AccountEmails.AlreadyRegistered(Lang,
+                    Url.Action("Login", "Account", null, Request.Scheme)!, Url.Action("ForgotPassword", "Account", null, Request.Scheme)!);
+                _emails.Enqueue(model.Email, exists.Subject, exists.Html);
+                TempData["RegisteredEmail"] = model.Email;
+                return RedirectToAction("RegisterConfirmation");
             }
 
             var user = new ApplicationUser
@@ -126,7 +130,7 @@ namespace Foras_Khadra.Controllers
         public async Task<IActionResult> RegisterConfirmation()
         {
             var user = await _userManager.GetUserAsync(User);
-            ViewData["Email"] = user?.Email;
+            ViewData["Email"] = user?.Email ?? TempData["RegisteredEmail"] as string;
             return View();
         }
 

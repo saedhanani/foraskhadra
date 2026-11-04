@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Rewrite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Serilog;
@@ -139,8 +140,15 @@ builder.Services.AddRateLimiter(options =>
 
     static string ClientKey(HttpContext ctx) => ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
-    options.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(ClientKey(ctx),
-        _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    // الدخول والتسجيل والاستعادة كلٌّ بعدّاده (20/دقيقة لكل IP ومسار): شبكات الهاتف في الوطن العربي تشترك في IP واحد (CGNAT)،
+    // والقفل الحقيقي ضد التخمين يبقى على الحساب (5 محاولات / 15 دقيقة)
+    options.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(ClientKey(ctx) + "|" + ctx.Request.Path.Value?.ToLowerInvariant(),
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    // البحث النصي يشغّل عدة LIKE على عمود كبير: 30 بحثًا/دقيقة لكل IP؛ التصفح بلا كلمة بحث غير محدود
+    options.AddPolicy("search", ctx => string.IsNullOrWhiteSpace(ctx.Request.Query["search"])
+        ? RateLimitPartition.GetNoLimiter("browse")
+        : RateLimitPartition.GetFixedWindowLimiter("search|" + ClientKey(ctx),
+            _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     options.AddPolicy("contact", ctx => RateLimitPartition.GetFixedWindowLimiter(ClientKey(ctx),
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 5, Window = TimeSpan.FromMinutes(10), QueueLimit = 0 }));
     options.AddPolicy("api", ctx => RateLimitPartition.GetFixedWindowLimiter(ClientKey(ctx),
@@ -157,6 +165,24 @@ builder.Services.AddResponseCompression(options =>
     options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "image/svg+xml" });
 });
 builder.Services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>();
+
+// ===== المضيف والتحويلات (المرحلة 0.6) =====
+// HSTS سنة كاملة بلا includeSubDomains (نطاقات فرعية مثل mail. ليست كلها HTTPS، وHSTS لا يُتراجع عنه بسهولة)
+builder.Services.AddHsts(o => { o.MaxAge = TimeSpan.FromDays(365); o.IncludeSubDomains = false; o.Preload = false; });
+if (!builder.Environment.IsDevelopment())
+{
+    // http → https دائم (301) بدل 307: محركات البحث تنقل الترتيب إلى https
+    builder.Services.AddHttpsRedirection(o => o.RedirectStatusCode = StatusCodes.Status301MovedPermanently);
+    // AllowedHosts "*" يسمح ببناء روابط الاستعادة وcanonical من ترويسة Host مزوّرة؛ إن تُرك "*" نحصره هنا.
+    // لإبقاء نطاق مؤقت يعمل (مثل نطاق الاستضافة التجريبي) أضفه في الإعدادات: "ExtraAllowedHosts": "a.example;b.example"
+    var configuredHosts = builder.Configuration["AllowedHosts"];
+    if (string.IsNullOrWhiteSpace(configuredHosts) || configuredHosts.Trim() == "*")
+    {
+        var hosts = new List<string> { "foraskhadra.com", "www.foraskhadra.com" };
+        hosts.AddRange((builder.Configuration["ExtraAllowedHosts"] ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        builder.Services.Configure<Microsoft.AspNetCore.HostFiltering.HostFilteringOptions>(o => o.AllowedHosts = hosts);
+    }
+}
 
 var app = builder.Build();
 
@@ -279,6 +305,11 @@ app.UseSerilogRequestLogging(options => options.GetLevel = (ctx, _, ex) =>
 // ❗ خليها بعد exception handling مباشرة
 app.UseStatusCodePages();
 
+if (!app.Environment.IsDevelopment())
+{
+    // foraskhadra.com → www.foraskhadra.com (301): نسخة واحدة في محركات البحث بدل نسختين مكررتين
+    app.UseRewriter(new Microsoft.AspNetCore.Rewrite.RewriteOptions().AddRedirectToWwwPermanent("foraskhadra.com"));
+}
 app.UseHttpsRedirection();
 
 // ===== ترويسات أمنية أساسية =====

@@ -301,6 +301,7 @@ namespace Foras_Khadra.Controllers
         }
 
         // ================= صفحة كل الفرص العامة =================
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("search")]
         public async Task<IActionResult> AllOpportunities(string country, string[] type, string search, int page = 1)
         {
             var query = _context.Opportunities

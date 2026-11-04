@@ -111,12 +111,11 @@ namespace Foras_Khadra.Controllers
             var existingUser = await _userManager.FindByEmailAsync(model.ContactEmail);
             if (existingUser != null)
             {
-                ModelState.AddModelError(nameof(model.ContactEmail),
-                    RegisterOrganizationResources.EmailAlreadyUsed);
-
-                // تمرير رقم الخطوة الحالية
-                ViewData["CurrentStep"] = 4; // الخطوة الخاصة بالمعلومات الأساسية + البريد
-                return View(model);
+                // لا نكشف وجود الحساب لمن في المتصفح: صفحة النجاح نفسها، ورسالة لصاحب البريد
+                var exists = Foras_Khadra.Services.AccountEmails.AlreadyRegistered(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName,
+                    Url.Action("Login", "Organization", null, Request.Scheme)!, Url.Action("ForgotPassword", "Organization", null, Request.Scheme)!);
+                emails.Enqueue(model.ContactEmail, exists.Subject, exists.Html);
+                return RedirectToAction("RegisterSuccess");
             }
 
 

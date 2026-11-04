@@ -25,6 +25,16 @@ namespace Foras_Khadra.Services
             T(lang, "تأكيد البريد الجديد", "Confirm new email", "Confirmer le nouvel e-mail"), link,
             T(lang, "إن لم تطلب هذا التغيير فتجاهل الرسالة ولن يتغير شيء.", "If you did not request this change, ignore this message and nothing will change.", "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : rien ne changera."));
 
+        /// <summary>تسجيل ببريد مسجَّل أصلًا: لا نكشف ذلك لمن في المتصفح، بل نخبر صاحب البريد.</summary>
+        public static Message AlreadyRegistered(string lang, string loginLink, string resetLink) => Build(lang,
+            T(lang, "لديك حساب في فرص خضراء بالفعل", "You already have a Foras Khadra account", "Vous avez déjà un compte Foras Khadra"),
+            T(lang, "مرحبًا،", "Hello,", "Bonjour,"),
+            T(lang, "حاول أحدهم (ربما أنت) إنشاء حساب بهذا البريد، وهو مسجَّل عندنا من قبل. سجّل الدخول بكلمة مرورك، أو أعد تعيينها من رابط «نسيت كلمة المرور»: " + WebUtility.HtmlEncode(resetLink),
+                    "Someone (probably you) tried to create an account with this email, which is already registered with us. Sign in with your password, or reset it here: " + WebUtility.HtmlEncode(resetLink),
+                    "Quelqu'un (probablement vous) a tenté de créer un compte avec cet e-mail, déjà enregistré chez nous. Connectez-vous avec votre mot de passe, ou réinitialisez-le ici : " + WebUtility.HtmlEncode(resetLink)),
+            T(lang, "تسجيل الدخول", "Sign in", "Se connecter"), loginLink,
+            T(lang, "إن لم تكن أنت فتجاهل هذه الرسالة؛ لم يتغير شيء في حسابك.", "If this wasn't you, ignore this message; nothing changed in your account.", "Si ce n'était pas vous, ignorez ce message ; rien n'a changé dans votre compte."));
+
         private static string T(string lang, string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
 
         private static string Name(string? first, string lang) =>
