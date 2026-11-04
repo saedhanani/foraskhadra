@@ -52,8 +52,8 @@ namespace Foras_Khadra.Controllers
             // الصفحات الثابتة
             Add("/", null, "daily", "1.0");
             Add("/Home/AllOpportunities", null, "daily", "0.9");
-            foreach (var typePage in new[] { "Jobs", "Trainings", "Scholarships", "Fellowships", "Volunteering", "Conferences", "Competitions" })
-                Add($"/Home/{typePage}", null, "daily", "0.8");
+            foreach (var typePage in OpportunityTypePages.All)
+                Add($"/opportunities/{typePage.Slug}", null, "daily", "0.9");
             Add("/Home/Articles", null, "weekly", "0.7");
             Add("/Home/News", null, "weekly", "0.7");
             Add("/Home/OrganizationsMap", null, "weekly", "0.6");

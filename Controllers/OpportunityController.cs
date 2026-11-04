@@ -471,25 +471,33 @@ public async Task<IActionResult> Create()
         [HttpGet]
         public async Task<IActionResult> Go(int id, [FromServices] IApplyClickCounter clicks, [FromServices] IAnalytics analytics)
         {
-            if (User.Identity?.IsAuthenticated != true)
-            {
-                analytics.Event("go.guest");
-                return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Details", "Opportunity", new { id }) });
-            }
-
-            // التأكيد مطلوب عند «قدّم الآن» فقط (التصفح والحفظ بلا تأكيد)
-            var applicant = await _userManager.GetUserAsync(User);
-            if (applicant != null && !applicant.EmailConfirmed && !User.IsInRole("Admin"))
-            {
-                analytics.Event("go.unconfirmed");
-                return RedirectToAction("ConfirmRequired", "Account", new { returnUrl = Url.Action("Details", "Opportunity", new { id }) });
-            }
-
             var opp = await _context.Opportunities.AsNoTracking()
                 .Where(o => o.Id == id)
-                .Select(o => new { o.Status, o.ApplyLink })
+                .Select(o => new { o.Status, o.ApplyLink, o.Type })
                 .FirstOrDefaultAsync();
             if (opp == null || opp.Status != OpportunityStatus.Published) return NotFound();
+
+            // الوظائف والتدريب والتطوع مفتوحة للزائر وبلا تأكيد بريد (Google for Jobs يرفض جدار الدخول — المرحلة 2.4)؛
+            // بقية الأنواع تطلب الدخول ثم تأكيد البريد عند «قدّم الآن» فقط (التصفح والحفظ بلا تأكيد)
+            var jobLike = opp.Type is OpportunityType.Jobs or OpportunityType.Internships or OpportunityType.Volunteering;
+            if (User.Identity?.IsAuthenticated != true)
+            {
+                if (!jobLike)
+                {
+                    analytics.Event("go.guest");
+                    return RedirectToAction("Login", "Account", new { returnUrl = Url.Action("Details", "Opportunity", new { id }) });
+                }
+                analytics.Event("go.guest.job");
+            }
+            else if (!jobLike)
+            {
+                var applicant = await _userManager.GetUserAsync(User);
+                if (applicant != null && !applicant.EmailConfirmed && !User.IsInRole("Admin"))
+                {
+                    analytics.Event("go.unconfirmed");
+                    return RedirectToAction("ConfirmRequired", "Account", new { returnUrl = Url.Action("Details", "Opportunity", new { id }) });
+                }
+            }
 
             var target = HttpUrl.Normalize(opp.ApplyLink);
             if (target == null) return NotFound();

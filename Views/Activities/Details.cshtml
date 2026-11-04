@@ -37,7 +37,7 @@
 }
 
 <link rel="stylesheet" asp-append-version="true" href="~/css/activities.css" />
-<script type="application/ld+json">@Html.Raw(eventJson)</script>
+@Html.Raw("<script type=\"application/ld+json\">" + eventJson + "</script>") @* Razor يرمّز "+" في قيمة type (ld&#x2B;json)؛ الوسم كله نصًا خامًا *@
 
 <div class="activity-details container">
     <a href="@Url.Action("News", "Home")" class="activity-back">

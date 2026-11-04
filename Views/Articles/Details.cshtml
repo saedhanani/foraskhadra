@@ -64,7 +64,7 @@
     <link rel="stylesheet" asp-append-version="true" href="~/css/articles-details.css" />
 }
 
-<script type="application/ld+json">@Html.Raw(articleJson)</script>
+@Html.Raw("<script type=\"application/ld+json\">" + articleJson + "</script>") @* Razor يرمّز "+" في قيمة type (ld&#x2B;json)؛ الوسم كله نصًا خامًا *@
 
 <div class="news-article-page">
     <div class="container-fluid ">

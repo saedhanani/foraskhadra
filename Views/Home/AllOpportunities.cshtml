@@ -6,12 +6,56 @@
 @inject IViewLocalizer Localizer
 
 @{
-    ViewData["Title"] = Localizer["PageTitle"];
     var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var tp = Model.TypePage;
+    var f = Model.Filter;
+    ViewData["Title"] = tp != null ? tp.Title(lang) : Localizer["PageTitle"].Value;
+    if (tp != null) ViewData["Description"] = tp.Meta(lang);
 
-    // الرابط القانوني يتجاهل الفلاتر ويبقي رقم الصفحة فقط
-    ViewData["Canonical"] = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}{Context.Request.Path}"
-        + (Model.Page > 1 ? $"?page={Model.Page}" : "");
+    // canonical (2.2): صفحة النوع والقائمة بلا فلاتر → ذاتي مع رقم الصفحة فقط (لا rel=prev/next)؛
+    // أي فلتر أو بحث أو ترتيب → noindex مع canonical ذاتي كامل (لا إشارات متضاربة)
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}";
+    var filtered = tp == null ? f.HasCriteria : f.HasCriteriaBeyondType;
+    if (filtered)
+    {
+        ViewData["Robots"] = "noindex,follow";
+        ViewData["Canonical"] = baseUrl + Context.Request.Path + Context.Request.QueryString;
+    }
+    else
+    {
+        ViewData["Canonical"] = baseUrl + (tp != null ? Url.Action("ByType", "Home", new { type = tp.Slug }) : Context.Request.Path.Value)
+            + (Model.Page > 1 ? $"?page={Model.Page}" : "");
+    }
+
+    // رقائق الفلاتر الفعّالة: كل رقاقة رابط يزيل معيارها ويبقي الباقي
+    string Without(string key, string? value = null)
+    {
+        var kept = Context.Request.Query
+            .Where(kv => kv.Key != "page" && !(kv.Key.Equals(key, StringComparison.OrdinalIgnoreCase) && (value == null || kv.Value.Any(v => string.Equals(v, value, StringComparison.OrdinalIgnoreCase)))))
+            .ToList();
+        return Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(Context.Request.Path.Value ?? "/", kept);
+    }
+    string FundingName(FundingType v) => v switch { FundingType.FullyFunded => T("ممولة بالكامل", "Fully funded", "Entièrement financée"), FundingType.PartiallyFunded => T("ممولة جزئيًا", "Partially funded", "Partiellement financée"), FundingType.SelfFunded => T("على نفقة المتقدم", "Self-funded", "Autofinancée"), FundingType.Paid => T("بأجر", "Paid", "Rémunérée"), _ => "" };
+    string DegreeName(DegreeLevels v) => v switch { DegreeLevels.HighSchool => T("ثانوي", "High school", "Lycée"), DegreeLevels.Bachelor => T("بكالوريوس", "Bachelor's", "Licence"), DegreeLevels.Master => T("ماستر", "Master's", "Master"), DegreeLevels.PhD => T("دكتوراه", "PhD", "Doctorat"), DegreeLevels.Postdoc => T("ما بعد الدكتوراه", "Postdoc", "Post-doctorat"), DegreeLevels.Professional => T("مهني", "Professional", "Professionnel"), _ => v.ToString() };
+    string ThemeName(GreenThemes v) => v switch { GreenThemes.Climate => T("المناخ", "Climate", "Climat"), GreenThemes.Energy => T("الطاقة", "Energy", "Énergie"), GreenThemes.Water => T("المياه", "Water", "Eau"), GreenThemes.Biodiversity => T("التنوع الحيوي", "Biodiversity", "Biodiversité"), GreenThemes.CircularEconomy => T("الاقتصاد الدائري", "Circular economy", "Économie circulaire"), GreenThemes.Agriculture => T("الزراعة", "Agriculture", "Agriculture"), GreenThemes.SustainableCities => T("المدن المستدامة", "Sustainable cities", "Villes durables"), GreenThemes.Policy => T("السياسات", "Policy", "Politiques"), _ => v.ToString() };
+    string FieldName(Field x) => lang == "en" ? x.NameEn : lang == "fr" ? x.NameFr : x.NameAr;
+
+    var chips = new List<(string Label, string Url)>();
+    if (f.Search.Length > 0) chips.Add((T("بحث: ", "Search: ", "Recherche : ") + f.Search, Without("search")));
+    if (tp == null) foreach (var t in f.Types) chips.Add((t.GetDisplayName(lang), Without("type", t.ToString())));
+    if (f.CountryIso != null) chips.Add((T("دولتي: ", "My country: ", "Mon pays : ") + (f.CountryIso == "XA" ? T("كل الوطن العربي", "Arab world", "Monde arabe") : Model.CountryOptions.FirstOrDefault(c => c.Iso == f.CountryIso)?.Name ?? CountryHelper.NameForIso(f.CountryIso, lang) ?? f.CountryIso), Without("country")));
+    else if (f.CountryName != null) chips.Add((f.CountryName, Without("country")));
+    if (f.Funding != null) chips.Add((FundingName(f.Funding.Value), Without("funding")));
+    if (f.Degree != null) chips.Add((DegreeName(f.Degree.Value), Without("degree")));
+    foreach (var k in f.Fields) chips.Add((Model.Fields.FirstOrDefault(x => x.Key == k) is Field fld ? FieldName(fld) : k, Without("field", k)));
+    if (f.Theme != null) chips.Add((ThemeName(f.Theme.Value), Without("theme")));
+    if (f.Host != null) chips.Add((T("في ", "In ", "En ") + (Model.HostOptions.FirstOrDefault(h => h.Iso == f.Host)?.Name ?? f.Host), Without("host")));
+    if (f.Remote) chips.Add((T("عن بُعد", "Remote", "À distance"), Without("remote")));
+    if (f.NoIelts) chips.Add((T("بدون آيلتس", "No IELTS", "Sans IELTS"), Without("noielts")));
+    if (f.Within != null) chips.Add((T($"ينتهي خلال {f.Within} يومًا", $"Closes within {f.Within} days", $"Se clôture sous {f.Within} jours"), Without("within")));
+    if (f.Sort != "open") chips.Add((f.Sort == "newest" ? T("الأحدث", "Newest", "Plus récentes") : T("الأقرب موعدًا", "Closest deadline", "Échéance proche"), Without("sort")));
+    var clearUrl = tp != null ? Url.Action("ByType", "Home", new { type = tp.Slug }) : Url.Action("AllOpportunities", "Home");
 
     // روابط الصفحات تحافظ على فلاتر البحث الحالية وتغيّر page فقط (type قد تتكرر، لذا لا نجمعها في نص واحد)
     string PageUrl(int p)
@@ -431,13 +475,35 @@
     }
 </style>
 
+<style>
+    /* ===== المرحلة 2.2: بحث ظاهر، فلاتر مهيكلة، رقائق، عدّاد ===== */
+    .ob-intro { color: #475569; line-height: 1.9; max-width: 900px; margin: 0 0 16px; }
+    .ob-bar { background: #fff; border: 1px solid #DCEFDD; border-radius: 16px; padding: 12px; margin-bottom: 10px; }
+    .ob-search { display: flex; align-items: center; gap: 8px; border: 1px solid #CBD5E1; border-radius: 12px; padding: 4px 6px 4px 12px; }
+    .ob-search i { color: #94A3B8; }
+    .ob-search input { flex: 1; border: 0; outline: 0; font: inherit; padding: 8px 0; min-width: 0; background: transparent; }
+    .ob-search button { border: 0; background: #1B6B23; color: #fff; border-radius: 10px; padding: 8px 16px; font: inherit; font-weight: 700; cursor: pointer; }
+    .ob-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .ob-filters select { border: 1px solid #CBD5E1; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: .9rem; background: #fff; max-width: 220px; }
+    .ob-filters select:has(option:checked:not([value=""])) { background: #E8F5E9; border-color: #1B6B23; color: #1B6B23; font-weight: 700; }
+    .ob-toggle { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #CBD5E1; border-radius: 999px; padding: 6px 12px; font-size: .9rem; cursor: pointer; }
+    .ob-toggle:has(input:checked) { background: #E8F5E9; border-color: #1B6B23; color: #1B6B23; font-weight: 700; }
+    .ob-toggle input { accent-color: #1B6B23; }
+    .ob-status { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+    .ob-count { color: #475569; }
+    .ob-count b { color: #1B6B23; font-size: 1.1rem; }
+    .ob-chip { display: inline-flex; align-items: center; gap: 4px; background: #E8F5E9; color: #1B6B23; border-radius: 999px; padding: 4px 10px; font-size: .85rem; font-weight: 700; text-decoration: none; }
+    .ob-chip:hover { background: #d4ecd6; color: #1B6B23; }
+    .ob-clear { color: #B91C1C; font-size: .85rem; text-decoration: none; }
+</style>
+
 <div class="page-wrapper container">
     <header class="custom-header">
         <div class="header-right">
             <div class="header-logo">
                 <img src="/images/about_us_leaf.svg" alt="Logo" />
             </div>
-            <h1 class="header-title">@Localizer["all_opportunities"]</h1>
+            <h1 class="header-title">@(tp != null ? tp.Title(lang) : Localizer["all_opportunities"].Value)</h1>
         </div>
 
         <div class="header-left">
@@ -531,6 +597,80 @@
             </form>
         </div>
     </header>
+
+    @if (tp != null)
+    {
+        <p class="ob-intro">@tp.Intro(lang)</p>
+    }
+
+    @* بحث ظاهر + فلاتر من الحقول المهيكلة + ترتيب + عدّاد + رقائق (المرحلة 2.2) — تتغيّر فتُرسل تلقائيًا *@
+    <form method="get" class="ob-bar" action="@(tp != null ? Url.Action("ByType", "Home", new { type = tp.Slug }) : Url.Action("AllOpportunities", "Home"))" id="obForm">
+        @if (tp == null)
+        {
+            foreach (var t in f.Types) { <input type="hidden" name="type" value="@t" /> }
+        }
+        @if (f.CountryName != null) { <input type="hidden" name="country" value="@f.CountryName" /> }
+        <div class="ob-search">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="search" name="search" value="@f.Search" maxlength="100" placeholder="@T("ابحث: منحة ماجستير في ألمانيا…", "Search: master's scholarship in Germany…", "Rechercher : bourse de master en Allemagne…")" aria-label="@T("بحث", "Search", "Rechercher")" />
+            <button type="submit">@T("بحث", "Search", "Rechercher")</button>
+        </div>
+        <div class="ob-filters">
+            @if (f.CountryName == null)
+            {
+                <select name="country" aria-label="@T("دولتي", "My country", "Mon pays")">
+                    <option value="">@T("دولتي", "My country", "Mon pays")</option>
+                    @foreach (var c in Model.CountryOptions) { <option value="@c.Iso" selected="@(f.CountryIso == c.Iso)">@c.Name</option> }
+                    <option value="XA" selected="@(f.CountryIso == "XA")">@T("كل الوطن العربي", "The whole Arab world", "Tout le monde arabe")</option>
+                </select>
+            }
+            <select name="funding" aria-label="@T("التمويل", "Funding", "Financement")">
+                <option value="">@T("التمويل", "Funding", "Financement")</option>
+                @foreach (var v in new[] { FundingType.FullyFunded, FundingType.PartiallyFunded, FundingType.SelfFunded, FundingType.Paid }) { <option value="@v" selected="@(f.Funding == v)">@FundingName(v)</option> }
+            </select>
+            <select name="degree" aria-label="@T("المرحلة", "Level", "Niveau")">
+                <option value="">@T("المرحلة", "Level", "Niveau")</option>
+                @foreach (var v in new[] { DegreeLevels.HighSchool, DegreeLevels.Bachelor, DegreeLevels.Master, DegreeLevels.PhD, DegreeLevels.Postdoc, DegreeLevels.Professional }) { <option value="@v" selected="@(f.Degree == v)">@DegreeName(v)</option> }
+            </select>
+            <select name="field" aria-label="@T("المجال", "Field", "Domaine")">
+                <option value="">@T("المجال", "Field", "Domaine")</option>
+                @foreach (var x in Model.Fields) { <option value="@x.Key" selected="@f.Fields.Contains(x.Key)">@FieldName(x)</option> }
+            </select>
+            <select name="theme" aria-label="@T("المحور الأخضر", "Green theme", "Axe vert")">
+                <option value="">@T("المحور الأخضر", "Green theme", "Axe vert")</option>
+                @foreach (var v in new[] { GreenThemes.Climate, GreenThemes.Energy, GreenThemes.Water, GreenThemes.Biodiversity, GreenThemes.CircularEconomy, GreenThemes.Agriculture, GreenThemes.SustainableCities, GreenThemes.Policy }) { <option value="@v" selected="@(f.Theme == v)">@ThemeName(v)</option> }
+            </select>
+            @if (Model.HostOptions.Count > 0)
+            {
+                <select name="host" aria-label="@T("بلد الاستضافة", "Host country", "Pays d'accueil")">
+                    <option value="">@T("بلد الاستضافة", "Host country", "Pays d'accueil")</option>
+                    @foreach (var h in Model.HostOptions) { <option value="@h.Iso" selected="@(f.Host == h.Iso)">@h.Name</option> }
+                </select>
+            }
+            <select name="within" aria-label="@T("ينتهي خلال", "Closes within", "Se clôture sous")">
+                <option value="">@T("ينتهي خلال…", "Closes within…", "Se clôture sous…")</option>
+                @foreach (var d in OpportunityFilter.WithinOptions) { <option value="@d" selected="@(f.Within == d)">@T($"{d} يومًا", $"{d} days", $"{d} jours")</option> }
+            </select>
+            <label class="ob-toggle"><input type="checkbox" name="remote" value="true" checked="@f.Remote" /> @T("عن بُعد", "Remote", "À distance")</label>
+            <label class="ob-toggle"><input type="checkbox" name="noielts" value="true" checked="@f.NoIelts" /> @T("بدون آيلتس", "No IELTS", "Sans IELTS")</label>
+            <select name="sort" aria-label="@T("الترتيب", "Sort", "Tri")">
+                <option value="" selected="@(f.Sort == "open")">@T("المفتوحة أولًا", "Open first", "Ouvertes d'abord")</option>
+                <option value="deadline" selected="@(f.Sort == "deadline")">@T("الأقرب موعدًا", "Closest deadline", "Échéance proche")</option>
+                <option value="newest" selected="@(f.Sort == "newest")">@T("الأحدث", "Newest", "Plus récentes")</option>
+            </select>
+        </div>
+    </form>
+    <div class="ob-status">
+        <span class="ob-count"><b>@Model.TotalCount.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)</b> @T("فرصة", "opportunities", "opportunités")</span>
+        @foreach (var chip in chips)
+        {
+            <a class="ob-chip" href="@chip.Url" rel="nofollow">@chip.Label <i class="bi bi-x"></i></a>
+        }
+        @if (chips.Count > 0)
+        {
+            <a class="ob-clear" href="@clearUrl">@T("مسح الكل", "Clear all", "Tout effacer")</a>
+        }
+    </div>
 
     @{
         // شريط "احفظ هذا البحث": يظهر للمسجّل عندما يكون ثمة بحث أو فلتر فعّال
@@ -802,4 +942,10 @@
         }
     });
 
+</script>
+<script>
+    // فلاتر المرحلة 2.2: أي تغيير يرسل النموذج (الصفحة تعود إلى 1 لأن page ليست في النموذج)
+    document.querySelectorAll('#obForm select, #obForm input[type=checkbox]').forEach(function (el) {
+        el.addEventListener('change', function () { el.form.submit(); });
+    });
 </script>

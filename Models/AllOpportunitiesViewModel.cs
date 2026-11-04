@@ -20,6 +20,16 @@ namespace Foras_Khadra.Models
         public int TotalCount { get; set; }
         public int TotalPages => Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
 
+        // المرحلة 2.1/2.2: الاستعلام كما جاء، والقيم المفهومة منه، وصفحة النوع إن كانت هذه صفحة نوع، وخيارات الفلاتر
+        public OpportunityQuery Query { get; set; } = new();
+        public ParsedFilter Filter { get; set; } = new();
+        public TypePage? TypePage { get; set; }
+        public List<Field> Fields { get; set; } = new();
+        /// <summary>"دولتي": الدول العربية برموز ISO بلغة الواجهة.</summary>
+        public List<CountryOption> CountryOptions { get; set; } = new();
+        /// <summary>بلدان الاستضافة الموجودة فعلًا في الفرص المنشورة.</summary>
+        public List<CountryOption> HostOptions { get; set; } = new();
+
         // لتوليد قائمة الأنواع للـ dropdown
         public List<SelectListItem> TypeSelectList
         {

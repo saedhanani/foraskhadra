@@ -230,146 +230,103 @@ namespace Foras_Khadra.Controllers
             return items;
         }
 
-        private async Task<IActionResult> GetOpportunitiesByType(OpportunityType type, string country, string typeName, int page)
+        // ================= صفحات الأنواع والقائمة العامة (المرحلة 2.1 + 2.2) =================
+
+        /// <summary>الروابط القديمة /Home/Jobs… → 301 إلى /opportunities/{slug} مع الدولة والصفحة.</summary>
+        private IActionResult RedirectToType(OpportunityType type, string? country, int page) =>
+            RedirectToActionPermanent(nameof(ByType), new { type = OpportunityTypePages.For(type).Slug, country = string.IsNullOrWhiteSpace(country) ? null : country, page = page > 1 ? page : (int?)null });
+
+        public IActionResult Trainings(string? country = null, int page = 1) => RedirectToType(OpportunityType.Internships, country, page);
+        public IActionResult Jobs(string? country = null, int page = 1) => RedirectToType(OpportunityType.Jobs, country, page);
+        public IActionResult Competitions(string? country = null, int page = 1) => RedirectToType(OpportunityType.Competitions, country, page);
+        public IActionResult Conferences(string? country = null, int page = 1) => RedirectToType(OpportunityType.Conferences, country, page);
+        public IActionResult Volunteering(string? country = null, int page = 1) => RedirectToType(OpportunityType.Volunteering, country, page);
+        public IActionResult Fellowships(string? country = null, int page = 1) => RedirectToType(OpportunityType.Fellowships, country, page);
+        public IActionResult Scholarships(string? country = null, int page = 1) => RedirectToType(OpportunityType.Scholarships, country, page);
+
+        /// <summary>صفحة نوع واحد /opportunities/{slug}: عنوان ومقدمة لكل لغة، canonical ذاتي لكل صفحة ترقيم، والفلاتر نفسها.</summary>
+        [HttpGet("/{culture:culture}/opportunities/{type}")]
+        [HttpGet("/opportunities/{type}", Order = 1)]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("search")]
+        public async Task<IActionResult> ByType(string type, [FromQuery] OpportunityQuery q)
         {
-            var query = _context.Opportunities
-                                .Include(o => o.AvailableCountries)
-                                .AsNoTracking()
-                                .Where(o => o.Status == OpportunityStatus.Published && o.Type == type);
-
-            if (!string.IsNullOrEmpty(country))
-            {
-                query = query.Where(o =>
-                    o.AvailableCountries.Any(c =>
-                        c.NameEn == country ||
-                        c.NameAr == country ||
-                        c.NameFr == country));
-            }
-
-            page = Math.Max(1, page);
-            var opportunities = PageOf(query, page, out var totalCount);
-
-            var model = new AllOpportunitiesViewModel
-            {
-                Opportunities = opportunities,
-                SelectedCountry = country,
-                SelectedTypes = new List<OpportunityType> { type },
-                Page = page,
-                PageSize = OpportunitiesPageSize,
-                TotalCount = totalCount
-            };
-
-            ViewBag.TypeName = typeName;
-            ViewBag.SavedIds = await SavedIdsFor(opportunities);
-            return View("AllOpportunities", model);
-        }
-        // مثال لكل نوع:
-        public Task<IActionResult> Trainings(string country = null, int page = 1)
-        {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Internships, country, "فرص التدريب", page);
-        }
-
-        public Task<IActionResult> Jobs(string country = null, int page = 1)
-        {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Jobs, country, "الوظائف", page);
-        }
-
-        public Task<IActionResult> Competitions(string country = null, int page = 1)
-        {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Competitions, country, "المسابقات", page);
-        }
-
-        public Task<IActionResult> Conferences(string country = null, int page = 1)
-        {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Conferences, country, "المؤتمرات", page);
-        }
-
-        public Task<IActionResult> Volunteering(string country = null, int page = 1)
-        {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Volunteering, country, "فرص التطوع", page);
-        }
-
-        public Task<IActionResult> Fellowships(string country = null, int page = 1)
-        {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Fellowships, country, "الزمالات", page);
-        }
-
-        public Task<IActionResult> Scholarships(string country = null, int page = 1)
-        {
-            return GetOpportunitiesByType(Foras_Khadra.Models.OpportunityType.Scholarships, country, "المنح الدراسية", page);
+            var page = OpportunityTypePages.BySlug(type);
+            if (page == null) return NotFound();
+            if (!string.Equals(type, page.Slug, StringComparison.Ordinal))
+                return RedirectToActionPermanent(nameof(ByType), new { type = page.Slug, page = q.Page > 1 ? q.Page : (int?)null }); // الأسماء القديمة والأحرف الكبيرة → الرابط القانوني
+            q.Type = new List<string> { page.Type.ToString() };
+            return View("AllOpportunities", await BuildListAsync(q, page));
         }
 
         // ================= صفحة كل الفرص العامة =================
         [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("search")]
-        public async Task<IActionResult> AllOpportunities(string country, string[] type, string search, [FromServices] IAnalytics analytics, int page = 1)
+        public async Task<IActionResult> AllOpportunities([FromQuery] OpportunityQuery q, [FromServices] IAnalytics analytics)
         {
-            var query = _context.Opportunities
-                                .Include(o => o.AvailableCountries)
-                                .AsNoTracking()
-                                .Where(o => o.Status == OpportunityStatus.Published)
-                                .AsQueryable();
+            var countries = await CountriesAsync();
+            var parsed = OpportunityFilter.Parse(q, countries);
+            // نوع واحد بلا أي معيار آخر: صفحته الخاصة هي القانونية
+            if (parsed.IsSingleTypeOnly)
+                return RedirectToActionPermanent(nameof(ByType), new { type = OpportunityTypePages.For(parsed.Types[0]).Slug, page = q.Page > 1 ? q.Page : (int?)null });
 
-            // بحث نصي كامل: كل كلمة (مطبّعة) يجب أن ترد في نص الفرصة المطبّع — انظر Helpers/SearchIndexer
-            foreach (var term in SearchIndexer.Terms(search))
-            {
-                var pattern = $"%{term}%";
-                query = query.Where(o => EF.Functions.Like(o.SearchText, pattern));
-            }
-
-            // فلترة حسب النوع
-            if (type != null && type.Any())
-            {
-                // تحويل النصوص إلى Enum
-                var selectedTypes = type
-                    .Where(t => Enum.TryParse<OpportunityType>(t, out _))
-                    .Select(t => Enum.Parse<OpportunityType>(t))
-                    .ToList();
-
-                query = query.Where(o => o.Type.HasValue && selectedTypes.Contains(o.Type.Value));
-            }
-
-            // فلترة حسب الدولة
-            if (!string.IsNullOrEmpty(country))
-            {
-                query = query.Where(o =>
-                    o.AvailableCountries.Any(c =>
-                        c.NameEn == country ||
-                        c.NameAr == country ||
-                        c.NameFr == country));
-            }
-
-            page = Math.Max(1, page);
-            var allOpportunities = PageOf(query, page, out var totalCount);
+            var vm = await BuildListAsync(q, null, countries, parsed);
 
             // تحليلات: عدد عمليات البحث، والبحث بصفر نتائج مع العبارة (ما يطلبه الزوار ولا نملكه)
-            if (!string.IsNullOrWhiteSpace(search))
+            if (parsed.Search.Length > 0)
             {
                 analytics.Event("search");
-                if (totalCount == 0) analytics.Event("search.zero", search);
+                if (vm.TotalCount == 0) analytics.Event("search.zero", parsed.Search);
             }
+            return View(vm);
+        }
 
-            var countries = _context.Countries
-                                    .OrderBy(c => c.NameAr)
-                                    .Select(c => c.NameAr)
-                                    .ToList();
+        private Task<List<Country>> CountriesAsync() => _context.Countries.AsNoTracking().ToListAsync();
+
+        private async Task<AllOpportunitiesViewModel> BuildListAsync(OpportunityQuery q, TypePage? typePage, List<Country>? countries = null, ParsedFilter? parsed = null)
+        {
+            countries ??= await CountriesAsync();
+            parsed ??= OpportunityFilter.Parse(q, countries);
+            var today = DateTime.Now.Date;
+
+            var query = OpportunityFilter.Apply(_context.Opportunities.Include(o => o.AvailableCountries).AsNoTracking(), parsed, today);
+            var totalCount = await query.CountAsync();
+            var page = Math.Clamp(q.Page, 1, 10000); // رقم سالب أو ضخم كان يصير OFFSET سالبًا → 500
+            var items = await OpportunityFilter.Sort(query, parsed.Sort, today)
+                .Skip((page - 1) * OpportunitiesPageSize)
+                .Take(OpportunitiesPageSize)
+                .ToListAsync();
+            foreach (var opp in items)
+                opp.IsExpired = opp.EndDate.HasValue && opp.EndDate.Value < DateTime.Now;
+
+            var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            string Name(Country c) => lang == "en" ? c.NameEn : lang == "fr" ? c.NameFr : c.NameAr;
+            var comparer = StringComparer.Create(System.Globalization.CultureInfo.CurrentUICulture, true);
+            var hostIso = await _context.Opportunities.AsNoTracking()
+                .Where(o => o.Status == OpportunityStatus.Published && o.HostCountryIso != null && o.HostCountryIso != "")
+                .Select(o => o.HostCountryIso!).Distinct().ToListAsync();
 
             var model = new AllOpportunitiesViewModel
             {
-                Opportunities = allOpportunities,
-                SelectedCountry = country,
-                SelectedTypes = type?.Where(t => Enum.TryParse<OpportunityType>(t, out _)).Select(t => Enum.Parse<OpportunityType>(t)).ToList() ?? new List<OpportunityType>(),
-                Countries = countries,
+                Opportunities = items,
+                SelectedCountry = q.Country,
+                SelectedTypes = parsed.Types,
+                Countries = countries.OrderBy(c => c.NameAr).Select(c => c.NameAr).ToList(),
                 Page = page,
                 PageSize = OpportunitiesPageSize,
-                TotalCount = totalCount
+                TotalCount = totalCount,
+                Query = q,
+                Filter = parsed,
+                TypePage = typePage,
+                Fields = await _context.Fields.AsNoTracking().Where(f => f.Key != Field.AnyKey).OrderBy(f => f.SortOrder).ToListAsync(),
+                CountryOptions = countries.Where(c => c.IsoCode != null && CompassMatcher.ArabIso.Contains(c.IsoCode))
+                    .Select(c => new CountryOption(c.IsoCode!.ToUpperInvariant(), Name(c))).OrderBy(o => o.Name, comparer).ToList(),
+                HostOptions = hostIso.Select(iso => new CountryOption(iso.ToUpperInvariant(), CountryHelper.NameForIso(iso, lang) ?? iso)).OrderBy(o => o.Name, comparer).ToList()
             };
 
-            ViewBag.SavedIds = await SavedIdsFor(allOpportunities);
-            ViewBag.MatchScores = await MatchScoresFor(allOpportunities);
-            ViewBag.SaveCounts = await _saved.SaveCountsAsync(allOpportunities.Select(o => o.Id));
-            return View(model);
+            ViewBag.SavedIds = await SavedIdsFor(items);
+            ViewBag.MatchScores = await MatchScoresFor(items);
+            ViewBag.SaveCounts = await _saved.SaveCountsAsync(items.Select(o => o.Id));
+            return model;
         }
-
 
         public IActionResult OrganizationsMap(string country = null, string sector = null, int page = 1)
         {

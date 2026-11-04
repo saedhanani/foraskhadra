@@ -22,6 +22,8 @@
     }
 
     var applyButtonClass = "apply-button " + (isExpired ? "expired-button" : "active-button");
+    // الوظائف والتدريب والتطوع: Google for Jobs يرفض جدار الدخول، فرابط التقديم ظاهر للزائر (المرحلة 2.4)
+    var isJobLike = Model.Type is OpportunityType.Jobs or OpportunityType.Internships or OpportunityType.Volunteering;
 
     var isRtl = lang == "ar";
     var dir = isRtl ? "rtl" : "ltr";
@@ -48,34 +50,48 @@
         + Url.Action("Details", "Opportunity", new { id = Model.Id, slug = SlugHelper.Make(title) });
     ViewData["Canonical"] = canonicalUrl;
 
-    // Google for Jobs يفهم JobPosting للوظائف والتدريب فقط؛ بقية الأنواع تكتفي بوسوم الصفحة
+    // Google for Jobs: JobPosting للوظائف والتدريب والتطوع، وللمفتوحة فقط (الترميز يُزال عند الانتهاء) — المرحلة 2.4
     string? jobPostingJson = null;
-    if (Model.Type == OpportunityType.Jobs || Model.Type == OpportunityType.Internships)
+    if (isJobLike && !isExpired)
     {
-        var publisherName = Model.IsPublishedByAdmin || string.Equals(Model.PublishedBy, "admin", StringComparison.OrdinalIgnoreCase)
-            ? "فرص خضراء"
-            : (string.IsNullOrWhiteSpace(Model.PublishedBy) ? "فرص خضراء" : Model.PublishedBy);
+        var hiringName = !string.IsNullOrWhiteSpace(Model.HostOrganizationName) ? Model.HostOrganizationName
+            : (Model.IsPublishedByAdmin || string.Equals(Model.PublishedBy, "admin", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(Model.PublishedBy)) ? "فرص خضراء" : Model.PublishedBy;
+        var hiring = new Dictionary<string, object?> { ["@type"] = "Organization", ["name"] = hiringName };
+        if (!string.IsNullOrWhiteSpace(Model.HostOrganizationUrl)) hiring["sameAs"] = Model.HostOrganizationUrl;
+        if (!string.IsNullOrWhiteSpace(Model.HostOrganizationLogoUrl)) hiring["logo"] = Model.HostOrganizationLogoUrl;
 
-        var countryNames = (Model.AvailableCountries ?? new List<Country>())
-            .Select(c => lang switch { "en" => c.NameEn, "fr" => c.NameFr, _ => c.NameAr })
-            .Where(n => !string.IsNullOrWhiteSpace(n))
-            .ToList();
+        // الدول المؤهَّلة برموز ISO: XA = 22 دولة عربية، XW = بلا قيد
+        var codes = FacetParser.EligibleCodes(Model).Select(c => c.ToUpperInvariant()).Distinct().ToList();
+        var applicantIso = codes.Contains(FacetParser.WorldCode)
+            ? new List<string>()
+            : codes.SelectMany(c => c == FacetParser.ArabWorldCode ? CompassMatcher.ArabIso.OrderBy(x => x).ToList() : new List<string> { c })
+                   .Where(FacetParser.IsRealIso).Distinct().ToList();
+        var remote = Model.IsRemote || Model.IsOnline;
+        var employment = FacetParser.ToJobPostingValue(Model.EmploymentType)
+            ?? (Model.Type == OpportunityType.Internships ? "INTERN" : Model.Type == OpportunityType.Volunteering ? "VOLUNTEER" : null);
+        var locationIso = !string.IsNullOrWhiteSpace(Model.HostCountryIso) ? new List<string> { Model.HostCountryIso!.ToUpperInvariant() } : applicantIso.Take(5).ToList();
 
         var jobPosting = new Dictionary<string, object?>
         {
             ["@context"] = "https://schema.org",
             ["@type"] = "JobPosting",
             ["title"] = title,
-            ["description"] = string.Join("\n\n", new[] { plainDescription, Plain(seoDetailsHtml) }.Where(s => s.Length > 0)),
+            ["description"] = string.Join("\n\n", new[] { plainDescription, Plain(seoDetailsHtml) }.Where(x => x.Length > 0)),
             ["datePosted"] = Model.PublishDate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
             ["validThrough"] = Model.DeadlineType == DeadlineType.SpecificDate && Model.EndDate.HasValue
-                ? Model.EndDate.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : null,
-            ["employmentType"] = Model.Type == OpportunityType.Internships ? "INTERN" : null,
-            ["hiringOrganization"] = new Dictionary<string, object?> { ["@type"] = "Organization", ["name"] = publisherName },
-            ["jobLocation"] = countryNames.Select(n => new Dictionary<string, object?>
+                ? Model.EndDate.Value.ToString("yyyy-MM-dd'T'23:59:59", System.Globalization.CultureInfo.InvariantCulture) : null,
+            ["employmentType"] = employment,
+            ["hiringOrganization"] = hiring,
+            ["jobLocation"] = remote && locationIso.Count == 0 ? null : locationIso.Select(iso => new Dictionary<string, object?>
             {
                 ["@type"] = "Place",
-                ["address"] = new Dictionary<string, object?> { ["@type"] = "PostalAddress", ["addressCountry"] = n }
+                ["address"] = new Dictionary<string, object?> { ["@type"] = "PostalAddress", ["addressCountry"] = iso }
+            }).ToList(),
+            ["jobLocationType"] = remote ? "TELECOMMUTE" : null,
+            ["applicantLocationRequirements"] = applicantIso.Count == 0 ? null : applicantIso.Select(iso => new Dictionary<string, object?>
+            {
+                ["@type"] = "Country",
+                ["name"] = CountryHelper.NameForIso(iso, "en") ?? iso
             }).ToList(),
             ["url"] = canonicalUrl,
             ["directApply"] = false
@@ -92,7 +108,8 @@
 <link asp-append-version="true" href="~/css/opportunity-deatails.css" rel="stylesheet" />
 @if (jobPostingJson != null)
 {
-    <script type="application/ld+json">@Html.Raw(jobPostingJson)</script>
+    @* Razor يرمّز "+" في قيمة type داخل كتلة @if (application/ld&#x2B;json)، فنكتب الوسم كله نصًا خامًا *@
+    @Html.Raw("<script type=\"application/ld+json\">" + jobPostingJson + "</script>")
 }
 
 <div class="opp-container" dir="@dir">
@@ -158,6 +175,12 @@
                         <i class="bi bi-calendar-plus"></i>
                     </a>
                 }
+            }
+            else if (!User.Identity.IsAuthenticated && isJobLike && !isExpired)
+            {
+                @* الزائر في الوظائف والتدريب والتطوع يقدّم مباشرة (النقرة تُعدّ في /go)؛ الحفظ يطلب الدخول ويعود إلى هنا *@
+                <a id="applyBtn" href="@Url.Action("Go", "Opportunity", new { id = Model.Id })" target="_blank" rel="noopener" class="@applyButtonClass">@Localizer["ApplyNow"]</a>
+                <a class="save-btn" href="@Url.Action("Login", "Account", new { returnUrl = Context.Request.Path.Value })" title="@(lang == "en" ? "Save" : lang == "fr" ? "Enregistrer" : "حفظ الفرصة")"><i class="bi bi-bookmark"></i></a>
             }
             else if (!User.Identity.IsAuthenticated)
             {
