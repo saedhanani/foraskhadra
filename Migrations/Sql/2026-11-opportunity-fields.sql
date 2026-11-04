@@ -1,6 +1,9 @@
 -- حقول الأهلية المهيكلة للفرصة + جدول المجالات + رموز ISO للدول (المرحلة 0.5 من خطة 2026؛ العقد مع منصة الكتابة في docs/PIPELINE-PROMPT-v2.md).
 -- ينفَّذ على قاعدة الإنتاج قبل نشر الكود الجديد. آمن للتكرار. خذ نسخة احتياطية قبل التشغيل. بلا EXEC إطلاقًا.
 -- بديل عن: dotnet ef database update (الهجرة 20261103234939_OpportunityFacets)
+-- ⚠️ نفّذه على دفعتين: SQL Server يتحقق من أسماء الأعمدة عند ترجمة الدفعة كاملة، فـ UPDATE Countries SET IsoCode في الدفعة نفسها التي تضيف IsoCode
+-- يفشل بـ Invalid column name. شغّل أولًا كل ما قبل «2) رموز ISO» (عدا CREATE INDEX)، ثم في تنفيذ ثانٍ: CREATE INDEX + UPDATE Countries + بقية الملف.
+-- (هكذا نُفِّذ على الإنتاج في 4 نوفمبر 2026.)
 
 -- 1) أعمدة الفرصة (كلها لها قيمة افتراضية أو NULL؛ الصفوف الحالية لا تتغير)
 IF COL_LENGTH('Opportunities', 'FundingType') IS NULL ALTER TABLE Opportunities ADD FundingType int NOT NULL CONSTRAINT DF_Opp_FundingType DEFAULT 0;
