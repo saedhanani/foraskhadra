@@ -177,7 +177,8 @@ namespace Foras_Khadra.Controllers
 
         /// <summary>"حمّل التطبيق": خطوات تثبيت فرص خضراء على iPhone (من Safari) وAndroid والحاسوب، وتفعيل التنبيهات.
         /// رابط قصير للمشاركة في وسائل التواصل: foraskhadra.com/app</summary>
-        [HttpGet("/app")]
+        [HttpGet("/{culture:culture}/app")]
+        [HttpGet("/app", Order = 1)]
         public IActionResult App() => View();
 
         public IActionResult AboutUs()

@@ -234,16 +234,16 @@
                 confirmButtonColor: "#F99D27"
             }).then(function (result) {
                 if (result.isConfirmed) {
-                    window.location.href = "/Account/Login";
+                    window.location.href = "@CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)/Account/Login";
                 }
             });
             return;
         }
 
         if (isManual) {
-            window.location.href = "/Home/ManualOrganizationDetails/" + orgId;
+            window.location.href = "@CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)/Home/ManualOrganizationDetails/" + orgId;
         } else {
-            window.location.href = "/Home/DetailsOrganization/" + orgId;
+            window.location.href = "@CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)/Home/DetailsOrganization/" + orgId;
         }
     });
 });

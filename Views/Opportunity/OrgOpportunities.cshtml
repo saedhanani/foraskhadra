@@ -621,7 +621,7 @@ value="@Antiforgery.GetAndStoreTokens(HttpContextAccessor.HttpContext).RequestTo
             });
             return;
         }
-        window.location.href = '/Opportunity/Edit/' + id;
+        window.location.href = '@CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)/Opportunity/Edit/' + id;
     }
 
     function handleDelete(id, canDelete) {

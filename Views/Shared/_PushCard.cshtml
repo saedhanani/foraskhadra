@@ -39,7 +39,7 @@
         </div>
         <div class="fk-push__actions">
             <button type="button" class="fk-push__btn" data-when="off error" data-push-enable>@T("فعّل", "Turn on", "Activer")</button>
-            <a class="fk-push__btn" data-when="ios-install" href="/app">@T("الطريقة", "How", "Comment")</a>
+            <a class="fk-push__btn" data-when="ios-install" href="@Url.Action("App", "Home")">@T("الطريقة", "How", "Comment")</a>
             @if (Model == "full")
             {
                 <button type="button" class="fk-push__link" data-when="on" data-push-disable>@T("إيقاف", "Turn off", "Désactiver")</button>

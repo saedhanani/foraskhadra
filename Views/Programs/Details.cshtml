@@ -18,7 +18,7 @@
         System.Net.WebUtility.HtmlDecode(System.Text.RegularExpressions.Regex.Replace(intro, "<.*?>", " ")), @"\s+", " ").Trim();
     ViewData["Description"] = plain.Length > 160 ? plain.Substring(0, 157) + "..." : plain;
     if (!string.IsNullOrEmpty(Model.HeroImagePath)) ViewData["OgImage"] = Model.HeroImagePath;
-    ViewData["Canonical"] = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}/Programs/{Model.Slug}";
+    ViewData["Canonical"] = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}{CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)}/Programs/{Model.Slug}";
 
     int position = ViewBag.Position ?? 0;
     int total = ViewBag.Total ?? 0;

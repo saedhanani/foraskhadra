@@ -27,16 +27,27 @@ namespace Foras_Khadra.Controllers
         public async Task<IActionResult> Sitemap()
         {
             XNamespace ns = "http://www.sitemaps.org/schemas/sitemap/0.9";
+            XNamespace xhtml = "http://www.w3.org/1999/xhtml";
             var urls = new List<XElement>();
 
+            // كل صفحة بثلاث لغات: <url> لكل لغة، وفي كل واحدة xhtml:link لكل البدائل + x-default (العربية) كما يطلب Google
             void Add(string path, DateTime? lastModified, string changeFrequency, string priority)
             {
-                var url = new XElement(ns + "url", new XElement(ns + "loc", BaseUrl + path));
-                if (lastModified.HasValue)
-                    url.Add(new XElement(ns + "lastmod", lastModified.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
-                url.Add(new XElement(ns + "changefreq", changeFrequency), new XElement(ns + "priority", priority));
-                urls.Add(url);
+                foreach (var culture in CultureRouting.Supported)
+                {
+                    var url = new XElement(ns + "url", new XElement(ns + "loc", BaseUrl + CultureRouting.WithCulture(path, culture)));
+                    if (lastModified.HasValue)
+                        url.Add(new XElement(ns + "lastmod", lastModified.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)));
+                    url.Add(new XElement(ns + "changefreq", changeFrequency), new XElement(ns + "priority", priority));
+                    foreach (var alt in CultureRouting.Supported)
+                        url.Add(Alternate(alt, BaseUrl + CultureRouting.WithCulture(path, alt)));
+                    url.Add(Alternate("x-default", BaseUrl + CultureRouting.WithCulture(path, CultureRouting.Default)));
+                    urls.Add(url);
+                }
             }
+
+            XElement Alternate(string hreflang, string href) =>
+                new(xhtml + "link", new XAttribute("rel", "alternate"), new XAttribute("hreflang", hreflang), new XAttribute("href", href));
 
             // الصفحات الثابتة
             Add("/", null, "daily", "1.0");
@@ -91,7 +102,8 @@ namespace Foras_Khadra.Controllers
             foreach (var slug in programs)
                 Add($"/Programs/{slug}", null, "monthly", "0.8");
 
-            var document = new XDocument(new XDeclaration("1.0", "utf-8", null), new XElement(ns + "urlset", urls));
+            var document = new XDocument(new XDeclaration("1.0", "utf-8", null),
+                new XElement(ns + "urlset", new XAttribute(XNamespace.Xmlns + "xhtml", xhtml), urls));
             return Content(document.Declaration + document.ToString(), "application/xml", Encoding.UTF8);
         }
 
@@ -99,34 +111,24 @@ namespace Foras_Khadra.Controllers
         [ResponseCache(Duration = 86400)]
         public IActionResult Robots()
         {
-            var text = string.Join("\n", new[]
+            var privatePaths = new[]
             {
-                "User-agent: *",
-                "Disallow: /Admin/",
-                "Disallow: /Account/",
-                "Disallow: /Organization/",
-                "Disallow: /Team/",
-                "Disallow: /User/",
-                "Disallow: /Language/",
-                "Disallow: /api/",
-                "Disallow: /Opportunity/Index",
-                "Disallow: /Opportunity/Create",
-                "Disallow: /Opportunity/Edit",
-                "Disallow: /Opportunity/OrgOpportunities",
-                "Disallow: /Articles/Index",
-                "Disallow: /Articles/Create",
-                "Disallow: /Articles/Edit",
-                "Disallow: /Activities/Index",
-                "Disallow: /Activities/Create",
-                "Disallow: /Activities/Edit",
-                "Disallow: /Programs/Index",
-                "Disallow: /Programs/Create",
-                "Disallow: /Programs/Edit",
-                "Disallow: /ImpactStats/",
-                "",
-                $"Sitemap: {BaseUrl}/sitemap.xml",
-                ""
-            });
+                "/Admin/", "/Account/", "/Organization/", "/Team/", "/User/", "/Language/", "/api/",
+                "/Opportunity/Index", "/Opportunity/Create", "/Opportunity/Edit", "/Opportunity/OrgOpportunities",
+                "/Articles/Index", "/Articles/Create", "/Articles/Edit",
+                "/Activities/Index", "/Activities/Create", "/Activities/Edit",
+                "/Programs/Index", "/Programs/Create", "/Programs/Edit",
+                "/ImpactStats/"
+            };
+            var lines = new List<string> { "User-agent: *" };
+            // المسارات نفسها بالعربية (بلا بادئة) وبـ/en و/fr
+            foreach (var culture in CultureRouting.Supported)
+                foreach (var p in privatePaths)
+                    lines.Add("Disallow: " + CultureRouting.Prefix(culture) + p);
+            lines.Add("");
+            lines.Add($"Sitemap: {BaseUrl}/sitemap.xml");
+            lines.Add("");
+            var text = string.Join("\n", lines);
             return Content(text, "text/plain", Encoding.UTF8);
         }
     }

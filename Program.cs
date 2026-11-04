@@ -1,4 +1,5 @@
 using Foras_Khadra.Data;
+using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
 using Foras_Khadra.Services;
 using Microsoft.AspNetCore.DataProtection;
@@ -121,7 +122,11 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     options.DefaultRequestCulture = new RequestCulture("ar"); // الافتراضي عربي
     options.SupportedCultures = supportedCultures;
     options.SupportedUICultures = supportedCultures;
+    // اللغة من الرابط فقط (/en/…، /fr/…، والعربية بلا بادئة) — لا من الكوكي ولا من Accept-Language ولا من ?culture=
+    options.RequestCultureProviders = new List<IRequestCultureProvider> { new PathRequestCultureProvider() };
 });
+builder.Services.Configure<RouteOptions>(options => options.ConstraintMap[CultureRouting.ConstraintName] = typeof(CultureRouteConstraint));
+builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Routing.IUrlHelperFactory, CultureUrlHelperFactory>(); // كل رابط يُولَّد في صفحة en/fr يحمل بادئتها
 
 // ===== Rate limiting: الدخول/التسجيل/استعادة كلمة المرور، نموذج التواصل، وواجهة المنصة (لكل عنوان IP) =====
 builder.Services.AddRateLimiter(options =>
@@ -346,6 +351,7 @@ var localizationOptions = app.Services
     .GetRequiredService<IOptions<RequestLocalizationOptions>>()
     .Value;
 
+app.UseCultureRedirects(); // ?culture= القديمة → 301؛ "/" لزائر كوكيه en/fr → 302؛ تذكّر آخر لغة
 app.UseRequestLocalization(localizationOptions);
 
 app.UseRouting();
@@ -354,37 +360,26 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// كل مسار صفحات له توأم ببادئة اللغة {culture:culture} (en|fr) يُسجَّل أولاً: الطلب /en/… يطابقه، وتوليد الروابط من صفحة
+// إنجليزية يحمل culture كقيمة محيطة فتخرج الروابط كلها /en/… تلقائياً؛ العربية لا تملك القيمة فتسقط إلى المسار بلا بادئة.
+void MapLocalized(string name, string pattern, object? defaults = null)
+{
+    app.MapControllerRoute(name + "-localized", "{culture:" + CultureRouting.ConstraintName + "}/" + pattern, defaults);
+    app.MapControllerRoute(name, pattern, defaults);
+}
+
 // روابط وصفية لمحركات البحث: /Opportunity/Details/12/منحة-ماجستير — المقطع الأخير تجميلي ويُتجاهل
-app.MapControllerRoute(
-    name: "opportunity-details",
-    pattern: "Opportunity/Details/{id:int}/{slug?}",
-    defaults: new { controller = "Opportunity", action = "Details" });
-
-app.MapControllerRoute(
-    name: "article-details",
-    pattern: "Articles/Details/{id:int}/{slug?}",
-    defaults: new { controller = "Articles", action = "Details" });
-
-app.MapControllerRoute(
-    name: "activity-details",
-    pattern: "Activities/Details/{id:int}/{slug?}",
-    defaults: new { controller = "Activities", action = "Details" });
+MapLocalized("opportunity-details", "Opportunity/Details/{id:int}/{slug?}", new { controller = "Opportunity", action = "Details" });
+MapLocalized("article-details", "Articles/Details/{id:int}/{slug?}", new { controller = "Articles", action = "Details" });
+MapLocalized("activity-details", "Activities/Details/{id:int}/{slug?}", new { controller = "Activities", action = "Details" });
 
 // صفحات المشاريع الرائدة: /Programs/rcoy-mena (الصفحات الإدارية Programs/Index|Create|Edit|Delete تسبقها في المطابقة)
-app.MapControllerRoute(
-    name: "program-details",
-    pattern: "Programs/{slug:regex(^(?!(Index|Create|Edit|Delete|Details)$)[a-z0-9-]+$)}",
-    defaults: new { controller = "Programs", action = "Details" });
+MapLocalized("program-details", "Programs/{slug:regex(^(?!(Index|Create|Edit|Delete|Details)$)[a-z0-9-]+$)}", new { controller = "Programs", action = "Details" });
 
-// بوابة روابط التقديم: /go/12 تتحقق من الرابط وتعدّ النقرة ثم تحوّل (OpportunityController.Go)
-app.MapControllerRoute(
-    name: "go",
-    pattern: "go/{id:int}",
-    defaults: new { controller = "Opportunity", action = "Go" });
+// بوابة روابط التقديم: /go/12 تتحقق من الرابط وتعدّ النقرة ثم تحوّل (OpportunityController.Go)؛ /en/go/12 يبقي صفحة الدخول بالإنجليزية
+MapLocalized("go", "go/{id:int}", new { controller = "Opportunity", action = "Go" });
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+MapLocalized("default", "{controller=Home}/{action=Index}/{id?}");
 
 // واجهة منصة الفريق: Controllers/Api (توجيه بالسمات)
 app.MapControllers();

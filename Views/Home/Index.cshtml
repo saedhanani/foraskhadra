@@ -446,7 +446,7 @@ html[dir="ltr"] #heroBg1 {
                 <h2 class="section-title m-0" style="color:#25652C; font-weight: bold;">@Localizer["LatestOpportunities"]</h2>
             </div>
 
-            <a href="~/Home/AllOpportunities"
+            <a href="@Url.Action("AllOpportunities", "Home")"
                class="view-all-btn"
                style="color:#25652C; font-weight:bold; font-size:18px; text-decoration:none; display:flex; align-items:center; gap:6px;">
                 <iconify-icon icon="mdi:clock-outline" style="color:#25652C; font-size:18px;"></iconify-icon>
@@ -559,7 +559,7 @@ html[dir="ltr"] #heroBg1 {
             </div>
 
             <!-- يسار: عرض الكل -->
-            <a href="~/Home/Articles"
+            <a href="@Url.Action("Articles", "Home")"
                class="view-all-btn"
                style="color:#25652C; font-weight:bold; font-size:18px; text-decoration:none; display:flex; align-items:center; gap:6px;">
 
@@ -668,7 +668,7 @@ html[dir="ltr"] #heroBg1 {
                 <h2 class="section-title m-0" style="color:#25652C; font-weight: bold;">@Localizer["HomeOrganizationsTitle"]</h2>
             </div>
 
-            <a href="~/Home/OrganizationsMap"
+            <a href="@Url.Action("OrganizationsMap", "Home")"
                class="view-all-btn"
                style="color:#25652C; font-weight:bold; font-size:18px; text-decoration:none; display:flex; align-items:center; gap:6px;">
                 <iconify-icon icon="mdi:clock-outline"
@@ -755,11 +755,11 @@ html[dir="ltr"] #heroBg1 {
                         confirmButtonColor: "#F99D27"
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = "/Account/Login";
+                            window.location.href = "@CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)/Account/Login";
                         }
                     });
                 } else {
-                    window.location.href = "/Home/DetailsOrganization/" + orgId;
+                    window.location.href = "@CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)/Home/DetailsOrganization/" + orgId;
                 }
             });
         });
@@ -938,11 +938,11 @@ html[dir="ltr"] #heroBg1 {
               `
             });
           } else {
-            window.location.href = '/Articles/Details/' + articleId;
+            window.location.href = '@CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)/Articles/Details/' + articleId;
           }
         } else if (opportunityId) {
           // الفرص → فتح مباشر بدون popup
-          window.location.href = '/Opportunity/Details/' + opportunityId;
+          window.location.href = '@CultureRouting.Prefix(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName)/Opportunity/Details/' + opportunityId;
         }
       });
     });
