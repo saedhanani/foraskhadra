@@ -127,6 +127,31 @@ namespace Foras_Khadra.Controllers
             return RedirectToAction(nameof(Facets), new { page });
         }
 
+        // ===== النسخ الاحتياطي اليومي (Services/BackupExporter) =====
+        [HttpGet]
+        public IActionResult Backups([FromServices] IBackupExporter backups)
+        {
+            ViewData["Folder"] = backups.Folder;
+            return View(backups.List());
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> RunBackup([FromServices] IBackupExporter backups)
+        {
+            var result = await backups.ExportAsync(HttpContext.RequestAborted);
+            TempData["BackupMessage"] = $"كُتبت النسخة {result.FileName} ({result.Bytes / 1024} KB، {result.Counts.Count} جدولًا).";
+            return RedirectToAction(nameof(Backups));
+        }
+
+        [HttpGet]
+        public IActionResult DownloadBackup(string name, [FromServices] IBackupExporter backups)
+        {
+            if (!BackupExporter.IsValidFileName(name)) return NotFound();
+            var path = Path.Combine(backups.Folder, name);
+            if (!System.IO.File.Exists(path)) return NotFound();
+            return PhysicalFile(path, "application/gzip", name);
+        }
+
         // ===== تحسين الصور المخزّنة (تصغير وإعادة ترميز الصور المرفوعة سابقًا) =====
         [HttpGet]
         public IActionResult OptimizeImages()

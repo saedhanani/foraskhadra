@@ -91,6 +91,9 @@ builder.Services.AddHttpClient(WebPushSender.HttpClientName, c => c.Timeout = Ti
 builder.Services.AddScoped<IWebPushSender, WebPushSender>();
 builder.Services.AddScoped<IPushDispatcher, PushDispatcher>();
 builder.Services.AddHostedService<NotificationSweepHostedService>();
+// نسخة احتياطية يومية (App_Data/backups، 14 يومًا) — Backup:Enabled / Backup:Hour / Backup:KeepDays في الإعدادات
+builder.Services.AddScoped<IBackupExporter, BackupExporter>();
+builder.Services.AddHostedService<BackupHostedService>();
 
 // الواجهة العامة للقراءة (api/v1) تُستدعى من مواقع أخرى بالمتصفح: GET فقط من أي أصل
 builder.Services.AddCors(options => options.AddPolicy("public-api", policy =>
