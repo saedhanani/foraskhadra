@@ -98,6 +98,8 @@
         };
 
         // المشفّر الافتراضي يهرّب < و > فلا يمكن كسر وسم script من نص الفرصة
+        // قيم null والقوائم الفارغة لا تُكتب (قاموس، فلا يطبّق عليه WhenWritingNull)
+        jobPosting = jobPosting.Where(kv => kv.Value != null && !(kv.Value is System.Collections.ICollection col && col.Count == 0)).ToDictionary(kv => kv.Key, kv => kv.Value);
         jobPostingJson = System.Text.Json.JsonSerializer.Serialize(jobPosting, new System.Text.Json.JsonSerializerOptions
         {
             DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
