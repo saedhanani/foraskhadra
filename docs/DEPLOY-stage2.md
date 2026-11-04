@@ -1,6 +1,14 @@
 # نشر المرحلة 2 (Google بعمق: 2.1 + 2.2 + 2.3 + 2.4) — قائمة التحقق
 
-**الإصدار الحي قبل النشر:** `d1e19bc` (المرحلة 1) · **هذا الإصدار:** آخر commit على `main` · لا تغيير في الإطار.
+**الإصدار الحي قبل النشر:** `d1e19bc` (المرحلة 1) · **هذا الإصدار:** `16fa043` · لا تغيير في الإطار.
+
+## ✅ نُشر — 4 نوفمبر 2026 (الإصدار الحي الآن `16fa043`)
+
+- نسخة احتياطية من القاعدة، ثم `2026-11-landing-pages.sql` في SQL Studio (`has_landing_pages` ≠ NULL، الهجرة مسجّلة).
+- حزمة الفرق: 3 ملفات (`Foras_Khadra.dll`, `Foras_Khadra.pdb`, `wwwroot/css/compass.css.gz`) مع `app_offline.htm` في رفع واحد → فك إلى `/site1` → إعادة تسمية `app_offline` إلى `app_offline-used-2026-11-04-c.txt`. `publish/site-files-current` مُحدَّث.
+- **الدفعة الأولى (36 صفحة):** زر «استيراد الدفعة الأولى» يحتاج تسجيل دخول المدير على الإنتاج، فأُدرجت عبر `Migrations/Sql/2026-11-landing-pages-seed.sql` في SQL Studio (النتيجة: 36 صفحة، 36 منشورة). الملف مولَّد من `LandingPageSeed.All` ومُتحقَّق من تطابقه حقلًا حقلًا مع الكود على LocalDB داخل معاملة مُلغاة. الضغط على الزر لاحقًا يعيد «لا جديد».
+- **التحقق (كله ناجح):** `/health` Healthy · `/opportunities/jobs` و`/en/opportunities/scholarships` 200 بعنوان وcanonical · `/Home/Jobs` و`/Home/AllOpportunities?type=Scholarships` → 301 · `/opportunities/trainings` → 301 إلى `internships` · `?funding=FullyFunded` فيه `noindex,follow` والعدّاد · الوظيفة 338 فيها `JobPosting` داخل `<script type="application/ld+json">` ورابط `/go/338` ظاهر للزائر ويحوّل 302 مباشرة · sitemap فيه الأنواع السبعة · `/opportunities/egypt` (292) و`jordan` (270) و`arab-world` (234) 200 مع `FAQPage` وبلا noindex · `fully-funded` و`no-ielts` و`scholarships-in-germany` و`women` 200 مع `FAQPage` لكن noindex (0 فرص: الحقول المهيكلة لم تُملأ بعد) · `/opportunities/not-a-page` 404.
+- **ما بقي للمالك:** اختبار Rich Results على وظيفة وصفحة نية؛ ملء `/Admin/Facets` وتزويد منصة الكتابة بالبرومبت v2 حتى تمتلئ صفحات التمويل/آيلتس/الاستضافة/النساء؛ تحرير نصوص الدفعة الأولى القالبية من `/Admin/LandingPages`؛ حذف `app_offline-used-*` والحزم القديمة من `/site1`.
 
 ## ما في هذه الدفعة
 
