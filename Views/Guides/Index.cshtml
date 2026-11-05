@@ -1,0 +1,38 @@
+@model List<Foras_Khadra.Controllers.GuideCard>
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+}
+<div class="fk-page container" dir="@dir">
+    <header class="fk-page-head">
+        <h1>@T("أدلة التقديم على البرامج الكبرى", "Application guides for the major programs", "Guides de candidature aux grands programmes")</h1>
+        <p>@T("لكل برنامج متكرر: الشروط بلغتك، الجدول الزمني المعتاد، هيكل خطاب الدوافع، الأخطاء الشائعة، نصائح من فائزين من الوطن العربي، وقائمة مهام تُحمَّل في متابعتك بنقرة.",
+             "For each recurring program: conditions in your language, the usual timeline, the motivation-letter structure, common mistakes, tips from winners in the Arab world, and a task list you load into your tracker in one click.",
+             "Pour chaque programme récurrent : conditions, calendrier habituel, structure de la lettre, erreurs fréquentes, conseils de lauréats du monde arabe, et une liste de tâches à charger dans votre suivi en un clic.")</p>
+    </header>
+
+    @if (Model.Count == 0)
+    {
+        <div class="fk-empty-state"><i class="bi bi-journal-bookmark"></i><p>@T("الأدلة قادمة قريبًا.", "Guides are coming soon.", "Les guides arrivent bientôt.")</p></div>
+    }
+    else
+    {
+        <div class="guide-grid">
+            @foreach (var c in Model)
+            {
+                var g = c.Guide;
+                <a class="guide-card" href="@Url.Action("Details", "Guides", new { slug = g.Slug })">
+                    <span class="guide-card__top">
+                        <span class="guide-card__key">@g.ProgramKey</span>
+                        @if (c.OpenCount > 0) { <span class="guide-card__open"><i class="bi bi-door-open"></i> @T($"{c.OpenCount} مفتوحة الآن", $"{c.OpenCount} open now", $"{c.OpenCount} ouverte(s)")</span> }
+                        else if (g.Season(lang) is string season) { <span class="guide-card__season"><i class="bi bi-calendar-event"></i> @season</span> }
+                    </span>
+                    <b>@g.Title(lang)</b>
+                    <span class="guide-card__sum">@g.Summary(lang)</span>
+                    <span class="guide-card__cta">@T("افتح الدليل", "Open the guide", "Ouvrir le guide") <i class="bi bi-arrow-left dir-flip"></i></span>
+                </a>
+            }
+        </div>
+    }
+</div>

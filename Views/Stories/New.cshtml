@@ -1,0 +1,57 @@
+@model Foras_Khadra.Controllers.StoryForm
+@using Foras_Khadra.Models
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    var opp = ViewBag.Opportunity as Opportunity;
+    var oppTitle = opp == null ? null : lang == "en" ? opp.TitleEn : lang == "fr" ? opp.TitleFr : opp.TitleAr;
+    ViewData["Robots"] = "noindex";
+}
+<div class="fk-page container" dir="@dir" style="max-width:760px;">
+    <header class="fk-page-head">
+        <h1>@T("شارك قصتك", "Share your story", "Partagez votre histoire")</h1>
+        <p>@T("قصتك تُشجّع شابًا آخر على التقديم. تُنشر على صفحة الأثر بعد مراجعتها، بالاسم الذي تختاره، ويمكنك طلب حذفها في أي وقت من صفحة التواصل.", "Your story encourages someone else to apply. It appears on the impact page after review, under the name you choose, and you can ask us to remove it any time via the contact page.", "Votre histoire encourage d'autres jeunes. Elle paraît sur la page Impact après relecture, sous le nom choisi, et vous pouvez demander sa suppression à tout moment.")</p>
+    </header>
+
+    <form method="post" class="fk-form" data-submit-once>
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+        @if (opp != null)
+        {
+            <input type="hidden" asp-for="OpportunityId" />
+            <p class="fk-form-note"><i class="bi bi-trophy"></i> @T("الفرصة:", "Opportunity:", "Opportunité :") <b>@oppTitle</b></p>
+        }
+        else
+        {
+            <label class="fk-dialog-label" asp-for="ProgramName">@T("اسم البرنامج أو الفرصة التي قُبلت فيها", "The program or opportunity you were accepted into", "Le programme ou l'opportunité où vous avez été admis")</label>
+            <input class="fk-dialog-input" asp-for="ProgramName" maxlength="200" />
+            <span asp-validation-for="ProgramName" class="text-danger small"></span>
+        }
+
+        <label class="fk-dialog-label" asp-for="Story">@T("قصتك (80–1500 حرفًا): كيف وجدت الفرصة، ماذا فعلت، وما الذي تغيّر", "Your story (80–1500 characters): how you found it, what you did, what changed", "Votre histoire (80–1500 caractères) : comment vous l'avez trouvée, ce que vous avez fait, ce qui a changé")</label>
+        <textarea class="fk-dialog-input" asp-for="Story" rows="7" maxlength="@SuccessStory.MaxStory" required></textarea>
+        <span asp-validation-for="Story" class="text-danger small"></span>
+
+        <label class="fk-dialog-label" asp-for="Advice">@T("نصيحة واحدة لمن يقدّم بعدك (اختياري)", "One tip for the next applicant (optional)", "Un conseil pour les prochains candidats (facultatif)")</label>
+        <input class="fk-dialog-input" asp-for="Advice" maxlength="300" />
+
+        <label class="fk-dialog-label" asp-for="DisplayName">@T("كيف نعرض اسمك؟", "How should we show your name?", "Comment afficher votre nom ?")</label>
+        <select class="fk-dialog-input" asp-for="DisplayName">
+            <option value="@StoryDisplayName.FirstName">@T("الاسم الأول فقط", "First name only", "Prénom seulement")</option>
+            <option value="@StoryDisplayName.FullName">@T("الاسم الكامل", "Full name", "Nom complet")</option>
+            <option value="@StoryDisplayName.Anonymous">@T("بلا اسم", "Anonymous", "Anonyme")</option>
+        </select>
+
+        <label class="fk-check">
+            <input type="checkbox" asp-for="ConsentPublic" />
+            <span>@T("أوافق على نشر قصتي علنًا على فرص خضراء وقنواته بالاسم الذي اخترته، وأعلم أنني أستطيع طلب حذفها.", "I agree to publish my story publicly on Foras Khadra and its channels under the name I chose, and I know I can ask for it to be removed.", "J'accepte la publication de mon histoire sur Foras Khadra et ses canaux sous le nom choisi, et je sais que je peux demander sa suppression.")</span>
+        </label>
+        <span asp-validation-for="ConsentPublic" class="text-danger small"></span>
+
+        <div class="fk-dialog-actions" style="justify-content:flex-start;">
+            <button type="submit" class="fk-btn fk-btn-primary">@T("أرسل القصة", "Send the story", "Envoyer l'histoire")</button>
+            <a class="fk-btn fk-btn-ghost" href="@Url.Action("Impact", "Stories")">@T("إلغاء", "Cancel", "Annuler")</a>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,30 @@
+@model Foras_Khadra.Controllers.AmbassadorVM
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var name = User.Identity?.Name ?? "";
+}
+<div class="fk-page container" dir="@dir">
+    <div class="no-print" style="display:flex; gap:10px; margin-bottom:14px;">
+        <button type="button" class="fk-btn fk-btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> @T("اطبع / احفظ PDF", "Print / save as PDF", "Imprimer / enregistrer en PDF")</button>
+        <a class="fk-btn fk-btn-ghost" href="@Url.Action("Index", "Ambassador")">@T("عودة", "Back", "Retour")</a>
+    </div>
+    <div class="amb-cert">
+        <img src="~/images/logo.png" alt="" class="amb-cert__logo" />
+        <p class="amb-cert__kicker">@T("فرص خضراء — شبكة السفراء الجامعيين", "Foras Khadra — University Ambassadors Network", "Foras Khadra — Réseau des ambassadeurs universitaires")</p>
+        <h1>@T("شهادة سفير", "Ambassador Certificate", "Certificat d'ambassadeur")</h1>
+        <p class="amb-cert__text">@T("تشهد فرص خضراء بأن", "Foras Khadra certifies that", "Foras Khadra certifie que")</p>
+        <p class="amb-cert__name">@(string.IsNullOrEmpty(Model.FirstName) ? name : Model.FirstName)</p>
+        <p class="amb-cert__text">
+            @T("سفير جامعي", "is a university ambassador", "est ambassadeur universitaire")@(string.IsNullOrEmpty(Model.University) ? "" : " — " + Model.University)
+            @T("بمستوى", "at the level of", "au niveau") <b>@Model.Level?.Title</b>،
+            @T($"بعد جمع {Model.Points} نقطة من نشر الفرص بين الطلاب ودعوة {Model.ReferralsTotal} زميلًا.", $"having earned {Model.Points} points by spreading opportunities among students and inviting {Model.ReferralsTotal} classmates.", $"ayant obtenu {Model.Points} points en diffusant les opportunités et en invitant {Model.ReferralsTotal} camarades.")
+        </p>
+        <div class="amb-cert__foot">
+            <span>@DateTime.Now.ToString("yyyy-MM-dd", inv)</span>
+            <span>www.foraskhadra.com/ambassadors/universities</span>
+        </div>
+    </div>
+</div>

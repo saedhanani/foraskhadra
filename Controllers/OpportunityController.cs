@@ -3,6 +3,7 @@ using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
 using Foras_Khadra.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -542,6 +543,59 @@ public async Task<IActionResult> Create()
             return RedirectToAction("Details", "Opportunity", new { id });
         }
 
+        /// <summary>سؤال عضو على فرصة (4.6): يُحفظ بانتظار جواب المدير ولا يظهر قبل النشر؛ 5 أسئلة معلّقة كحد أقصى للعضو.</summary>
+        [Authorize(Roles = "User")]
+        [HttpPost]
+        [EnableRateLimiting("contact")]
+        public async Task<IActionResult> Ask(int id, string? question)
+        {
+            var userId = _userManager.GetUserId(User);
+            if (userId == null) return Challenge();
+            question = (question ?? string.Empty).Trim();
+            var exists = await _context.Opportunities.AnyAsync(o => o.Id == id && o.Status == OpportunityStatus.Published);
+            if (!exists || question.Length < 10) { TempData["Asked"] = "invalid"; return RedirectToAction("Details", new { id }); }
+            if (question.Length > OpportunityQuestion.MaxQuestion) question = question[..OpportunityQuestion.MaxQuestion];
+            var pending = await _context.OpportunityQuestions.CountAsync(x => x.UserId == userId && x.Status == QuestionStatus.Pending);
+            if (pending >= 5) { TempData["Asked"] = "limit"; return RedirectToAction("Details", new { id }); }
+
+            _context.OpportunityQuestions.Add(new OpportunityQuestion
+            {
+                OpportunityId = id, QuestionAr = question, UserId = userId,
+                Lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName
+            });
+            await _context.SaveChangesAsync();
+            TempData["Asked"] = "sent";
+            return RedirectToAction("Details", new { id });
+        }
+
+        /// <summary>تقويم webcal شخصي (4.3): كل مواعيد الفرص المحفوظة القادمة؛ الرابط يحمل رمزًا محميًا بمفاتيح Data Protection فلا يحتاج دخولًا.</summary>
+        [AllowAnonymous]
+        [HttpGet("/calendar/{token}.ics")]
+        public async Task<IActionResult> CalendarFeed(string token, [FromServices] Microsoft.AspNetCore.DataProtection.IDataProtectionProvider dp)
+        {
+            string userId;
+            try { userId = dp.CreateProtector("webcal").Unprotect(token); }
+            catch (Exception) { return NotFound(); }
+
+            var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            var today = DateTime.Now.Date;
+            var items = await _context.SavedOpportunities.AsNoTracking()
+                .Where(s => s.UserId == userId && s.Opportunity!.Status == OpportunityStatus.Published
+                    && s.Opportunity.DeadlineType == DeadlineType.SpecificDate && s.Opportunity.EndDate != null && s.Opportunity.EndDate >= today.AddDays(-1))
+                .Select(s => new { s.Opportunity!.Id, s.Opportunity.TitleAr, s.Opportunity.TitleEn, s.Opportunity.TitleFr, EndDate = s.Opportunity.EndDate!.Value })
+                .ToListAsync();
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var prefix = lang == "en" ? "Deadline: " : lang == "fr" ? "Date limite : " : "الموعد النهائي: ";
+            var events = items.Select(o =>
+            {
+                var title = lang == "en" ? o.TitleEn : lang == "fr" ? o.TitleFr : o.TitleAr;
+                return (o.Id, prefix + title, o.EndDate, baseUrl + Url.Action("Details", "Opportunity", new { id = o.Id, slug = SlugHelper.Make(title) }));
+            });
+            var ics = CalendarHelper.BuildCalendar(lang == "en" ? "Foras Khadra — my deadlines" : lang == "fr" ? "Foras Khadra — mes échéances" : "فرص خضراء — مواعيدي", events);
+            Response.Headers.CacheControl = "private,max-age=600";
+            return File(System.Text.Encoding.UTF8.GetBytes(ics), "text/calendar; charset=utf-8");
+        }
+
         // ================= DETAILS =================
         [AllowAnonymous]
         [HttpGet]
@@ -581,6 +635,17 @@ public async Task<IActionResult> Create()
                 creatorOrg = await _context.Organizations.AsNoTracking().FirstOrDefaultAsync(o => o.UserId == creator.Id);
             ViewBag.CreatorOrg = creatorOrg;
             ViewBag.IsFollowing = creatorOrg != null && userId != null && User.IsInRole("User") && await follows.IsFollowingAsync(userId, creatorOrg.Id);
+
+            // المرحلة 4: أسئلة وأجوبة منشورة (4.6)، «N يتابعون» (محفوظات + مراقبو الدورة)، ودليل التقديم للبرنامج (4.1)
+            ViewBag.Questions = await _context.OpportunityQuestions.AsNoTracking()
+                .Where(x => x.OpportunityId == opp.Id && x.Status == QuestionStatus.Published)
+                .OrderByDescending(x => x.IsCurated).ThenBy(x => x.SortOrder).ThenBy(x => x.CreatedAt)
+                .ToListAsync();
+            ViewBag.Followers = await _context.SavedOpportunities.CountAsync(s => s.OpportunityId == opp.Id)
+                + await _context.CycleWatches.CountAsync(w => w.OpportunityId == opp.Id);
+            ViewBag.Guide = string.IsNullOrEmpty(opp.ProgramKey) ? null
+                : await _context.ApplicationGuides.AsNoTracking().FirstOrDefaultAsync(g => g.ProgramKey == opp.ProgramKey && g.IsPublished);
+            ViewBag.Asked = TempData["Asked"] as string;
 
             // "تابعت مؤخرًا" للمسجّلين (المنظمات والإدارة تتصفح لأغراض أخرى)
             if (userId != null && opp.Status == OpportunityStatus.Published && !User.IsInRole("Organization") && !User.IsInRole("Admin"))
@@ -622,7 +687,7 @@ public async Task<IActionResult> Create()
 
         /// <summary>"فرصي": المحفوظات مقسّمة (عاجل / قيد التحضير / قدّمت / النتائج / انتهت) مع العدّ التنازلي — الشاشة الأساسية في تطبيق الهاتف.</summary>
         [HttpGet]
-        public async Task<IActionResult> Saved()
+        public async Task<IActionResult> Saved([FromServices] Microsoft.AspNetCore.DataProtection.IDataProtectionProvider dp)
         {
             var userId = _userManager.GetUserId(User);
             if (userId == null) return Challenge();
@@ -630,6 +695,8 @@ public async Task<IActionResult> Create()
             var opportunities = await _saved.ListAsync(userId);
             var cards = await _tracker.CardsAsync(userId, opportunities.Select(o => o.Id));
             var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            // رابط التقويم الشخصي (webcal، 4.3): رمز محمي ثابت لهذا العضو
+            ViewBag.WebcalPath = "/calendar/" + dp.CreateProtector("webcal").Protect(userId) + ".ics";
             return View(MyOpportunitiesViewModel.Build(opportunities, cards, lang));
         }
 

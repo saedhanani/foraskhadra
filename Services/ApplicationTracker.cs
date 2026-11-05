@@ -118,6 +118,19 @@ namespace Foras_Khadra.Services
                 var order = 0;
                 foreach (var key in ChecklistDefaults.For(saved.Opportunity?.Type))
                     saved.Checklist.Add(new ChecklistItem { Key = key, SortOrder = order++, Done = saved.Status.HasApplied() });
+
+                // دليل التقديم للبرنامج المتكرر (4.1): مهامه الخاصة تُضاف بلغة العضو بعد الأوراق الافتراضية
+                var programKey = saved.Opportunity?.ProgramKey;
+                if (!string.IsNullOrEmpty(programKey))
+                {
+                    var guide = await _db.ApplicationGuides.AsNoTracking().FirstOrDefaultAsync(g => g.ProgramKey == programKey && g.IsPublished);
+                    if (guide != null)
+                    {
+                        var lang = await _db.Users.Where(u => u.Id == userId).Select(u => u.Language).FirstOrDefaultAsync() ?? "ar";
+                        foreach (var task in guide.Sections(lang).Checklist.Take(MaxChecklistItems - saved.Checklist.Count))
+                            saved.Checklist.Add(new ChecklistItem { Text = task.Length > 120 ? task[..120] : task, SortOrder = order++, Done = saved.Status.HasApplied() });
+                    }
+                }
                 await _db.SaveChangesAsync();
             }
 

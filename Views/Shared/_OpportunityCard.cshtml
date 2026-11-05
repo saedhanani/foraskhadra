@@ -40,6 +40,7 @@
     }
     <div class="opp-category-row">
         <span class="type-tag">@opp.Type.GetDisplayName(lang)</span>
+        @if (opp.IsSponsoredNow) { <span class="type-tag sponsored-tag">@(lang == "en" ? "Sponsored" : lang == "fr" ? "Sponsorisé" : "إعلان مموَّل")</span> }
         @if (saveCount >= 2)
         {
             <span class="category-tag save-count-tag" title="@(lang == "en" ? "People who saved this opportunity" : lang == "fr" ? "Personnes ayant enregistré cette opportunité" : "عدد من حفظوا هذه الفرصة")">

@@ -26,7 +26,9 @@ namespace Foras_Khadra.Models
         /// <summary>للمدير: بلاغات زوار أوقفت زر التقديم على فرصة (OpportunityId = الفرصة، Count = عدد المُبلِّغين).</summary>
         OpportunityReported = 10,
         /// <summary>للعضو: منظمة يتابعها نشرت فرصة جديدة (OpportunityId = الفرصة، Label = اسم المنظمة، LinkParams = رقمها).</summary>
-        OrganizationPublished = 11
+        OrganizationPublished = 11,
+        /// <summary>للعضو: فرصة مُعزَّزة تنطبق عليه شروطها («عزّز للمؤهَّلين» 4.5؛ OpportunityId = الفرصة).</summary>
+        BoostedMatch = 12
     }
 
     /// <summary>إشعار داخل الموقع — يولّده NotificationSweeper ويظهر في جرس الهيدر.</summary>

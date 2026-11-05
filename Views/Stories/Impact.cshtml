@@ -1,0 +1,63 @@
+@model Foras_Khadra.Controllers.ImpactVM
+@using Foras_Khadra.Models
+@using Foras_Khadra.Helpers
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    var submitted = ViewBag.Submitted as string;
+}
+<div class="fk-page container" dir="@dir">
+    <header class="fk-page-head">
+        <h1>@T("أثرنا وقصص النجاح", "Our impact and success stories", "Notre impact et les histoires de réussite")</h1>
+        <p>@T("أرقام تُحدَّث من الموقع نفسه، وقصص كتبها أعضاء قُبلوا في فرص وجدوها هنا — بموافقتهم الصريحة وبأسمائهم كما اختاروا.", "Numbers updated from the site itself, and stories written by members accepted into opportunities they found here — with their explicit consent and the name they chose.", "Des chiffres mis à jour depuis le site, et des histoires écrites par des membres admis — avec leur consentement explicite et le nom qu'ils ont choisi.")</p>
+    </header>
+
+    @if (submitted == "sent") { <div class="trust-thanks" role="status"><i class="bi bi-check-circle-fill"></i> @T("شكرًا! وصلت قصتك وستظهر بعد مراجعتها.", "Thank you! Your story was received and will appear after review.", "Merci ! Votre histoire a été reçue et paraîtra après relecture.")</div> }
+    else if (submitted == "limit") { <div class="trust-paused" role="status">@T("لديك قصص بانتظار المراجعة؛ انتظر اعتمادها قبل إرسال غيرها.", "You have stories awaiting review; wait for them before sending more.", "Vous avez des histoires en attente ; patientez avant d'en envoyer d'autres.")</div> }
+
+    <div class="reach-tiles impact-tiles">
+        <div class="reach-tile"><span class="reach-num">@Model.AcceptedTotal.ToString("N0", inv)</span><span class="reach-lbl">@T("قبول سجّله الأعضاء في متابعتهم", "acceptances members recorded in their tracker", "admissions enregistrées par les membres")</span></div>
+        <div class="reach-tile"><span class="reach-num">@Model.MembersTotal.ToString("N0", inv)</span><span class="reach-lbl">@T("عضو من الوطن العربي", "members from the Arab world", "membres du monde arabe")</span></div>
+        <div class="reach-tile"><span class="reach-num">@Model.OpenTotal.ToString("N0", inv)</span><span class="reach-lbl">@T("فرصة مفتوحة الآن", "opportunities open now", "opportunités ouvertes")</span></div>
+        <div class="reach-tile"><span class="reach-num">@Model.CountriesTotal.ToString("N0", inv)</span><span class="reach-lbl">@T("دولة يأتي منها أعضاؤنا", "countries our members come from", "pays d'origine de nos membres")</span></div>
+        @foreach (var s in Model.Stats)
+        {
+            <div class="reach-tile"><span class="reach-num">@s.Value</span><span class="reach-lbl">@(lang == "en" ? s.LabelEn : lang == "fr" ? s.LabelFr : s.LabelAr)</span></div>
+        }
+    </div>
+
+    <section class="fk-section">
+        <div class="fk-section-head">
+            <h2>@T("قصص بكلماتهم", "Stories in their words", "Leurs histoires")</h2>
+            @if (User.IsInRole("User")) { <a class="fk-btn fk-btn-primary" href="@Url.Action("New", "Stories")"><i class="bi bi-stars"></i> @T("شارك قصتك", "Share your story", "Partagez votre histoire")</a> }
+            else if (User.Identity?.IsAuthenticated != true) { <a class="fk-btn fk-btn-ghost" href="@Url.Action("Login", "Account", new { returnUrl = Url.Action("New", "Stories") })">@T("قُبلت في فرصة؟ شارك قصتك", "Got accepted? Share your story", "Admis ? Partagez votre histoire")</a> }
+        </div>
+        @if (Model.Stories.Count == 0)
+        {
+            <div class="fk-empty-state"><i class="bi bi-chat-quote"></i><p>@T("أول قصة ستظهر هنا قريبًا — إن قُبلت في فرصة وجدتها عندنا فكن أنت أولها.", "The first story will appear here soon — if you were accepted into an opportunity you found here, be the first.", "La première histoire paraîtra bientôt — si vous avez été admis grâce à nous, soyez le premier.")</p></div>
+        }
+        else
+        {
+            <div class="story-grid">
+                @foreach (var s in Model.Stories)
+                {
+                    var program = s.Opportunity != null ? (lang == "en" ? s.Opportunity.TitleEn : lang == "fr" ? s.Opportunity.TitleFr : s.Opportunity.TitleAr) : s.ProgramName;
+                    <article class="story-card @(s.Featured ? "is-featured" : "")" lang="@s.Lang" dir="@(s.Lang == "ar" ? "rtl" : "ltr")">
+                        <header>
+                            <b>@(string.IsNullOrEmpty(s.ShownName) ? T("عضو من فرص خضراء", "A Foras Khadra member", "Un membre de Foras Khadra") : s.ShownName)</b>
+                            @if (!string.IsNullOrEmpty(program))
+                            {
+                                <span>@T("قُبل في", "Accepted into", "Admis à") @(s.Opportunity != null ? Html.ActionLink(program, "Details", "Opportunity", new { id = s.Opportunity.Id, slug = SlugHelper.Make(program) }, null) : Html.Raw(Html.Encode(program)))</span>
+                            }
+                        </header>
+                        <p>@s.Story</p>
+                        @if (!string.IsNullOrEmpty(s.Advice)) { <p class="story-advice"><i class="bi bi-lightbulb"></i> @s.Advice</p> }
+                        <footer>@(s.ReviewedAt ?? s.CreatedAt).ToString("yyyy-MM-dd", inv)</footer>
+                    </article>
+                }
+            </div>
+        }
+    </section>
+</div>

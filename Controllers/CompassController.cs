@@ -138,6 +138,8 @@ namespace Foras_Khadra.Controllers
             var result = await _compass.BuildAsync(answers, Lang);
             _analytics.Event("compass.me");
             var code = await _referrals.EnsureCodeAsync(user);
+            // أدلة التقديم المنشورة (4.1): رابط الدليل تحت كل برنامج في «قريبًا»
+            ViewBag.GuideSlugs = await _db.ApplicationGuides.AsNoTracking().Where(g => g.IsPublished).ToDictionaryAsync(g => g.ProgramKey, g => g.Slug);
             return View(new CompassMeVM
             {
                 Result = result,

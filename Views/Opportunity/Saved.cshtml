@@ -63,6 +63,19 @@
             <div class="my-stat"><b>@Model.AcceptedCount</b><span>@T("قُبلت", "Accepted", "Acceptées")</span></div>
         </div>
 
+        @* تقويم webcal شخصي (4.3): كل مواعيدك المحفوظة في تقويم هاتفك، يتجدد تلقائيًا *@
+        @if (ViewBag.WebcalPath is string webcalPath)
+        {
+            var webcal = "webcal://" + Context.Request.Host + webcalPath;
+            var https = Context.Request.Scheme + "://" + Context.Request.Host + webcalPath;
+            <div class="webcal-box">
+                <i class="bi bi-calendar-plus" aria-hidden="true"></i>
+                <span>@T("اشترك بتقويم مواعيدك: يظهر كل موعد محفوظ في تقويم هاتفك ويتجدد وحده.", "Subscribe to your deadlines calendar: every saved deadline shows in your phone calendar and refreshes itself.", "Abonnez-vous à votre calendrier : chaque échéance enregistrée apparaît dans l'agenda de votre téléphone et se met à jour seule.")</span>
+                <a class="fk-btn fk-btn-primary" href="@webcal">@T("أضف إلى التقويم", "Add to calendar", "Ajouter à l'agenda")</a>
+                <button type="button" class="fk-btn fk-btn-ghost" onclick="navigator.clipboard && navigator.clipboard.writeText('@https').then(() => { this.textContent = '@T("نُسخ ✓", "Copied ✓", "Copié ✓")'; })">@T("انسخ الرابط (Google Calendar)", "Copy link (Google Calendar)", "Copier le lien (Google Agenda)")</button>
+            </div>
+        }
+
         await Group("my-group--urgent", "bi-alarm", T("تنتهي قريبًا", "Closing soon", "Bientôt clôturées"), Model.Urgent);
         await Group("", "bi-hourglass-split", T("قيد التحضير", "To prepare", "À préparer"), Model.Preparing);
         await Group("", "bi-send-check", T("قدّمت عليها", "Applied", "Candidatures envoyées"), Model.Applied);

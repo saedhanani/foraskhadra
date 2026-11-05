@@ -1,0 +1,49 @@
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    var contact = Url.Action("Index", "contact");
+}
+<div class="fk-page container pkg-page" dir="@dir">
+    <header class="fk-page-head">
+        <h1>@T("باقات الشركاء — بلا إعلانات", "Partner packages — no ads", "Offres partenaires — sans publicité")</h1>
+        <p>@T("النشر على فرص خضراء مجاني دائمًا وسيبقى. لا نبيع مساحات إعلانية ولا بيانات أعضائنا. ما نقدّمه للمنظمات التي تريد وصولًا أوسع هو خدمات واضحة ومعلَّمة للزائر، ويعود عائدها إلى تشغيل المنصة وتحقيق الفرص.", "Publishing on Foras Khadra is free and will stay free. We sell no ad space and no member data. What we offer organizations that want more reach are clear services, always labelled for the visitor, whose revenue runs the platform and the verification work.", "La publication reste gratuite. Nous ne vendons ni espace publicitaire ni données de membres. Nous proposons des services clairs, toujours signalés au visiteur, dont les revenus financent la plateforme et la vérification.")</p>
+    </header>
+
+    <div class="pkg-grid">
+        <section class="pkg-card">
+            <h2><i class="bi bi-star"></i> @T("إبراز مموَّل", "Sponsored listing", "Mise en avant")</h2>
+            <p>@T("فرصتكم تظهر أولًا في صفحة نوعها وفي البحث لمدة 14 أو 30 يومًا، بعلامة «إعلان مموَّل» واضحة. لا تغيّر العلامة شروط المراجعة: الفرصة تبقى مُحقَّقة ومجانية للمتقدم.", "Your opportunity appears first on its type page and in search for 14 or 30 days, with a clear “Sponsored” label. The label changes nothing about review: the opportunity stays verified and free for applicants.", "Votre opportunité apparaît en premier sur sa page de type et dans la recherche pendant 14 ou 30 jours, avec une mention « Sponsorisé » claire. La vérification reste identique.")</p>
+            <ul><li>@T("الأول في القائمة + علامة واضحة", "First in the list + clear label", "Premier de la liste + mention claire")</li><li>@T("تقرير وصول يومي", "Daily reach report", "Rapport de portée quotidien")</li></ul>
+        </section>
+        <section class="pkg-card pkg-card--hi">
+            <h2><i class="bi bi-bullseye"></i> @T("عزّز للمؤهَّلين", "Boost to eligible members", "Diffusion aux membres éligibles")</h2>
+            <p>@T("إشعار جرس ودفع يصل فقط إلى الأعضاء الذين تنطبق عليهم شروط فرصتكم فعلًا (الجنسية، المرحلة، العمر، التمويل) حسب ملفات الأهلية في «بوصلة». تعرفون العدد قبل الدفع.", "A bell and push notification that reaches only members who actually meet your criteria (nationality, level, age, funding) according to their Compass eligibility profiles. You know the number before paying.", "Une notification qui n'atteint que les membres réellement éligibles (nationalité, niveau, âge, financement) selon leurs profils Boussole. Vous connaissez le nombre avant de payer.")</p>
+            <ul><li>@T("عدد المؤهَّلين قبل الإرسال", "Eligible count before sending", "Nombre d'éligibles avant l'envoi")</li><li>@T("مرة واحدة لكل عضو، بلا إزعاج", "Once per member, no spam", "Une fois par membre, sans spam")</li></ul>
+        </section>
+        <section class="pkg-card">
+            <h2><i class="bi bi-calendar-check"></i> @T("باقة شريك سنوية", "Annual partner package", "Offre partenaire annuelle")</h2>
+            <p>@T("لمنظمة تنشر فرصًا على مدار العام: إبراز لعدد من الفرص، تعزيزات شهرية، شارة «شريك» على صفحتكم وفرصكم، أولوية في المراجعة، وتقرير فصلي.", "For an organization that publishes year-round: sponsored slots, monthly boosts, a “Partner” badge on your page and opportunities, review priority and a quarterly report.", "Pour une organisation qui publie toute l'année : mises en avant, diffusions mensuelles, badge « Partenaire », priorité de validation et rapport trimestriel.")</p>
+        </section>
+        <section class="pkg-card">
+            <h2><i class="bi bi-building"></i> @T("رخصة مكاتب التوظيف الجامعية", "University career-office licence", "Licence bureaux carrière universitaires")</h2>
+            <p>@T("للجامعات: أداة التضمين بشعار الجامعة، لوحة جامعية بمشاهدات طلابها ومحفوظاتهم، حسابات لمكتب التوظيف لنشر فرص الجامعة مباشرة، وجلسة تعريفية فصلية للطلاب.", "For universities: the embed widget with your logo, a university dashboard with your students' views and saves, career-office accounts to publish the university's own opportunities directly, and a termly info session for students.", "Pour les universités : widget avec votre logo, tableau de bord universitaire, comptes pour le bureau carrière, et une séance d'information par semestre.")</p>
+            <ul><li><a href="@Url.Action("Index", "Embed")">@T("جرّب أداة التضمين مجانًا", "Try the embed widget free", "Essayez le widget gratuitement")</a></li></ul>
+        </section>
+        <section class="pkg-card">
+            <h2><i class="bi bi-flag"></i> @T("رعاية البرامج", "Program sponsorship", "Parrainage de programmes")</h2>
+            <p>@T("ارعوا برنامجًا كاملًا: مسارات خضراء مع RCOY MENA، أو دليل تقديم لبرنامج كبير، أو قمة أصوات المناخ. اسمكم على الصفحة وفي كل ما ينتجه البرنامج.", "Sponsor a whole program: green tracks with RCOY MENA, an application guide for a major program, or the Climate Voices Summit. Your name on the page and on everything the program produces.", "Parrainez un programme entier : parcours verts avec RCOY MENA, un guide de candidature, ou le Sommet des voix du climat.")</p>
+            <ul><li><a href="@Url.Action("News", "Home")">@T("برامجنا", "Our programs", "Nos programmes")</a></li></ul>
+        </section>
+    </div>
+
+    <section class="pkg-promise">
+        <h2>@T("وعدنا للزائر", "Our promise to the visitor", "Notre promesse au visiteur")</h2>
+        <ul>
+            <li>@T("كل ما هو مدفوع يحمل علامة «إعلان مموَّل» ظاهرة.", "Everything paid carries a visible “Sponsored” label.", "Tout contenu payant porte une mention « Sponsorisé » visible.")</li>
+            <li>@T("لا فرصة مدفوعة تتجاوز المراجعة أو شرط «التقديم مجاني».", "No paid opportunity skips review or the “free to apply” rule.", "Aucune opportunité payante n'échappe à la vérification ni à la règle « candidature gratuite ».")</li>
+            <li>@T("بيانات الأعضاء لا تُباع ولا تُشارك؛ التعزيز يصل من خلالنا فقط.", "Member data is never sold or shared; boosts go out only through us.", "Les données des membres ne sont ni vendues ni partagées.")</li>
+        </ul>
+        <p><a class="fk-btn fk-btn-primary" href="@contact">@T("تواصل للتسعير", "Contact us for pricing", "Contactez-nous pour les tarifs")</a> <a class="fk-btn fk-btn-ghost" href="@Url.Action("Index", "Partners")">@T("أو انشر مجانًا", "Or publish free", "Ou publiez gratuitement")</a></p>
+    </section>
+</div>

@@ -42,6 +42,14 @@ namespace Foras_Khadra.Services
 
                     var dispatcher = scope.ServiceProvider.GetRequiredService<IPushDispatcher>();
                     var pushed = await dispatcher.DispatchPendingAsync(stoppingToken);
+
+                    // قناة تيليجرام (4.3): معطَّلة ما لم تُضبط Telegram:BotToken وTelegram:ChannelId
+                    var telegram = scope.ServiceProvider.GetRequiredService<ITelegramPoster>();
+                    if (telegram.Enabled)
+                    {
+                        try { await telegram.PostNewAsync(stoppingToken); }
+                        catch (Exception ex) when (ex is not OperationCanceledException) { _logger.LogWarning(ex, "Telegram posting failed"); }
+                    }
                     if (pushed > 0)
                         _logger.LogInformation("Sent {Count} push notifications", pushed);
                 }

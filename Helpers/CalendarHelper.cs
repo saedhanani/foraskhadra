@@ -32,6 +32,41 @@ namespace Foras_Khadra.Helpers
             return sb.ToString();
         }
 
+        /// <summary>تقويم بعدة مواعيد (webcal الشخصي، 4.3): حدث يوم كامل لكل فرصة محفوظة بتنبيه قبله بثلاثة أيام، واسم تقويم ظاهر في التطبيقات.</summary>
+        public static string BuildCalendar(string calendarName, IEnumerable<(int Id, string Title, DateTime Deadline, string Url)> events, DateTime? now = null)
+        {
+            var stamp = (now ?? DateTime.UtcNow).ToString("yyyyMMdd'T'HHmmss'Z'", System.Globalization.CultureInfo.InvariantCulture);
+            var sb = new StringBuilder();
+            sb.Append("BEGIN:VCALENDAR\r\n");
+            sb.Append("VERSION:2.0\r\n");
+            sb.Append("PRODID:-//Foras Khadra//Saved Deadlines//AR\r\n");
+            sb.Append("CALSCALE:GREGORIAN\r\n");
+            sb.Append("METHOD:PUBLISH\r\n");
+            sb.Append(Fold("X-WR-CALNAME:" + Escape(calendarName)));
+            sb.Append("REFRESH-INTERVAL;VALUE=DURATION:PT12H\r\n");
+            sb.Append("X-PUBLISHED-TTL:PT12H\r\n");
+            foreach (var e in events)
+            {
+                var day = e.Deadline.Date;
+                sb.Append("BEGIN:VEVENT\r\n");
+                sb.Append(Fold($"UID:opportunity-{e.Id}@foraskhadra.com"));
+                sb.Append($"DTSTAMP:{stamp}\r\n");
+                sb.Append($"DTSTART;VALUE=DATE:{day:yyyyMMdd}\r\n");
+                sb.Append($"DTEND;VALUE=DATE:{day.AddDays(1):yyyyMMdd}\r\n");
+                sb.Append(Fold("SUMMARY:" + Escape(e.Title)));
+                sb.Append(Fold("DESCRIPTION:" + Escape(e.Url)));
+                sb.Append(Fold("URL:" + Escape(e.Url)));
+                sb.Append("BEGIN:VALARM\r\n");
+                sb.Append("TRIGGER:-P3D\r\n");
+                sb.Append("ACTION:DISPLAY\r\n");
+                sb.Append(Fold("DESCRIPTION:" + Escape(e.Title)));
+                sb.Append("END:VALARM\r\n");
+                sb.Append("END:VEVENT\r\n");
+            }
+            sb.Append("END:VCALENDAR\r\n");
+            return sb.ToString();
+        }
+
         /// <summary>هروب النص حسب RFC 5545: الفاصلة والفاصلة المنقوطة والشرطة المائلة وسطر جديد.</summary>
         public static string Escape(string text) =>
             text.Replace("\\", "\\\\").Replace(";", "\\;").Replace(",", "\\,").Replace("\r\n", "\\n").Replace("\n", "\\n");

@@ -1,0 +1,40 @@
+@model List<Foras_Khadra.Models.SuccessStory>
+@using Foras_Khadra.Models
+@{
+    ViewData["Title"] = "قصص النجاح";
+    var all = (ViewBag.ShowingAll as bool?) == true;
+}
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="m-0">قصص النجاح <span class="badge bg-secondary">@Model.Count</span></h2>
+        <div class="d-flex gap-2">
+            <a asp-action="Stories" class="btn @(all ? "btn-outline-primary" : "btn-primary")">بانتظار المراجعة</a>
+            <a asp-action="Stories" asp-route-status="all" class="btn @(all ? "btn-primary" : "btn-outline-primary")">الكل</a>
+            <a href="@Url.Action("Impact", "Stories")" target="_blank" class="btn btn-outline-secondary">صفحة الأثر</a>
+        </div>
+    </div>
+    @if (TempData["StoryMessage"] is string msg) { <div class="alert alert-success">@msg</div> }
+    <p class="text-muted small">القصة تُعرض على /impact بعد الاعتماد بالاسم الذي اختاره العضو (الاسم يُجمَّد لحظة الاعتماد). «مميّزة» تظهر أولًا.</p>
+    @if (Model.Count == 0) { <div class="fk-empty-state"><i class="bi bi-chat-quote"></i><p>لا قصص @(all ? "" : "بانتظار المراجعة").</p></div> }
+    @foreach (var s in Model)
+    {
+        <div class="card mb-3 shadow-sm"><div class="card-body">
+            <div class="d-flex justify-content-between flex-wrap gap-2">
+                <div>
+                    <b>@(s.User?.FullName ?? s.User?.Email)</b> <span class="text-muted small">(@s.User?.Email)</span>
+                    · يُعرض باسم: <b>@(string.IsNullOrEmpty(s.ShownName) ? "بلا اسم" : s.ShownName)</b> (@s.DisplayName)
+                    · @(s.Opportunity != null ? Html.ActionLink(s.Opportunity.TitleAr, "Details", "Opportunity", new { id = s.OpportunityId }, new { target = "_blank" }) : Html.Raw(Html.Encode(s.ProgramName ?? "")))
+                </div>
+                <div><span class="badge @(s.Status == StoryStatus.Approved ? "bg-success" : s.Status == StoryStatus.Rejected ? "bg-secondary" : "bg-warning text-dark")">@s.Status</span> @if (s.Featured) { <span class="badge bg-primary">مميّزة</span> } <small class="text-muted">@s.CreatedAt.ToString("yyyy-MM-dd")</small></div>
+            </div>
+            <p class="mt-2" lang="@s.Lang" dir="@(s.Lang == "ar" ? "rtl" : "ltr")" style="white-space:pre-wrap">@s.Story</p>
+            @if (!string.IsNullOrEmpty(s.Advice)) { <p class="small"><i class="bi bi-lightbulb"></i> @s.Advice</p> }
+            <div class="d-flex gap-2 flex-wrap">
+                @foreach (var (action, label, css) in new[] { ("approve", "اعتماد ونشر", "btn-success"), ("reject", "رفض", "btn-outline-danger"), (s.Featured ? "unfeature" : "feature", s.Featured ? "إلغاء التمييز" : "تمييز", "btn-outline-primary"), ("delete", "حذف نهائي", "btn-outline-secondary") })
+                {
+                    <form asp-action="StoryReview" method="post" class="d-inline" onsubmit="@(action == "delete" ? "return confirm('حذف القصة نهائيًا؟')" : "")"><input type="hidden" name="id" value="@s.Id" /><input type="hidden" name="action" value="@action" /><button class="btn btn-sm @css">@label</button></form>
+                }
+            </div>
+        </div></div>
+    }
+</div>

@@ -79,7 +79,7 @@ namespace Foras_Khadra.Helpers
 
     public static class OpportunityFilter
     {
-        public static readonly int[] WithinOptions = { 7, 30, 90 };
+        public static readonly int[] WithinOptions = { 7, 15, 30, 90 };
         public static readonly string[] SortOptions = { "open", "newest", "deadline" };
 
         public static ParsedFilter Parse(OpportunityQuery q, IReadOnlyCollection<Country> countries)
@@ -97,7 +97,7 @@ namespace Foras_Khadra.Helpers
             p.Remote = q.Remote;
             p.NoIelts = q.NoIelts;
             p.Women = q.Women;
-            p.Within = q.Within is 7 or 30 or 90 ? q.Within : null;
+            p.Within = q.Within is int w && WithinOptions.Contains(w) ? q.Within : null;
             p.Sort = SortOptions.Contains(q.Sort ?? string.Empty) ? q.Sort! : "open";
 
             if (!string.IsNullOrWhiteSpace(q.Country))
@@ -179,14 +179,17 @@ namespace Foras_Khadra.Helpers
         public static IQueryable<Opportunity> Sort(IQueryable<Opportunity> q, string sort, DateTime today)
         {
             today = today.Date;
+            // المموَّلة المفتوحة أولًا دائمًا (بعلامة «إعلان مموَّل» في البطاقة — 4.5)، ثم الترتيب المطلوب
+            var sponsoredFirst = q.OrderByDescending(o => o.IsSponsored && (o.SponsoredUntil == null || o.SponsoredUntil >= today)
+                                                        && (o.DeadlineType != DeadlineType.SpecificDate || o.EndDate == null || o.EndDate >= today));
             return sort switch
             {
-                "newest" => q.OrderByDescending(o => o.PublishDate),
-                "deadline" => q.OrderByDescending(o => o.DeadlineType != DeadlineType.SpecificDate || o.EndDate == null || o.EndDate >= today)
+                "newest" => sponsoredFirst.ThenByDescending(o => o.PublishDate),
+                "deadline" => sponsoredFirst.ThenByDescending(o => o.DeadlineType != DeadlineType.SpecificDate || o.EndDate == null || o.EndDate >= today)
                                .ThenBy(o => o.EndDate == null ? 1 : 0)
                                .ThenBy(o => o.EndDate)
                                .ThenByDescending(o => o.PublishDate),
-                _ => q.OrderByDescending(o => o.DeadlineType != DeadlineType.SpecificDate || o.EndDate == null || o.EndDate >= today)
+                _ => sponsoredFirst.ThenByDescending(o => o.DeadlineType != DeadlineType.SpecificDate || o.EndDate == null || o.EndDate >= today)
                       .ThenByDescending(o => o.PublishDate),
             };
         }

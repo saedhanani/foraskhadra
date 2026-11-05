@@ -1,0 +1,47 @@
+@model List<Foras_Khadra.Models.AmbassadorTaskSubmission>
+@using Foras_Khadra.Models
+@using Foras_Khadra.Helpers
+@{
+    ViewData["Title"] = "مهام السفراء";
+    var all = (ViewBag.ShowingAll as bool?) == true;
+}
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="m-0">تسليمات السفراء <span class="badge bg-secondary">@Model.Count</span></h2>
+        <div class="d-flex gap-2">
+            <a asp-action="AmbassadorTasks" class="btn @(all ? "btn-outline-primary" : "btn-primary")">بانتظار المراجعة</a>
+            <a asp-action="AmbassadorTasks" asp-route-status="all" class="btn @(all ? "btn-primary" : "btn-outline-primary")">الكل</a>
+            <a href="@Url.Action("Universities", "Ambassador")" target="_blank" class="btn btn-outline-secondary">لوحة الجامعات</a>
+        </div>
+    </div>
+    @if (TempData["TaskMessage"] is string msg) { <div class="alert alert-success">@msg</div> }
+    <p class="text-muted small">المهام والنقاط في <code>Helpers/AmbassadorTasks.cs</code>. مهمة الدعوات تُعتمد آليًا. الشهادة من 20 نقطة، فضي 60، ذهبي 150.</p>
+    @if (Model.Count == 0) { <div class="fk-empty-state"><i class="bi bi-people"></i><p>لا تسليمات @(all ? "" : "بانتظار المراجعة").</p></div> }
+    else
+    {
+        <table class="table align-middle">
+            <thead><tr><th>السفير</th><th>المهمة</th><th>الشهر</th><th>الملاحظة</th><th>الإثبات</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    var def = AmbassadorTasks.Find(s.TaskKey);
+                    <tr>
+                        <td>@(s.User?.FullName ?? s.User?.Email)<br /><small class="text-muted">@s.User?.Email</small></td>
+                        <td>@(def?.TitleAr ?? s.TaskKey) <small class="text-muted">(+@(def?.Points ?? 0))</small></td>
+                        <td>@s.Month</td>
+                        <td class="small">@s.Note</td>
+                        <td>@if (!string.IsNullOrEmpty(s.ProofUrl)) { <a href="@s.ProofUrl" target="_blank" rel="noopener nofollow">فتح</a> }</td>
+                        <td><span class="badge @(s.Status == TaskSubmissionStatus.Approved ? "bg-success" : s.Status == TaskSubmissionStatus.Rejected ? "bg-secondary" : "bg-warning text-dark")">@s.Status</span></td>
+                        <td class="text-nowrap">
+                            @if (s.Status == TaskSubmissionStatus.Submitted)
+                            {
+                                <form asp-action="TaskReview" method="post" class="d-inline"><input type="hidden" name="id" value="@s.Id" /><input type="hidden" name="action" value="approve" /><button class="btn btn-sm btn-success">اعتماد</button></form>
+                                <form asp-action="TaskReview" method="post" class="d-inline"><input type="hidden" name="id" value="@s.Id" /><input type="hidden" name="action" value="reject" /><button class="btn btn-sm btn-outline-danger">رفض</button></form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

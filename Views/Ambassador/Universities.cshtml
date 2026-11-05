@@ -1,0 +1,35 @@
+@model List<Foras_Khadra.Controllers.UniversityRow>
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+}
+<div class="fk-page container" dir="@dir" style="max-width:900px;">
+    <header class="fk-page-head">
+        <h1>@T("لوحة الجامعات", "Universities board", "Tableau des universités")</h1>
+        <p>@T("الجامعات التي ينشط سفراؤها أكثر في نشر الفرص: أعضاء، سفراء معتمدون، نقاط، ودعوات. تُحسب من ملفات الأهلية في البوصلة.", "Universities whose ambassadors are most active: members, certified ambassadors, points and invitations. Computed from Compass eligibility profiles.", "Les universités dont les ambassadeurs sont les plus actifs : membres, ambassadeurs certifiés, points et invitations.")</p>
+    </header>
+    @if (Model.Count == 0)
+    {
+        <div class="fk-empty-state"><i class="bi bi-mortarboard"></i><p>@T("لا بيانات بعد — أضف جامعتك في البوصلة وكن أول سفير لها.", "No data yet — add your university in the Compass and be its first ambassador.", "Pas encore de données — ajoutez votre université dans la Boussole.")</p></div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle reach-table">
+                <thead><tr><th>#</th><th>@T("الجامعة", "University", "Université")</th><th class="text-center">@T("أعضاء", "Members", "Membres")</th><th class="text-center">@T("سفراء", "Ambassadors", "Ambassadeurs")</th><th class="text-center">@T("نقاط", "Points", "Points")</th><th class="text-center">@T("دعوات", "Invitations", "Invitations")</th></tr></thead>
+                <tbody>
+                    @for (var i = 0; i < Model.Count; i++)
+                    {
+                        var r = Model[i];
+                        <tr><td>@(i + 1)</td><td><b>@r.University</b></td><td class="text-center">@r.Members</td><td class="text-center">@r.Ambassadors</td><td class="text-center">@r.Points</td><td class="text-center">@r.Referrals</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    <p class="guide-note">
+        @if (User.IsInRole("User")) { <a href="@Url.Action("Index", "Ambassador")">@T("لوحة السفير →", "Ambassador dashboard →", "Tableau de bord ambassadeur →")</a> }
+        else { <a href="@Url.Action("Login", "Account", new { returnUrl = "/ambassador" })">@T("سجّل الدخول لتصبح سفيرًا", "Sign in to become an ambassador", "Connectez-vous pour devenir ambassadeur")</a> }
+    </p>
+</div>

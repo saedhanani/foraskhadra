@@ -42,6 +42,11 @@ namespace Foras_Khadra.Data
         public DbSet<LandingPage> LandingPages { get; set; }
         public DbSet<OpportunityReport> OpportunityReports { get; set; }
         public DbSet<OrganizationFollow> OrganizationFollows { get; set; }
+        public DbSet<ApplicationGuide> ApplicationGuides { get; set; }
+        public DbSet<SuccessStory> SuccessStories { get; set; }
+        public DbSet<OpportunityQuestion> OpportunityQuestions { get; set; }
+        public DbSet<AmbassadorTaskSubmission> AmbassadorTaskSubmissions { get; set; }
+        public DbSet<OpportunityBoost> OpportunityBoosts { get; set; }
 
         // نص البحث المطبّع للفرصة يُحدَّث مع كل إضافة أو تعديل أيًّا كان مصدره (الإدارة، المنظمة، منصة الفريق، البذر)
         public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -214,6 +219,19 @@ namespace Foras_Khadra.Data
                 .WithMany()
                 .HasForeignKey(r => r.OpportunityId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // المرحلة 4: أدلة التقديم (slug وprogramKey فريدان)، قصص النجاح، أسئلة الفرص، مهام السفراء، التعزيزات
+            modelBuilder.Entity<ApplicationGuide>().HasIndex(g => g.Slug).IsUnique();
+            modelBuilder.Entity<ApplicationGuide>().HasIndex(g => g.ProgramKey).IsUnique();
+            modelBuilder.Entity<SuccessStory>().HasIndex(s => new { s.Status, s.Featured });
+            modelBuilder.Entity<SuccessStory>().HasOne(s => s.User).WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.ClientCascade);
+            modelBuilder.Entity<SuccessStory>().HasOne(s => s.Opportunity).WithMany().HasForeignKey(s => s.OpportunityId).OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<OpportunityQuestion>().HasIndex(x => new { x.OpportunityId, x.Status });
+            modelBuilder.Entity<OpportunityQuestion>().HasOne(x => x.Opportunity).WithMany().HasForeignKey(x => x.OpportunityId).OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<OpportunityQuestion>().HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.ClientSetNull);
+            modelBuilder.Entity<AmbassadorTaskSubmission>().HasIndex(t => new { t.UserId, t.TaskKey, t.Month }).IsUnique();
+            modelBuilder.Entity<AmbassadorTaskSubmission>().HasOne(t => t.User).WithMany().HasForeignKey(t => t.UserId).OnDelete(DeleteBehavior.ClientCascade);
+            modelBuilder.Entity<OpportunityBoost>().HasOne(b => b.Opportunity).WithMany().HasForeignKey(b => b.OpportunityId).OnDelete(DeleteBehavior.Cascade);
 
             // متابعة منظمة (3.2): صف واحد لكل (عضو، منظمة)؛ جهة المستخدم بلا cascade كالمعتاد
             modelBuilder.Entity<OrganizationFollow>()

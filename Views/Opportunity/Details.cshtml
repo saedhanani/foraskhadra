@@ -145,6 +145,10 @@
 
             <div class="opp-title">
                 <span>@title</span>
+                @if (Model.IsSponsoredNow)
+                {
+                    <span class="sponsored-tag" title="@TT("فرصة مموَّلة: تظهر أولًا بمقابل من الجهة، وتبقى مُحقَّقة ومجانية للمتقدم", "Sponsored: shown first for a fee from the organizer; still verified and free to apply", "Sponsorisé : affiché en premier contre paiement ; toujours vérifié et gratuit")">@TT("إعلان مموَّل", "Sponsored", "Sponsorisé")</span>
+                }
             </div>
         </div>
 
@@ -412,6 +416,58 @@
         }
         <div class="@benefitsClass">@Html.SanitizedRaw(benefits)</div>
     </div>
+
+    @* دليل التقديم للبرنامج (4.1) *@
+    @if (ViewBag.Guide is ApplicationGuide guide)
+    {
+        <a class="guide-box guide-box--link" href="@Url.Action("Details", "Guides", new { slug = guide.Slug })" style="margin-top:18px;">
+            <i class="bi bi-journal-bookmark"></i> @TT("دليل التقديم على هذا البرنامج: الشروط، الجدول الزمني، الخطاب، والأخطاء الشائعة", "Application guide for this program: conditions, timeline, letter and common mistakes", "Guide de candidature : conditions, calendrier, lettre et erreurs fréquentes") <i class="bi bi-arrow-left dir-flip"></i>
+        </a>
+    }
+
+    @* أسئلة وأجوبة (4.6) + «N يتابعون» *@
+    @{
+        var questions = ViewBag.Questions as List<OpportunityQuestion> ?? new List<OpportunityQuestion>();
+        var answered = questions.Where(q => q.HasAnswer).ToList();
+        var followers = (ViewBag.Followers as int?) ?? 0;
+        var asked = ViewBag.Asked as string;
+        var qaLd = answered.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+        {
+            ["@context"] = "https://schema.org", ["@type"] = "FAQPage",
+            ["mainEntity"] = answered.Select(q => new Dictionary<string, object> { ["@type"] = "Question", ["name"] = q.Question(lang), ["acceptedAnswer"] = new Dictionary<string, object> { ["@type"] = "Answer", ["text"] = q.Answer(lang) ?? "" } }).ToList()
+        });
+    }
+    @if (qaLd != null) { @Html.Raw("<script type=\"application/ld+json\">" + qaLd + "</script>") }
+    <section class="qa-card" id="qa">
+        <h2><i class="bi bi-chat-left-text"></i> @TT("أسئلة وأجوبة", "Questions and answers", "Questions et réponses")</h2>
+        @if (followers >= 3) { <p class="qa-followers"><i class="bi bi-people"></i> @TT($"{followers} يتابعون هذه الفرصة", $"{followers} people follow this opportunity", $"{followers} personnes suivent cette opportunité")</p> }
+        @if (answered.Count == 0)
+        {
+            <p class="qa-followers">@TT("لا أسئلة منشورة بعد. إن كان لديك سؤال عن الشروط أو الموعد فاكتبه وسيجيب الفريق وينشره هنا.", "No published questions yet. If you have a question about conditions or dates, write it and the team will answer and publish it here.", "Pas encore de questions publiées. Posez la vôtre : l'équipe répondra ici.")</p>
+        }
+        else
+        {
+            foreach (var q in answered)
+            {
+                <details class="qa-item"><summary>@q.Question(lang)</summary><p>@q.Answer(lang)</p></details>
+            }
+        }
+        @if (asked == "sent") { <p class="trust-thanks" role="status"><i class="bi bi-check-circle-fill"></i> @TT("وصل سؤالك وسيُنشر مع جوابه بعد المراجعة.", "Your question was received and will be published with its answer after review.", "Votre question a été reçue et sera publiée avec sa réponse.")</p> }
+        else if (asked == "limit") { <p class="trust-paused" role="status">@TT("لديك أسئلة بانتظار الجواب؛ انتظرها قبل سؤال جديد.", "You have questions awaiting answers; wait for them before asking more.", "Vous avez des questions en attente ; patientez avant d'en poser d'autres.")</p> }
+        else if (asked == "invalid") { <p class="trust-paused" role="status">@TT("اكتب سؤالًا من 10 أحرف على الأقل.", "Write a question of at least 10 characters.", "Écrivez une question d'au moins 10 caractères.")</p> }
+        @if (User.IsInRole("User"))
+        {
+            <form method="post" action="@Url.Action("Ask", "Opportunity", new { id = Model.Id })" class="qa-ask" data-submit-once>
+                @Html.AntiForgeryToken()
+                <textarea name="question" class="fk-dialog-input" rows="2" maxlength="@OpportunityQuestion.MaxQuestion" required minlength="10" placeholder="@TT("اسأل عن الشروط أو الموعد أو الأوراق…", "Ask about conditions, dates or documents…", "Posez une question sur les conditions, dates ou documents…")"></textarea>
+                <button type="submit" class="fk-btn fk-btn-primary">@TT("اسأل", "Ask", "Demander")</button>
+            </form>
+        }
+        else if (User.Identity?.IsAuthenticated != true)
+        {
+            <p class="qa-followers"><a href="@Url.Action("Login", "Account", new { returnUrl = Context.Request.Path.Value + "#qa" })">@TT("سجّل الدخول لتسأل", "Sign in to ask", "Connectez-vous pour poser une question")</a></p>
+        }
+    </section>
 
 </div>
 

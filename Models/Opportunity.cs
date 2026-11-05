@@ -142,6 +142,14 @@ namespace Foras_Khadra.Models
         /// <summary>آخر تعديل (يملؤه ApplicationDbContext عند الحفظ) — lastmod في خريطة الموقع.</summary>
         public DateTime? UpdatedAt { get; set; }
 
+        /// <summary>فرصة مموَّلة/مُبرَزة بمقابل (المرحلة 4.5): تظهر أولًا في قوائمها بعلامة «إعلان مموَّل» واضحة. يضبطها المدير فقط (ليست من منصة الكتابة).</summary>
+        public bool IsSponsored { get; set; }
+        /// <summary>نهاية الإبراز؛ null = حتى يلغيه المدير.</summary>
+        public DateTime? SponsoredUntil { get; set; }
+
+        [NotMapped]
+        public bool IsSponsoredNow => IsSponsored && (SponsoredUntil == null || SponsoredUntil.Value.Date >= DateTime.Now.Date);
+
         [NotMapped]
         public string AvailableCountriesNames
         {

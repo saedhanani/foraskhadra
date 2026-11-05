@@ -1,0 +1,59 @@
+@model Foras_Khadra.Models.GuideForm
+@{
+    ViewData["Title"] = Model.Id == 0 ? "دليل جديد" : "تحرير الدليل";
+    var months = Enumerable.Range(1, 12).Select(m => (m, System.Globalization.CultureInfo.GetCultureInfo("ar").DateTimeFormat.GetMonthName(m))).ToList();
+}
+<div class="container py-4" dir="rtl" style="max-width:1100px;">
+    <h2>@ViewData["Title"]</h2>
+    <form method="post" data-submit-once>
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="All" class="alert alert-danger"></div>
+        <div class="row g-3">
+            <div class="col-md-3"><label class="form-label">مفتاح البرنامج (ProgramKey)</label><input asp-for="ProgramKey" class="form-control" placeholder="daad-epos" /></div>
+            <div class="col-md-3"><label class="form-label">الرابط (slug)</label><input asp-for="Slug" class="form-control" placeholder="daad-epos" /></div>
+            <div class="col-md-4"><label class="form-label">الموقع الرسمي</label><input asp-for="OfficialUrl" class="form-control" type="url" /></div>
+            <div class="col-md-1"><label class="form-label">يفتح</label><select asp-for="OpensMonth" class="form-select"><option value="">—</option>@foreach (var (m, n) in months) { <option value="@m">@n</option> }</select></div>
+            <div class="col-md-1"><label class="form-label">يغلق</label><select asp-for="ClosesMonth" class="form-select"><option value="">—</option>@foreach (var (m, n) in months) { <option value="@m">@n</option> }</select></div>
+            <div class="col-md-4"><label class="form-label">العنوان (ع)</label><input asp-for="TitleAr" class="form-control" /></div>
+            <div class="col-md-4"><label class="form-label">Title (en)</label><input asp-for="TitleEn" class="form-control" dir="ltr" /></div>
+            <div class="col-md-4"><label class="form-label">Titre (fr)</label><input asp-for="TitleFr" class="form-control" dir="ltr" /></div>
+            <div class="col-md-4"><label class="form-label">ملخص (ع)</label><textarea asp-for="SummaryAr" class="form-control" rows="2"></textarea></div>
+            <div class="col-md-4"><label class="form-label">Summary (en)</label><textarea asp-for="SummaryEn" class="form-control" rows="2" dir="ltr"></textarea></div>
+            <div class="col-md-4"><label class="form-label">Résumé (fr)</label><textarea asp-for="SummaryFr" class="form-control" rows="2" dir="ltr"></textarea></div>
+        </div>
+
+        <ul class="nav nav-tabs mt-4" role="tablist">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-ar" type="button" role="tab">العربية</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-en" type="button" role="tab">English</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-fr" type="button" role="tab">Français</button></li>
+        </ul>
+        <div class="tab-content border border-top-0 p-3">
+            @{
+                async Task Lang(string id, string dir, string c, string t, string l, string m, string tips, string check)
+                {
+                    <div class="tab-pane fade @(id == "ar" ? "show active" : "")" id="tab-@id" role="tabpanel" dir="@dir">
+                        <div class="row g-3">
+                            <div class="col-md-6"><label class="form-label">الشروط (سطر لكل شرط)</label><textarea name="@c" class="form-control" rows="6">@Html.Raw(Html.Encode(ViewData.Eval(c) ?? ""))</textarea></div>
+                            <div class="col-md-6"><label class="form-label">الجدول الزمني (سطر لكل مرحلة)</label><textarea name="@t" class="form-control" rows="6">@Html.Raw(Html.Encode(ViewData.Eval(t) ?? ""))</textarea></div>
+                            <div class="col-md-6"><label class="form-label">خطاب الدوافع (فقرات)</label><textarea name="@l" class="form-control" rows="6">@Html.Raw(Html.Encode(ViewData.Eval(l) ?? ""))</textarea></div>
+                            <div class="col-md-6"><label class="form-label">أخطاء شائعة (سطر لكل خطأ)</label><textarea name="@m" class="form-control" rows="6">@Html.Raw(Html.Encode(ViewData.Eval(m) ?? ""))</textarea></div>
+                            <div class="col-md-6"><label class="form-label">نصائح من فائزين (سطر لكل نصيحة)</label><textarea name="@tips" class="form-control" rows="5">@Html.Raw(Html.Encode(ViewData.Eval(tips) ?? ""))</textarea></div>
+                            <div class="col-md-6"><label class="form-label">قائمة المهام (سطر لكل مهمة، حتى 20)</label><textarea name="@check" class="form-control" rows="5">@Html.Raw(Html.Encode(ViewData.Eval(check) ?? ""))</textarea></div>
+                        </div>
+                    </div>
+                }
+                await Lang("ar", "rtl", "ConditionsAr", "TimelineAr", "LetterAr", "MistakesAr", "TipsAr", "ChecklistAr");
+                await Lang("en", "ltr", "ConditionsEn", "TimelineEn", "LetterEn", "MistakesEn", "TipsEn", "ChecklistEn");
+                await Lang("fr", "ltr", "ConditionsFr", "TimelineFr", "LetterFr", "MistakesFr", "TipsFr", "ChecklistFr");
+            }
+        </div>
+
+        <div class="d-flex gap-3 align-items-center mt-3 flex-wrap">
+            <label class="form-check"><input type="checkbox" asp-for="IsPublished" class="form-check-input" /> <span class="form-check-label">منشور</span></label>
+            <label>الترتيب <input asp-for="SortOrder" type="number" class="form-control d-inline-block" style="width:90px" /></label>
+            <button type="submit" class="btn btn-success">حفظ</button>
+            <a asp-action="Guides" class="btn btn-outline-secondary">إلغاء</a>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,95 @@
+@model Foras_Khadra.Controllers.GuideDetailsVM
+@using Foras_Khadra.Helpers
+@using Foras_Khadra.Models
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    var g = Model.Guide;
+    var s = g.Sections(lang);
+    var inv = System.Globalization.CultureInfo.InvariantCulture;
+    IEnumerable<string> Paras(string text) => text.Replace("\r\n", "\n").Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(p => p.Trim());
+    var tracked = ViewBag.Tracked as string;
+    var faq = new List<(string q, string a)>();
+    if (!string.IsNullOrWhiteSpace(s.Conditions)) faq.Add((T("ما شروط التقديم؟", "What are the conditions?", "Quelles sont les conditions ?"), s.Conditions.Replace("\n", " ")));
+    if (!string.IsNullOrWhiteSpace(s.Timeline)) faq.Add((T("متى يفتح التقديم؟", "When does it open?", "Quand ouvre la candidature ?"), s.Timeline.Replace("\n", " ")));
+    if (!string.IsNullOrWhiteSpace(s.Mistakes)) faq.Add((T("ما الأخطاء الشائعة؟", "What are the common mistakes?", "Quelles sont les erreurs fréquentes ?"), s.Mistakes.Replace("\n", " ")));
+    var faqLd = faq.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+    {
+        ["@context"] = "https://schema.org", ["@type"] = "FAQPage",
+        ["mainEntity"] = faq.Select(x => new Dictionary<string, object> { ["@type"] = "Question", ["name"] = x.q, ["acceptedAnswer"] = new Dictionary<string, object> { ["@type"] = "Answer", ["text"] = x.a } }).ToList()
+    });
+}
+@if (faqLd != null) { @Html.Raw("<script type=\"application/ld+json\">" + faqLd + "</script>") }
+
+<div class="fk-page container guide-page" dir="@dir">
+    <nav class="fk-crumbs" aria-label="@T("مسار", "Breadcrumb", "Fil d'Ariane")"><a href="@Url.Action("Index", "Guides")">@T("أدلة التقديم", "Guides", "Guides")</a> › <span>@g.Title(lang)</span></nav>
+    <header class="fk-page-head">
+        <h1>@g.Title(lang)</h1>
+        @if (!string.IsNullOrEmpty(g.Summary(lang))) { <p>@g.Summary(lang)</p> }
+        <div class="guide-meta">
+            @if (g.Season(lang) is string season) { <span><i class="bi bi-calendar-event"></i> @season</span> }
+            @if (HttpUrl.Normalize(g.OfficialUrl) is string url) { <a href="@url" target="_blank" rel="noopener nofollow"><i class="bi bi-box-arrow-up-right"></i> @T("الموقع الرسمي", "Official website", "Site officiel")</a> }
+            <span><i class="bi bi-patch-check"></i> @T("آخر تحديث", "Updated", "Mis à jour") @g.UpdatedAt.ToString("yyyy-MM-dd", inv)</span>
+        </div>
+    </header>
+
+    @if (tracked == "none")
+    {
+        <div class="trust-paused" role="status"><i class="bi bi-info-circle"></i> @T("لا فرصة من هذا البرنامج على الموقع الآن؛ اضغط «أعلمني حين تفتح» في البوصلة لنخبرك.", "No opportunity from this program is on the site right now; use “Notify me when it opens” in the Compass.", "Aucune opportunité de ce programme n'est en ligne pour l'instant ; utilisez « Prévenez-moi » dans la Boussole.")</div>
+    }
+
+    <div class="guide-layout">
+        <article class="guide-main">
+            @if (!string.IsNullOrWhiteSpace(s.Conditions)) { <section class="guide-sec"><h2><i class="bi bi-check2-square"></i> @T("الشروط", "Conditions", "Conditions")</h2><ul>@foreach (var p in Paras(s.Conditions)) { <li>@p</li> }</ul></section> }
+            @if (!string.IsNullOrWhiteSpace(s.Timeline)) { <section class="guide-sec"><h2><i class="bi bi-calendar3"></i> @T("الجدول الزمني المعتاد", "Usual timeline", "Calendrier habituel")</h2><ol class="guide-timeline">@foreach (var p in Paras(s.Timeline)) { <li>@p</li> }</ol><p class="guide-note">@T("المواعيد تقريبية وتتغير كل عام — تحقق من الموقع الرسمي ومن صفحة الفرصة عندنا.", "Dates are approximate and change yearly — check the official site and the opportunity page here.", "Dates approximatives et variables chaque année — vérifiez le site officiel et la page de l'opportunité.")</p></section> }
+            @if (!string.IsNullOrWhiteSpace(s.Letter)) { <section class="guide-sec"><h2><i class="bi bi-envelope-paper"></i> @T("خطاب الدوافع", "Motivation letter", "Lettre de motivation")</h2>@foreach (var p in Paras(s.Letter)) { <p>@p</p> }</section> }
+            @if (!string.IsNullOrWhiteSpace(s.Mistakes)) { <section class="guide-sec guide-sec--warn"><h2><i class="bi bi-exclamation-triangle"></i> @T("أخطاء شائعة", "Common mistakes", "Erreurs fréquentes")</h2><ul>@foreach (var p in Paras(s.Mistakes)) { <li>@p</li> }</ul></section> }
+            @if (!string.IsNullOrWhiteSpace(s.Tips)) { <section class="guide-sec guide-sec--good"><h2><i class="bi bi-lightbulb"></i> @T("نصائح من فائزين", "Tips from winners", "Conseils de lauréats")</h2><ul>@foreach (var p in Paras(s.Tips)) { <li>@p</li> }</ul></section> }
+        </article>
+
+        <aside class="guide-side">
+            @if (s.Checklist.Count > 0)
+            {
+                <div class="guide-box">
+                    <h2><i class="bi bi-list-check"></i> @T("قائمة المهام", "Task list", "Liste des tâches")</h2>
+                    <ul class="guide-check">@foreach (var item in s.Checklist) { <li><i class="bi bi-square"></i> @item</li> }</ul>
+                    @if (Model.IsMember)
+                    {
+                        <form method="post" action="@Url.Action("Track", "Guides", new { slug = g.Slug })" data-submit-once>
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="fk-btn fk-btn-primary" style="width:100%;">@T("حمّل القائمة إلى متابعتي", "Load the list into my tracker", "Charger la liste dans mon suivi")</button>
+                        </form>
+                        <p class="guide-note">@T("نحفظ أحدث فرصة من البرنامج ونفتح رفيق التقديم بهذه المهام.", "We save the latest opportunity from this program and open the application companion with these tasks.", "Nous enregistrons la dernière opportunité du programme et ouvrons le compagnon avec ces tâches.")</p>
+                    }
+                    else
+                    {
+                        <a class="fk-btn fk-btn-primary" style="display:block;text-align:center;" href="@Url.Action("Login", "Account", new { returnUrl = Context.Request.Path.Value })">@T("سجّل الدخول لتحميل القائمة", "Sign in to load the list", "Connectez-vous pour charger la liste")</a>
+                    }
+                </div>
+            }
+
+            <div class="guide-box">
+                <h2><i class="bi bi-door-open"></i> @T("الفرص المفتوحة من هذا البرنامج", "Open opportunities from this program", "Opportunités ouvertes de ce programme")</h2>
+                @if (Model.Open.Count == 0)
+                {
+                    <p class="guide-note">@T("لا شيء مفتوح الآن.", "Nothing open right now.", "Rien d'ouvert pour l'instant.")
+                        @if (Model.LastCycle != null) { var lt = lang == "en" ? Model.LastCycle.TitleEn : lang == "fr" ? Model.LastCycle.TitleFr : Model.LastCycle.TitleAr; <a href="@Url.Action("Details", "Opportunity", new { id = Model.LastCycle.Id, slug = SlugHelper.Make(lt) })">@T("آخر دورة →", "Last cycle →", "Dernier cycle →")</a> }
+                    </p>
+                }
+                else
+                {
+                    <ul class="guide-open">
+                        @foreach (var o in Model.Open)
+                        {
+                            var t = lang == "en" ? o.TitleEn : lang == "fr" ? o.TitleFr : o.TitleAr;
+                            var d = DeadlineInfo.For(o, lang);
+                            <li><a href="@Url.Action("Details", "Opportunity", new { id = o.Id, slug = SlugHelper.Make(t) })">@t</a><small class="@d.CssClass">@d.Label</small></li>
+                        }
+                    </ul>
+                }
+            </div>
+            <a class="guide-box guide-box--link" href="@Url.Action("Index", "Compass")"><i class="bi bi-compass"></i> @T("هل أنا مؤهَّل؟ جرّب البوصلة", "Am I eligible? Try the Compass", "Suis-je éligible ? Essayez la Boussole")</a>
+        </aside>
+    </div>
+</div>

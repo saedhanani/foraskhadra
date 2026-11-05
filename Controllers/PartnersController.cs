@@ -35,6 +35,18 @@ namespace Foras_Khadra.Controllers
         [HttpGet("/for-organizations", Order = 1)]
         public async Task<IActionResult> Index() => View(await PageAsync(new PublishRequestForm()));
 
+        /// <summary>باقات الشركاء (4.5): إبراز مموَّل بعلامة واضحة، «عزّز للمؤهَّلين»، باقات سنوية، رخصة مكاتب التوظيف الجامعية، رعاية البرامج — بلا إعلانات.</summary>
+        [HttpGet("/{culture:culture}/for-organizations/packages")]
+        [HttpGet("/for-organizations/packages", Order = 1)]
+        public IActionResult Packages()
+        {
+            ViewData["Title"] = T("باقات الشركاء — بلا إعلانات", "Partner packages — no ads", "Offres partenaires — sans publicité");
+            ViewData["Description"] = T("النشر مجاني دائمًا. للمنظمات التي تريد وصولًا أوسع: إبراز مموَّل بعلامة واضحة، تعزيز للأعضاء المؤهَّلين، باقات سنوية، رخصة لمكاتب التوظيف الجامعية، ورعاية البرامج.",
+                "Publishing is always free. For organizations that want more reach: clearly labelled sponsored listings, boosts to eligible members, annual packages, a licence for university career offices, and program sponsorship.",
+                "La publication reste gratuite. Pour plus de portée : mises en avant clairement signalées, diffusion aux membres éligibles, offres annuelles, licence pour les bureaux carrière universitaires et parrainage de programmes.");
+            return View();
+        }
+
         [HttpPost("/{culture:culture}/for-organizations")]
         [HttpPost("/for-organizations", Order = 1)]
         [ValidateAntiForgeryToken]

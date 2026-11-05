@@ -1,0 +1,73 @@
+@model List<Foras_Khadra.Models.Opportunity>
+@using Foras_Khadra.Models
+@{
+    ViewData["Title"] = "الإبراز والتعزيز";
+    var selected = ViewBag.Selected as Opportunity;
+    var estimate = ViewBag.Estimate as int?;
+    var sponsored = ViewBag.Sponsored as List<Opportunity> ?? new();
+    var boosts = ViewBag.Boosts as List<OpportunityBoost> ?? new();
+}
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="m-0">الإبراز المموَّل والتعزيز للمؤهَّلين</h2>
+        <a href="@Url.Action("Packages", "Partners")" target="_blank" class="btn btn-outline-secondary">صفحة الباقات</a>
+    </div>
+    @if (TempData["PromoteMessage"] is string msg) { <div class="alert alert-success">@msg</div> }
+
+    @if (selected != null)
+    {
+        <div class="card mb-4 border-primary"><div class="card-body">
+            <h5><a href="@Url.Action("Details", "Opportunity", new { id = selected.Id })" target="_blank">@selected.TitleAr</a> <small class="text-muted">#@selected.Id · @selected.PublishedBy</small></h5>
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <h6>إبراز مموَّل</h6>
+                    <p class="small text-muted">تظهر أولًا في قوائمها بعلامة «إعلان مموَّل». الحالة الآن: <b>@(selected.IsSponsoredNow ? "مموَّلة" + (selected.SponsoredUntil.HasValue ? " حتى " + selected.SponsoredUntil.Value.ToString("yyyy-MM-dd") : "") : "غير مموَّلة")</b></p>
+                    <form asp-action="SetSponsored" method="post" class="d-flex gap-2 align-items-center flex-wrap">
+                        <input type="hidden" name="id" value="@selected.Id" />
+                        <label class="small">حتى <input type="date" name="until" class="form-control form-control-sm d-inline-block" style="width:auto" value="@(selected.SponsoredUntil?.ToString("yyyy-MM-dd") ?? DateTime.Now.AddDays(30).ToString("yyyy-MM-dd"))" /></label>
+                        <button name="sponsored" value="true" class="btn btn-sm btn-success">تفعيل الإبراز</button>
+                        <button name="sponsored" value="false" class="btn btn-sm btn-outline-secondary">إلغاء</button>
+                    </form>
+                </div>
+                <div class="col-md-6">
+                    <h6>عزّز للمؤهَّلين</h6>
+                    <p class="small text-muted">الأعضاء الذين تنطبق عليهم الشروط الصلبة حسب ملفات الأهلية: <b>@(estimate?.ToString() ?? "—")</b>. كل عضو يُشعَر مرة واحدة لكل فرصة (جرس + دفع).</p>
+                    <form asp-action="Boost" method="post" class="d-flex gap-2 flex-wrap" onsubmit="return confirm('إرسال التعزيز الآن؟')">
+                        <input type="hidden" name="id" value="@selected.Id" />
+                        <input name="note" class="form-control form-control-sm" style="max-width:260px" maxlength="200" placeholder="ملاحظة (الجهة الدافعة، الفاتورة…)" />
+                        <button class="btn btn-sm btn-primary" @(estimate is > 0 ? "" : "disabled")>أرسل التعزيز</button>
+                    </form>
+                </div>
+            </div>
+        </div></div>
+    }
+
+    <form method="get" class="d-flex gap-2 mb-3">
+        <input name="q" class="form-control" style="max-width:360px" placeholder="ابحث بالعنوان أو الناشر" value="@ViewBag.Query" />
+        <button class="btn btn-outline-primary">بحث</button>
+    </form>
+    <table class="table align-middle">
+        <thead><tr><th>الفرصة</th><th>الناشر</th><th>الموعد</th><th>الحالة</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var o in Model)
+            {
+                <tr class="@(o.IsSponsoredNow ? "table-warning" : "")">
+                    <td><b>@o.TitleAr</b> <small class="text-muted">#@o.Id</small></td>
+                    <td>@o.PublishedBy</td>
+                    <td class="small">@(o.EndDate?.ToString("yyyy-MM-dd") ?? "مفتوح")</td>
+                    <td>@if (o.IsSponsoredNow) { <span class="badge bg-warning text-dark">مموَّلة</span> }</td>
+                    <td><a asp-action="Promote" asp-route-id="@o.Id" class="btn btn-sm btn-outline-primary">إدارة</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h5 class="mt-4">سجل التعزيزات</h5>
+    @if (boosts.Count == 0) { <p class="text-muted small">لا تعزيزات بعد.</p> }
+    else
+    {
+        <table class="table table-sm"><thead><tr><th>التاريخ</th><th>الفرصة</th><th>المستلمون</th><th>ملاحظة</th></tr></thead><tbody>
+            @foreach (var b in boosts) { <tr><td>@b.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td><td>@b.Opportunity?.TitleAr</td><td>@b.Recipients</td><td class="small">@b.Note</td></tr> }
+        </tbody></table>
+    }
+</div>

@@ -103,7 +103,8 @@ namespace Foras_Khadra.Tests
             Assert.Equal(new[] { 2 }, Ids(new OpportunityQuery { NoIelts = true }));           // None فقط، لا Unknown
             Assert.Equal(new[] { 5 }, Ids(new OpportunityQuery { Within = 7 }));
             Assert.Equal(new[] { 5, 1 }, Ids(new OpportunityQuery { Within = 30 }));
-            Assert.Equal(new[] { 5, 1, 3, 2, 4 }, Ids(new OpportunityQuery { Within = 15 }));   // قيمة غير معروفة تُهمل
+            Assert.Equal(new[] { 5 }, Ids(new OpportunityQuery { Within = 15 }));               // 15 صارت خيارًا (4.3): #1 ينتهي بعد 20 يومًا
+            Assert.Equal(new[] { 5, 1, 3, 2, 4 }, Ids(new OpportunityQuery { Within = 16 }));   // قيمة غير معروفة تُهمل
         }
 
         [Fact]

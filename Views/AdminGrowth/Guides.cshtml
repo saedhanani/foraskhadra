@@ -1,0 +1,42 @@
+@model List<Foras_Khadra.Models.ApplicationGuide>
+@{
+    ViewData["Title"] = "أدلة التقديم";
+    var open = ViewBag.OpenCounts as Dictionary<string, int> ?? new();
+    var known = ViewBag.KnownKeys as List<string> ?? new();
+}
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="m-0">أدلة التقديم <span class="badge bg-secondary">@Model.Count</span></h2>
+        <div class="d-flex gap-2">
+            <a asp-action="GuideEdit" class="btn btn-primary">دليل جديد</a>
+            <form asp-action="GuidesSeed" method="post" class="d-inline"><button type="submit" class="btn btn-outline-success">استيراد الدفعة الأولى (8 أدلة)</button></form>
+            <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-secondary">لوحة التحكم</a>
+        </div>
+    </div>
+    @if (TempData["GuideMessage"] is string msg) { <div class="alert alert-success">@msg</div> }
+    <p class="text-muted small">الدليل يرتبط بالفرص عبر <code>ProgramKey</code> (مفاتيح موجودة في الفرص الآن: @(known.Count == 0 ? "لا شيء" : string.Join("، ", known))). يظهر على صفحة كل فرصة من البرنامج وفي «قريبًا» في البوصلة، ومهامه تُضاف إلى رفيق التقديم.</p>
+    @if (Model.Count == 0) { <div class="fk-empty-state"><i class="bi bi-journal-bookmark"></i><p>لا أدلة بعد — استورد الدفعة الأولى أو أنشئ دليلًا.</p></div> }
+    else
+    {
+        <table class="table align-middle">
+            <thead><tr><th>العنوان</th><th>المفتاح</th><th>الرابط</th><th>الموسم</th><th>مفتوحة الآن</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var g in Model)
+                {
+                    <tr>
+                        <td><b>@g.TitleAr</b><br /><small class="text-muted">@g.TitleEn</small></td>
+                        <td><code>@g.ProgramKey</code></td>
+                        <td><a href="@Url.Action("Details", "Guides", new { slug = g.Slug })" target="_blank">/guides/@g.Slug</a></td>
+                        <td class="small">@(g.Season("ar") ?? "—")</td>
+                        <td>@open.GetValueOrDefault(g.ProgramKey)</td>
+                        <td>@(g.IsPublished ? Html.Raw("<span class='badge bg-success'>منشور</span>") : Html.Raw("<span class='badge bg-secondary'>مسودة</span>"))</td>
+                        <td class="text-nowrap">
+                            <a asp-action="GuideEdit" asp-route-id="@g.Id" class="btn btn-sm btn-outline-primary">تحرير</a>
+                            <form asp-action="GuideDelete" method="post" class="d-inline" onsubmit="return confirm('حذف الدليل؟')"><input type="hidden" name="id" value="@g.Id" /><button class="btn btn-sm btn-outline-danger">حذف</button></form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

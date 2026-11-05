@@ -111,6 +111,11 @@ namespace Foras_Khadra.Helpers
                         T($"جديد من {n.Label}", $"New from {n.Label}", $"Nouveau de {n.Label}"),
                         oppTitle!, oppUrl!, tag, lang);
 
+                case NotificationKind.BoostedMatch when opp != null:
+                    return new PushMessage(
+                        T("فرصة تنطبق عليك شروطها", "An opportunity you qualify for", "Une opportunité pour laquelle vous êtes éligible"),
+                        oppTitle!, oppUrl!, $"boost{opp.Id}", lang);
+
                 case NotificationKind.WeeklySummary:
                     return new PushMessage(
                         T("ملخص أسبوعك جاهز", "Your weekly summary is ready", "Votre résumé hebdomadaire est prêt"),

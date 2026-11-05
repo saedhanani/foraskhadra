@@ -112,6 +112,10 @@ builder.Services.AddScoped<IApplyClickCounter, ApplyClickCounter>();
 builder.Services.AddScoped<IOpportunityReportService, OpportunityReportService>();
 builder.Services.AddScoped<IOrganizationFollowService, OrganizationFollowService>();
 builder.Services.AddScoped<IOrgReachReport, OrgReachReport>();
+// المرحلة 4: «عزّز للمؤهَّلين» (4.5)، قناة تيليجرام الاختيارية (4.3؛ معطَّلة بلا إعدادات)
+builder.Services.AddScoped<IBoostService, BoostService>();
+builder.Services.AddHttpClient(TelegramPoster.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(20));
+builder.Services.AddScoped<ITelegramPoster, TelegramPoster>();
 // بوابة المنظمات: طلبات النشر بلا حساب + تقدير الأعضاء المؤهَّلين (مخزَّن ساعة)
 builder.Services.AddScoped<IPublishRequestService, PublishRequestService>();
 builder.Services.AddScoped<IAudienceEstimator, AudienceEstimator>();

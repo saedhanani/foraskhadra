@@ -1,0 +1,75 @@
+@model Foras_Khadra.Controllers.AmbassadorVM
+@using Foras_Khadra.Helpers
+@using Foras_Khadra.Models
+@{
+    var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+    string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+    var dir = lang == "ar" ? "rtl" : "ltr";
+    var msg = ViewBag.Message as string;
+    var shareUrl = $"{Context.Request.Scheme}://{Context.Request.Host}/?ref={Model.ReferralCode}";
+    ViewData["Robots"] = "noindex";
+}
+<div class="fk-page container amb-page" dir="@dir">
+    <header class="fk-page-head">
+        <h1>@T("لوحة السفير", "Ambassador dashboard", "Tableau de bord ambassadeur") @(string.IsNullOrEmpty(Model.FirstName) ? "" : "— " + Model.FirstName)</h1>
+        <p>@T("السفير الجامعي ينشر الفرص بين زملائه ويكسب نقاطًا وشارات وشهادة. المهام تتجدد كل شهر.", "A university ambassador spreads opportunities among classmates and earns points, badges and a certificate. Tasks reset every month.", "L'ambassadeur universitaire diffuse les opportunités et gagne des points, des badges et un certificat. Les tâches se renouvellent chaque mois.")</p>
+    </header>
+
+    @if (msg == "sent") { <div class="trust-thanks" role="status"><i class="bi bi-check-circle-fill"></i> @T("وصل تسليمك وسيُراجع خلال أيام.", "Your submission was received and will be reviewed within days.", "Votre envoi a été reçu et sera examiné sous quelques jours.")</div> }
+    else if (msg == "proof") { <div class="trust-paused" role="status">@T("هذه المهمة تحتاج رابط إثبات (منشور أو صورة).", "This task needs a proof link (post or photo).", "Cette tâche nécessite un lien de preuve.")</div> }
+    else if (msg == "empty") { <div class="trust-paused" role="status">@T("اكتب ملاحظة أو رابطًا.", "Write a note or a link.", "Écrivez une note ou un lien.")</div> }
+    else if (msg == "already") { <div class="trust-paused" role="status">@T("سلّمت هذه المهمة هذا الشهر.", "You already submitted this task this month.", "Déjà envoyée ce mois-ci.")</div> }
+
+    <div class="reach-tiles">
+        <div class="reach-tile"><span class="reach-num">@Model.Points</span><span class="reach-lbl">@T("نقطة معتمدة", "approved points", "points validés")</span></div>
+        <div class="reach-tile"><span class="reach-num">@Model.MonthPoints</span><span class="reach-lbl">@T("نقاط هذا الشهر", "points this month", "points ce mois-ci")</span></div>
+        <div class="reach-tile"><span class="reach-num">@Model.ReferralsTotal</span><span class="reach-lbl">@T("زميل سجّل برمزك", "classmates who joined with your code", "camarades inscrits avec votre code")</span></div>
+        <div class="reach-tile"><span class="reach-num">@(Model.Level?.Title ?? T("بعد", "Not yet", "Pas encore"))</span><span class="reach-lbl">@(Model.Next is { } nx ? T($"يبقى {nx.Needed} نقطة إلى {nx.Title}", $"{nx.Needed} points to {nx.Title}", $"{nx.Needed} points avant {nx.Title}") : T("أعلى مستوى", "Top level", "Niveau maximal"))</span></div>
+    </div>
+
+    <section class="fk-section">
+        <div class="fk-section-head">
+            <h2>@T("مهام شهر", "Tasks for", "Tâches de") @Model.Month</h2>
+            @if (Model.CertificateReady) { <a class="fk-btn fk-btn-ghost" href="@Url.Action("Certificate", "Ambassador")"><i class="bi bi-award"></i> @T("شهادتي", "My certificate", "Mon certificat")</a> }
+        </div>
+        <div class="amb-tasks">
+            @foreach (var row in Model.Tasks)
+            {
+                var d = row.Def; var sub = row.Submission;
+                var state = sub == null ? "" : sub.Status == TaskSubmissionStatus.Approved ? "is-approved" : sub.Status == TaskSubmissionStatus.Rejected ? "is-rejected" : "is-submitted";
+                <div class="amb-task @state">
+                    <div class="amb-task__head">
+                        <b>@d.Title(lang)</b>
+                        <span class="amb-task__pts">+@d.Points</span>
+                    </div>
+                    <p class="amb-task__hint">@d.Hint(lang)</p>
+                    @if (d.Key == AmbassadorTasks.InviteKey)
+                    {
+                        <div class="amb-progress"><span style="width:@(100 * row.Progress / AmbassadorTasks.InviteTarget)%"></span></div>
+                        <small>@row.Progress / @AmbassadorTasks.InviteTarget · @T("رمزك:", "Your code:", "Votre code :") <code>@Model.ReferralCode</code> · <a href="https://wa.me/?text=@Uri.EscapeDataString(T("سجّل في فرص خضراء برمزي: ", "Join Foras Khadra with my code: ", "Rejoins Foras Khadra avec mon code : ") + shareUrl)" target="_blank" rel="noopener">@T("شارك عبر واتساب", "Share on WhatsApp", "Partager sur WhatsApp")</a></small>
+                    }
+                    else if (sub != null && sub.Status != TaskSubmissionStatus.Rejected)
+                    {
+                        <small class="amb-task__status"><i class="bi @(sub.Status == TaskSubmissionStatus.Approved ? "bi-check-circle-fill" : "bi-hourglass-split")"></i> @(sub.Status == TaskSubmissionStatus.Approved ? T("اعتُمدت", "Approved", "Validée") : T("بانتظار المراجعة", "Awaiting review", "En attente"))</small>
+                    }
+                    else
+                    {
+                        if (sub?.Status == TaskSubmissionStatus.Rejected) { <small class="amb-task__status"><i class="bi bi-x-circle"></i> @T("رُفض التسليم السابق — يمكنك إعادة التسليم.", "Previous submission rejected — you can resubmit.", "Envoi précédent refusé — vous pouvez renvoyer.")</small> }
+                        <form method="post" action="@Url.Action("Submit", "Ambassador")" class="amb-form" data-submit-once>
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="taskKey" value="@d.Key" />
+                            <input class="fk-dialog-input" name="note" maxlength="500" placeholder="@T("ملاحظة", "Note", "Note")" />
+                            <input class="fk-dialog-input" name="proofUrl" type="url" maxlength="500" placeholder="@(d.NeedsProof ? T("رابط الإثبات (مطلوب)", "Proof link (required)", "Lien de preuve (requis)") : T("رابط (اختياري)", "Link (optional)", "Lien (facultatif)"))" @(d.NeedsProof ? "required" : "") />
+                            <button type="submit" class="fk-btn fk-btn-primary">@T("سلّم", "Submit", "Envoyer")</button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </section>
+
+    <p class="guide-note">
+        @T("جامعتك:", "Your university:", "Votre université :") <b>@(string.IsNullOrEmpty(Model.University) ? T("غير محددة — أضفها من البوصلة لتظهر جامعتك في لوحة الجامعات.", "not set — add it in the Compass so your university appears on the universities board.", "non renseignée — ajoutez-la dans la Boussole.") : Model.University)</b>
+        · <a href="@Url.Action("Universities", "Ambassador")">@T("لوحة الجامعات", "Universities board", "Tableau des universités")</a>
+    </p>
+</div>

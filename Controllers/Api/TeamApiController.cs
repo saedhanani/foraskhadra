@@ -94,6 +94,7 @@ namespace Foras_Khadra.Controllers.Api
             eligibleCountries = FacetParser.EligibleCodes(o).ToArray(),
             hostCountry = o.HostCountryIso,
             programKey = o.ProgramKey,
+            isSponsored = o.IsSponsored, // يضبطه المدير فقط (4.5)؛ للعرض لا للكتابة
             lastCheckedAt = o.LastCheckedAt?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
         };
 

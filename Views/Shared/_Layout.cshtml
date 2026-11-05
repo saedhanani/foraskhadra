@@ -78,6 +78,8 @@
             <link rel="alternate" hreflang="@alt" href="@(baseUrl + CultureRouting.WithCulture(alternatePath, alt))" />
         }
         <link rel="alternate" hreflang="x-default" href="@(baseUrl + CultureRouting.WithCulture(alternatePath, CultureRouting.Default))" />
+        @* خلاصة Atom (4.3): الصفحة تضبط ViewData["FeedUrl"] لخلاصتها الخاصة (نوع/نية/تنتهي قريبًا) وإلا الخلاصة العامة *@
+        <link rel="alternate" type="application/atom+xml" title="@(culture == "en" ? "Foras Khadra — opportunities feed" : culture == "fr" ? "Foras Khadra — flux des opportunités" : "فرص خضراء — خلاصة الفرص")" href="@(baseUrl + (ViewData["FeedUrl"] as string ?? CultureRouting.WithCulture("/feed/opportunities.xml", culture)))" />
     }
     @if (!isErrorPage && ViewData["Robots"] is string robotsMeta)
     {
@@ -922,6 +924,11 @@ else
                         <li><a href="@Url.Action("AboutUs", "Home")">@Localizer["AboutUs"]</a></li>
                         <li><a href="@Url.Action("Index", "contact")">@Localizer["ContactUs"]</a></li>
                         <li><a href="@Url.Action("Index", "Partners")">@(culture == "en" ? "For organizations: publish free" : culture == "fr" ? "Organisations : publiez gratuitement" : "للمنظمات: انشر فرصتك مجانًا")</a></li>
+                        <li><a href="@Url.Action("Packages", "Partners")">@(culture == "en" ? "Partner packages" : culture == "fr" ? "Offres partenaires" : "باقات الشركاء")</a></li>
+                        <li><a href="@Url.Action("ClosingSoon", "Home")">@(culture == "en" ? "Closing within 7 days" : culture == "fr" ? "Se clôturent sous 7 jours" : "تنتهي خلال 7 أيام")</a></li>
+                        <li><a href="@Url.Action("Index", "Guides")">@(culture == "en" ? "Application guides" : culture == "fr" ? "Guides de candidature" : "أدلة التقديم")</a></li>
+                        <li><a href="@Url.Action("Impact", "Stories")">@(culture == "en" ? "Impact and success stories" : culture == "fr" ? "Impact et réussites" : "أثرنا وقصص النجاح")</a></li>
+                        <li><a href="@(CultureRouting.WithCulture("/feed/opportunities.xml", culture))" type="application/atom+xml"><i class="bi bi-rss" aria-hidden="true"></i> @(culture == "en" ? "RSS feed" : culture == "fr" ? "Flux RSS" : "خلاصة RSS")</a></li>
                         @* شرح التثبيت لكل جهاز (Views/Home/App.cshtml)؛ يختفي داخل التطبيق المثبّت *@
                         <li class="fk-hide-standalone"><a href="@Url.Action("App", "Home")"><i class="bi bi-phone" aria-hidden="true"></i> @(culture == "en" ? "Get the app" : culture == "fr" ? "Installer l'application" : "حمّل التطبيق")</a></li>
                     </ul>

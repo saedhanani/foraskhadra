@@ -1,0 +1,55 @@
+@model List<Foras_Khadra.Models.OpportunityQuestion>
+@using Foras_Khadra.Models
+@{
+    ViewData["Title"] = "أسئلة الفرص";
+    var all = (ViewBag.ShowingAll as bool?) == true;
+}
+<div class="container py-4" dir="rtl">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h2 class="m-0">أسئلة الأعضاء على الفرص <span class="badge bg-secondary">@Model.Count</span></h2>
+        <div class="d-flex gap-2">
+            <a asp-action="Questions" class="btn @(all ? "btn-outline-primary" : "btn-primary")">بانتظار الجواب</a>
+            <a asp-action="Questions" asp-route-status="all" class="btn @(all ? "btn-primary" : "btn-outline-primary")">الكل</a>
+        </div>
+    </div>
+    @if (TempData["QuestionMessage"] is string msg) { <div class="alert alert-success">@msg</div> }
+
+    <details class="card mb-3"><summary class="card-body py-2 fw-bold">إضافة سؤال منسَّق على فرصة</summary>
+        <form asp-action="QuestionAdd" method="post" class="card-body pt-0 row g-2">
+            <div class="col-md-2"><input name="opportunityId" type="number" class="form-control" placeholder="رقم الفرصة" required /></div>
+            <div class="col-md-10"><input name="questionAr" class="form-control" placeholder="السؤال بالعربية" required maxlength="300" /></div>
+            <div class="col-md-6"><input name="questionEn" class="form-control" placeholder="Question (en)" dir="ltr" maxlength="300" /></div>
+            <div class="col-md-6"><input name="questionFr" class="form-control" placeholder="Question (fr)" dir="ltr" maxlength="300" /></div>
+            <div class="col-md-4"><textarea name="answerAr" class="form-control" rows="3" placeholder="الجواب بالعربية" maxlength="1500"></textarea></div>
+            <div class="col-md-4"><textarea name="answerEn" class="form-control" rows="3" placeholder="Answer (en)" dir="ltr" maxlength="1500"></textarea></div>
+            <div class="col-md-4"><textarea name="answerFr" class="form-control" rows="3" placeholder="Réponse (fr)" dir="ltr" maxlength="1500"></textarea></div>
+            <div class="col-12"><button class="btn btn-success btn-sm">إضافة ونشر</button></div>
+        </form>
+    </details>
+
+    @if (Model.Count == 0) { <div class="fk-empty-state"><i class="bi bi-chat-left-text"></i><p>لا أسئلة @(all ? "" : "بانتظار الجواب").</p></div> }
+    @foreach (var q in Model)
+    {
+        <div class="card mb-3 shadow-sm"><div class="card-body">
+            <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+                <div><a href="@Url.Action("Details", "Opportunity", new { id = q.OpportunityId })" target="_blank"><b>@q.Opportunity?.TitleAr</b></a> · @(q.IsCurated ? "منسَّق" : (q.User?.Email ?? "عضو")) · <span class="text-muted small">@q.CreatedAt.ToString("yyyy-MM-dd") · @q.Lang</span></div>
+                <span class="badge @(q.Status == QuestionStatus.Published ? "bg-success" : q.Status == QuestionStatus.Hidden ? "bg-secondary" : "bg-warning text-dark")">@q.Status</span>
+            </div>
+            <form asp-action="QuestionAnswer" method="post" class="row g-2">
+                <input type="hidden" name="id" value="@q.Id" />
+                <div class="col-md-4"><input name="questionAr" class="form-control" value="@q.QuestionAr" maxlength="300" /></div>
+                <div class="col-md-4"><input name="questionEn" class="form-control" value="@q.QuestionEn" placeholder="Question (en)" dir="ltr" maxlength="300" /></div>
+                <div class="col-md-4"><input name="questionFr" class="form-control" value="@q.QuestionFr" placeholder="Question (fr)" dir="ltr" maxlength="300" /></div>
+                <div class="col-md-4"><textarea name="answerAr" class="form-control" rows="3" placeholder="الجواب بالعربية" maxlength="1500">@q.AnswerAr</textarea></div>
+                <div class="col-md-4"><textarea name="answerEn" class="form-control" rows="3" placeholder="Answer (en)" dir="ltr" maxlength="1500">@q.AnswerEn</textarea></div>
+                <div class="col-md-4"><textarea name="answerFr" class="form-control" rows="3" placeholder="Réponse (fr)" dir="ltr" maxlength="1500">@q.AnswerFr</textarea></div>
+                <div class="col-12 d-flex gap-2">
+                    <button name="action" value="publish" class="btn btn-success btn-sm">حفظ ونشر</button>
+                    <button name="action" value="save" class="btn btn-outline-primary btn-sm">حفظ فقط</button>
+                    <button name="action" value="hide" class="btn btn-outline-secondary btn-sm">إخفاء</button>
+                    <button name="action" value="delete" class="btn btn-outline-danger btn-sm" onclick="return confirm('حذف السؤال؟')">حذف</button>
+                </div>
+            </form>
+        </div></div>
+    }
+</div>

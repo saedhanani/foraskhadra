@@ -104,6 +104,14 @@ else
                 <span>@T($"{n.Count} بلاغات أوقفت التقديم على: ", $"{n.Count} reports paused applying on: ", $"{n.Count} signalements ont suspendu : ")<b>@n.Opportunity.TitleAr</b></span>
             </a>
         }
+        else if (n.Kind == NotificationKind.BoostedMatch && n.Opportunity != null)
+        {
+            var title = lang switch { "en" => n.Opportunity.TitleEn, "fr" => n.Opportunity.TitleFr, _ => n.Opportunity.TitleAr };
+            <a class="notif-item @unread" href="@Url.Action("Details", "Opportunity", new { id = n.OpportunityId, slug = SlugHelper.Make(title) })">
+                <i class="bi bi-bullseye notif-ico orange"></i>
+                <span>@T("فرصة تنطبق عليك شروطها: ", "You qualify for: ", "Vous êtes éligible à : ")<b>@title</b></span>
+            </a>
+        }
         else if (n.Kind == NotificationKind.OrganizationPublished && n.Opportunity != null)
         {
             var title = lang switch { "en" => n.Opportunity.TitleEn, "fr" => n.Opportunity.TitleFr, _ => n.Opportunity.TitleAr };

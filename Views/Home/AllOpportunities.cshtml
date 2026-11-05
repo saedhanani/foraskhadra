@@ -12,18 +12,27 @@
     var lp = Model.Landing;
     var f = Model.Filter;
     var fc = lp != null ? Model.ExtraFilter : f; // رقائق صفحة النية من معايير الطلب فقط (فلترها المحفوظ لا يُزال)
-    ViewData["Title"] = lp != null ? lp.Title(lang) : tp != null ? tp.Title(lang) : Localizer["PageTitle"].Value;
+    // قائمة مخصصة (مثل «تنتهي خلال 7 أيام» 4.3): عنوان ومقدمة وcanonical من الإجراء، وتُفهرس رغم فلترها
+    var customTitle = ViewData["ListTitle"] as string;
+    var customCanonical = ViewData["ListCanonical"] as string;
+    ViewData["Title"] = lp != null ? lp.Title(lang) : tp != null ? tp.Title(lang) : customTitle ?? Localizer["PageTitle"].Value;
     if (lp != null) ViewData["Description"] = lp.Meta(lang);
     else if (tp != null) ViewData["Description"] = tp.Meta(lang);
+    // خلاصة Atom مطابقة للصفحة (4.3)
+    if (ViewData["FeedUrl"] == null && (lp != null || tp != null)) ViewData["FeedUrl"] = (lang == "ar" ? "" : "/" + lang) + "/feed/" + (lp?.Slug ?? tp!.Slug) + ".xml";
 
     // canonical (2.2): صفحة النوع والقائمة بلا فلاتر → ذاتي مع رقم الصفحة فقط (لا rel=prev/next)؛
     // أي فلتر أو بحث أو ترتيب → noindex مع canonical ذاتي كامل (لا إشارات متضاربة)
     var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.PathBase}";
-    var filtered = lp != null ? Model.ExtraFilter.HasCriteria : tp == null ? f.HasCriteria : f.HasCriteriaBeyondType;
+    var filtered = customCanonical == null && (lp != null ? Model.ExtraFilter.HasCriteria : tp == null ? f.HasCriteria : f.HasCriteriaBeyondType);
     if (filtered)
     {
         ViewData["Robots"] = "noindex,follow";
         ViewData["Canonical"] = baseUrl + Context.Request.Path + Context.Request.QueryString;
+    }
+    else if (customCanonical != null)
+    {
+        ViewData["Canonical"] = baseUrl + customCanonical + (Model.Page > 1 ? (customCanonical.Contains('?') ? "&" : "?") + $"page={Model.Page}" : "");
     }
     else
     {
@@ -515,7 +524,7 @@
             <div class="header-logo">
                 <img src="/images/about_us_leaf.svg" alt="Logo" />
             </div>
-            <h1 class="header-title">@(lp != null ? lp.Title(lang) : tp != null ? tp.Title(lang) : Localizer["all_opportunities"].Value)</h1>
+            <h1 class="header-title">@(lp != null ? lp.Title(lang) : tp != null ? tp.Title(lang) : customTitle ?? Localizer["all_opportunities"].Value)</h1>
         </div>
 
         <div class="header-left">
@@ -620,6 +629,18 @@
     else if (tp != null)
     {
         <p class="ob-intro">@tp.Intro(lang)</p>
+    }
+    else if (ViewData["ListIntro"] is string listIntro)
+    {
+        <p class="ob-intro">@listIntro</p>
+        @if (ViewData["ListWithin"] is int within)
+        {
+            <p class="ob-intro">
+                <a class="@(within == 7 ? "fw-bold" : "")" href="@Url.Action("ClosingSoon", "Home")">@T("خلال 7 أيام", "Within 7 days", "Sous 7 jours")</a> ·
+                <a class="@(within == 15 ? "fw-bold" : "")" href="@Url.Action("ClosingSoon", "Home", new { within = 15 })">@T("خلال 15 يومًا", "Within 15 days", "Sous 15 jours")</a> ·
+                <a href="@ViewData["FeedUrl"]" type="application/atom+xml"><i class="bi bi-rss" aria-hidden="true"></i> @T("خلاصة RSS", "RSS feed", "Flux RSS")</a>
+            </p>
+        }
     }
 
     @* بحث ظاهر + فلاتر من الحقول المهيكلة + ترتيب + عدّاد + رقائق (المرحلة 2.2) — تتغيّر فتُرسل تلقائيًا *@
@@ -763,6 +784,7 @@
 
                         <div class="opp-category-row">
                             <span class="type-tag">@opp.Type.GetDisplayName(lang)</span>
+                            @if (opp.IsSponsoredNow) { <span class="type-tag sponsored-tag" title="@T("فرصة مموَّلة: تظهر أولًا بمقابل من الجهة، وتبقى مُحقَّقة ومجانية للمتقدم", "Sponsored: shown first for a fee from the organizer; still verified and free to apply", "Sponsorisé : affiché en premier contre paiement ; toujours vérifié et gratuit")">@T("إعلان مموَّل", "Sponsored", "Sponsorisé")</span> }
                             @if (!string.IsNullOrWhiteSpace(opp.AvailableCountriesNames))
                             {
                                 var allCountries = opp.AvailableCountriesNames

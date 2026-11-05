@@ -32,6 +32,10 @@
            title="@T("شارك إنجازك", "Share your achievement", "Partagez votre réussite")">
             <i class="bi bi-stars"></i> @T("شارك إنجازك", "Share", "Partager")
         </a>
+        <a class="app-prep" style="color:#1B6B23;" href="@Url.Action("New", "Stories", new { opportunityId = Model.OpportunityId })"
+           title="@T("اكتب قصتك لتشجّع غيرك (تُنشر بموافقتك)", "Write your story to encourage others (published with your consent)", "Racontez votre histoire pour encourager d'autres (publiée avec votre accord)")">
+            <i class="bi bi-chat-quote"></i> @T("قصتي", "My story", "Mon histoire")
+        </a>
     }
     <a class="app-prep" href="@Url.Action("Prepare", "Tracker", new { id = Model.OpportunityId })"
        title="@T("رفيق التقديم", "Application companion", "Compagnon de candidature")">

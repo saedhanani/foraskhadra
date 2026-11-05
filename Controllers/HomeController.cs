@@ -244,6 +244,29 @@ namespace Foras_Khadra.Controllers
         public IActionResult Fellowships(string? country = null, int page = 1) => RedirectToType(OpportunityType.Fellowships, country, page);
         public IActionResult Scholarships(string? country = null, int page = 1) => RedirectToType(OpportunityType.Scholarships, country, page);
 
+        /// <summary>«تنتهي خلال 7/15 يومًا» (4.3): قائمة مفهرسة بترتيب الأقرب موعدًا، بعنوان ووصف خاصين وخلاصة Atom مطابقة.</summary>
+        [HttpGet("/{culture:culture}/opportunities/closing-soon")]
+        [HttpGet("/opportunities/closing-soon", Order = 1)]
+        [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("search")]
+        public async Task<IActionResult> ClosingSoon(int within = 7, int page = 1)
+        {
+            within = within == 15 ? 15 : 7;
+            var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
+            var vm = await BuildListAsync(new OpportunityQuery { Within = within, Sort = "deadline", Page = Math.Max(1, page) }, null);
+            ViewData["ListTitle"] = within == 15
+                ? T("فرص تنتهي خلال 15 يومًا", "Opportunities closing within 15 days", "Opportunités qui se clôturent sous 15 jours")
+                : T("فرص تنتهي خلال 7 أيام", "Opportunities closing within 7 days", "Opportunités qui se clôturent sous 7 jours");
+            ViewData["ListIntro"] = T($"آخر فرصة للتقديم: كل الفرص المفتوحة التي يُغلق بابها خلال {within} يومًا، مرتبة بالأقرب موعدًا وتُحدَّث يوميًا. احفظ ما يعنيك لنذكّرك قبل الموعد بثلاثة أيام.",
+                $"Last call: every open opportunity closing within {within} days, soonest first, updated daily. Save the ones you want and we remind you three days before the deadline.",
+                $"Dernier appel : toutes les opportunités ouvertes qui se clôturent sous {within} jours, les plus proches d'abord, mises à jour chaque jour. Enregistrez celles qui vous intéressent et nous vous rappelons trois jours avant.");
+            ViewData["Description"] = ViewData["ListIntro"];
+            ViewData["ListCanonical"] = Url.Action("ClosingSoon", "Home", within == 15 ? new { within = 15 } : null);
+            ViewData["ListWithin"] = within;
+            ViewData["FeedUrl"] = (lang == "ar" ? "" : "/" + lang) + "/feed/opportunities.xml?within=" + within;
+            return View("AllOpportunities", vm);
+        }
+
         /// <summary>صفحة نوع واحد /opportunities/{slug}: عنوان ومقدمة لكل لغة، canonical ذاتي لكل صفحة ترقيم، والفلاتر نفسها.</summary>
         [HttpGet("/{culture:culture}/opportunities/{type}")]
         [HttpGet("/opportunities/{type}", Order = 1)]
