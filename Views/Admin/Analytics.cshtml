@@ -1,11 +1,17 @@
 @model Foras_Khadra.Models.AnalyticsVM
+@using Foras_Khadra.Services
 @{
-    ViewData["Title"] = "التحليلات";
+    ViewData["Title"] = "التحليلات والمؤشرات";
+    var k = Model.Kpi;
     var maxDay = Model.PerDay.Count == 0 ? 1 : Math.Max(1, Model.PerDay.Max(d => d.Views));
+    var maxOppDay = k.OpportunitiesPerDay.Count == 0 ? 1 : Math.Max(1, k.OpportunitiesPerDay.Max(d => d.Count));
     string N(int n) => n.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+    string D1(double v) => v.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
     string Delta(int now, int before) => before == 0 ? "" : $"{(now >= before ? "+" : "")}{(now - before) * 100 / before}% عن المدة السابقة";
     int Ev(string name) => Model.Events.TryGetValue(name, out var n) ? n : 0;
     string Pct(int part, int whole) => whole == 0 ? "—" : (part * 100 / whole) + "%";
+    string Hours(double? h) => !h.HasValue ? "—" : h.Value < 48 ? D1(h.Value) + " ساعة" : D1(h.Value / 24) + " يوم";
+    string Target(bool? met) => met == null ? "bg-light text-dark border" : met.Value ? "bg-success" : "bg-warning text-dark";
     var funnel = new (string Label, int Value)[]
     {
         ("صفحة التسجيل", Ev("register.view")),
@@ -17,7 +23,7 @@
 
 <div class="container py-4" dir="rtl">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h2 class="m-0">التحليلات <small class="text-muted fs-6">@Model.From.ToString("yyyy-MM-dd") → @Model.To.ToString("yyyy-MM-dd")</small></h2>
+        <h2 class="m-0">التحليلات والمؤشرات <small class="text-muted fs-6">@Model.From.ToString("yyyy-MM-dd") → @Model.To.ToString("yyyy-MM-dd")</small></h2>
         <div class="d-flex gap-2">
             @foreach (var d in new[] { 7, 30, 90 })
             {
@@ -26,36 +32,103 @@
             <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-secondary">لوحة التحكم</a>
         </div>
     </div>
-    <p class="text-muted small">بلا كوكيز ولا عناوين IP: مشاهدات الصفحات العامة فقط (الزاحفات والمديرون لا يُعدّون)، تُكتب كل دقيقة كصفوف يومية وتُحفظ 400 يومًا. المصدر = أول صفحة في الزيارة (الإحالة الخارجية أو utm أو التطبيق).</p>
+    <p class="text-muted small">بلا كوكيز ولا عناوين IP: مشاهدات الصفحات العامة فقط (الزاحفات والمديرون لا يُعدّون)، تُكتب كل دقيقة كصفوف يومية وتُحفظ 400 يومًا. المصدر = أول صفحة في الزيارة (الإحالة الخارجية أو utm أو التطبيق). التسجيلات والفرص والمراجعة والمنظمات تُقرأ من جداولها مباشرة.</p>
+
+    <h5 class="mb-2">لوحة المؤشرات <small class="text-muted fs-6">— أهداف عمليات المحتوى (المرحلة 5): @KpiSnapshot.OpportunitiesPerDayTarget فرصة/يوم، مراجعة خلال @KpiSnapshot.ReviewHoursTarget ساعة، مقال أو دليل أسبوعيًا</small></h5>
+    <div class="row g-3 mb-3">
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">الزيارات (مشاهدات الصفحات)</div>
+            <div class="fs-3 fw-bold">@N(Model.TotalViews)</div>
+            <div class="small text-muted">@Delta(Model.TotalViews, Model.PreviousTotalViews)</div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">التسجيلات (حسابات أفراد)</div>
+            <div class="fs-3 fw-bold">@N(k.NewUsers)</div>
+            <div class="small text-muted">@Delta(k.NewUsers, k.NewUsersPrevious) · بريد مؤكَّد @Pct(k.NewUsersConfirmed, k.NewUsers)</div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">إكمال البوصلة</div>
+            <div class="fs-3 fw-bold">@N(k.CompassProfiles) <span class="fs-6 fw-normal text-muted">ملف أهلية</span></div>
+            <div class="small text-muted">@Pct(k.CompassResults, k.CompassStarts) ممن بدأوا وصلوا إلى النتيجة (@N(k.CompassResults) من @N(k.CompassStarts))</div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">تحويل بوابة المنظمات</div>
+            <div class="fs-3 fw-bold">@N(k.PublishRequests) <span class="fs-6 fw-normal text-muted">طلب نشر</span></div>
+            <div class="small text-muted">@Pct(k.PublishRequests, k.GatewayViews) من @N(k.GatewayViews) زيارة للبوابة · نُشر @N(k.PublishRequestsPublished) · رُفض @N(k.PublishRequestsRejected) · الإغلاق خلال @Hours(k.PublishRequestMedianHours) · منظمات جديدة @N(k.NewOrganizations)</div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">نقرات «قدّم الآن» (/go/)</div>
+            <div class="fs-3 fw-bold">@N(Model.ApplyClicks)</div>
+            <div class="small text-muted">@Pct(Model.ApplyClicks, Model.TotalViews) من المشاهدات</div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">فرص/يوم</div>
+            <div class="fs-3 fw-bold">@D1(k.OpportunitiesPerDayAverage) <span class="badge @Target(k.MeetsOpportunitiesTarget) fs-6 align-middle">الهدف @KpiSnapshot.OpportunitiesPerDayTarget</span></div>
+            <div class="small text-muted">@N(k.OpportunitiesPublished) فرصة نُشرت في @k.Days يومًا</div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">زمن المراجعة (الوسيط)</div>
+            <div class="fs-3 fw-bold">@Hours(k.ReviewMedianHours) <span class="badge @Target(k.MeetsReviewTarget) fs-6 align-middle">الهدف &lt; @KpiSnapshot.ReviewHoursTarget ساعة</span></div>
+            <div class="small text-muted">@N(k.Reviewed) مراجعة في المدة · @N(k.Pending) بانتظار المراجعة@(k.OldestPendingHours.HasValue ? $" (أقدمها منذ {Hours(k.OldestPendingHours)})" : "") · @N(k.Drafts) مسودة من المنصة</div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card h-100"><div class="card-body">
+            <div class="text-muted small">بحث بصفر نتائج</div>
+            <div class="fs-3 fw-bold">@N(Ev("search.zero"))</div>
+            <div class="small text-muted">من @N(Ev("search")) عملية بحث</div>
+        </div></div></div>
+    </div>
+    <div class="card mb-4"><div class="card-body d-flex flex-wrap align-items-center gap-3">
+        <div><span class="text-muted small">المحتوى الأسبوعي:</span> <strong>@N(k.ArticlesPublished)</strong> مقال + <strong>@N(k.GuidesAdded)</strong> دليل تقديم في @D1(k.Weeks) أسبوع = <strong>@D1(k.ContentPerWeek)</strong>/أسبوع</div>
+        <span class="badge @Target(k.MeetsContentTarget)">الهدف @KpiSnapshot.ContentPerWeekTarget أسبوعيًا</span>
+        <a asp-controller="Articles" asp-action="Create" class="btn btn-sm btn-outline-primary ms-auto">مقال جديد</a>
+        <a asp-controller="AdminGrowth" asp-action="GuideEdit" class="btn btn-sm btn-outline-primary">دليل جديد</a>
+    </div></div>
 
     <div class="row g-3 mb-4">
-        <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">مشاهدات الصفحات</div><div class="fs-3 fw-bold">@N(Model.TotalViews)</div><div class="small text-muted">@Delta(Model.TotalViews, Model.PreviousTotalViews)</div></div></div></div>
-        <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">نقرات «قدّم الآن»</div><div class="fs-3 fw-bold">@N(Model.ApplyClicks)</div><div class="small text-muted">@Pct(Model.ApplyClicks, Model.TotalViews) من المشاهدات</div></div></div></div>
-        <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">حسابات جديدة</div><div class="fs-3 fw-bold">@N(Ev("register.done"))</div><div class="small text-muted">@Pct(Ev("register.done"), Ev("register.view")) من زوار صفحة التسجيل</div></div></div></div>
-        <div class="col-md-3"><div class="card h-100"><div class="card-body"><div class="text-muted small">بحث بصفر نتائج</div><div class="fs-3 fw-bold">@N(Ev("search.zero"))</div><div class="small text-muted">من @N(Ev("search")) عملية بحث</div></div></div></div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-body">
-            <h5 class="card-title">المشاهدات يومًا بيوم</h5>
-            <div class="d-flex align-items-end gap-1" style="height:140px;">
-                @foreach (var (day, views) in Model.PerDay)
-                {
-                    <div class="flex-fill text-center" title="@day.ToString("yyyy-MM-dd"): @N(views)">
-                        <div style="background:#1B6B23;border-radius:4px 4px 0 0;height:@(Math.Max(2, views * 120 / maxDay))px;"></div>
-                        @if (Model.Days <= 30)
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">المشاهدات يومًا بيوم</h5>
+                    <div class="d-flex align-items-end gap-1" style="height:140px;">
+                        @foreach (var (day, views) in Model.PerDay)
                         {
-                            <div class="small text-muted" style="font-size:.65rem;">@day.Day</div>
+                            <div class="flex-fill text-center" title="@day.ToString("yyyy-MM-dd"): @N(views)">
+                                <div style="background:#1B6B23;border-radius:4px 4px 0 0;height:@(Math.Max(2, views * 120 / maxDay))px;"></div>
+                                @if (Model.Days <= 30)
+                                {
+                                    <div class="small text-muted" style="font-size:.65rem;">@day.Day</div>
+                                }
+                            </div>
                         }
                     </div>
-                }
+                    <div class="small text-muted mt-2">
+                        اللغات:
+                        @foreach (var kv in Model.ByCulture.OrderByDescending(x => x.Value))
+                        {
+                            <span class="badge bg-light text-dark border me-1">@kv.Key: @N(kv.Value) (@Pct(kv.Value, Model.TotalViews))</span>
+                        }
+                    </div>
+                </div>
             </div>
-            <div class="small text-muted mt-2">
-                اللغات:
-                @foreach (var kv in Model.ByCulture.OrderByDescending(k => k.Value))
-                {
-                    <span class="badge bg-light text-dark border me-1">@kv.Key: @N(kv.Value) (@Pct(kv.Value, Model.TotalViews))</span>
-                }
+        </div>
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">الفرص المنشورة يومًا بيوم <small class="text-muted fs-6">— الهدف @KpiSnapshot.OpportunitiesPerDayTarget</small></h5>
+                    <div class="d-flex align-items-end gap-1" style="height:140px;">
+                        @foreach (var (day, count) in k.OpportunitiesPerDay)
+                        {
+                            <div class="flex-fill text-center" title="@day.ToString("yyyy-MM-dd"): @N(count)">
+                                <div style="background:@(count >= KpiSnapshot.OpportunitiesPerDayTarget ? "#1B6B23" : "#E08A1E");border-radius:4px 4px 0 0;height:@(Math.Max(2, count * 120 / Math.Max(maxOppDay, KpiSnapshot.OpportunitiesPerDayTarget)))px;"></div>
+                                @if (k.Days <= 30)
+                                {
+                                    <div class="small text-muted" style="font-size:.65rem;">@day.Day</div>
+                                }
+                            </div>
+                        }
+                    </div>
+                    <div class="small text-muted mt-2">أخضر = يوم بلغ الهدف؛ المقياس حتى الهدف على الأقل.</div>
+                </div>
             </div>
         </div>
     </div>

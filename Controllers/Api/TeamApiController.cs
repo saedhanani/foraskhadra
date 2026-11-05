@@ -270,6 +270,7 @@ namespace Foras_Khadra.Controllers.Api
                 CreatedByUserId = user.Id,
                 PublishDate = DateTime.Now,
                 Status = OpportunityStatus.Draft,
+                SubmittedAt = DateTime.Now, // زمن المراجعة (5.1): من وصول المسودة حتى اعتماد المدقق
                 SourceUrl = sourceUrl,
                 PipeId = d.PipeId,
                 AiGenerated = d.AiGenerated,

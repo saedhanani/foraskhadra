@@ -18,5 +18,7 @@ namespace Foras_Khadra.Models
         public List<(string Term, int Count)> ZeroResultSearches { get; set; } = new();
         public List<(int Id, string Title, int Views, int ApplyClicks)> TopOpportunities { get; set; } = new();
         public int ApplyClicks { get; set; }
+        /// <summary>لوحة المؤشرات (المرحلة 5.1): Services/KpiReport.</summary>
+        public Foras_Khadra.Services.KpiSnapshot Kpi { get; set; } = Foras_Khadra.Services.KpiSnapshot.Empty(default, default);
     }
 }

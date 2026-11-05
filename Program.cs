@@ -124,6 +124,8 @@ builder.Services.AddScoped<ICompassService, CompassService>();
 // تحليلات داخلية بلا كوكيز: عدّادات في الذاكرة تُكتب كل دقيقة كصفوف يومية (Services/Analytics)
 builder.Services.AddSingleton<IAnalytics, Analytics>();
 builder.Services.AddHostedService<AnalyticsFlushService>();
+// لوحة مؤشرات المدير (5.1): أرقام المدة من الجداول الموجودة (تسجيلات، بوصلة، بوابة، فرص/يوم، زمن المراجعة، محتوى)
+builder.Services.AddScoped<IKpiReport, KpiReport>();
 // إشعارات الدفع (Web Push): مفاتيح VAPID في App_Data/push-vapid.json، والإرسال من NotificationSweepHostedService
 builder.Services.AddSingleton<IVapidKeyStore, VapidKeyStore>();
 builder.Services.AddHttpClient(WebPushSender.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(15));
@@ -436,3 +438,6 @@ app.MapRazorPages();
 app.MapHealthChecks("/health");
 
 app.Run();
+
+/// <summary>يجعل نقطة الدخول مرئية لاختبارات التكامل (WebApplicationFactory&lt;Program&gt;) — المرحلة 5.2.</summary>
+public partial class Program { }

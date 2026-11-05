@@ -31,7 +31,7 @@
 dotnet test
 ```
 
-مشروع `Foras_Khadra.Tests` (xUnit) يغطي تعقيم HTML، التحقق من الصور المرفوعة، تطبيع الروابط في واجهة المنصة، توليد الـ slug، حالة طلبات الريلز، وخدمة الفرص المحفوظة (SQLite في الذاكرة بالمخطط الحقيقي).
+مشروع `Foras_Khadra.Tests` (xUnit) يغطي تعقيم HTML، التحقق من الصور المرفوعة، تطبيع الروابط في واجهة المنصة، توليد الـ slug، حالة طلبات الريلز، وخدمة الفرص المحفوظة (SQLite في الذاكرة بالمخطط الحقيقي). ومنذ المرحلة 5: اختبارات تكامل عبر HTTP على الموقع كاملًا (`Foras_Khadra.Tests/Integration`، `WebApplicationFactory` على SQLite في بيئة Testing) تعمل أيضًا في GitHub Actions (`.github/workflows/ci.yml`) مع كل دفعة إلى `main`.
 
 ## البحث
 
@@ -101,5 +101,7 @@ dotnet test
 - صفحة الفرصة تُخرج JSON-LD من نوع `JobPosting` للوظائف والتدريب، وصفحة المقال `Article`.
 
 ## النشر
+
+أداة النشر `.\tools\deploy.ps1` (المرحلة 5.3) تبني وتقارن بـ`publish/site-files-current` وتحزم المتغيّر فقط وتجمع سكربتات `Migrations/Sql` الجديدة بالترتيب وتكتب `publish/deploy-<sha>/CHECKLIST.md`؛ بعد الرفع `--verify <url>`، وبعد نجاحه `--sync --sha <sha>`. التفاصيل في `docs/ROADMAP-2026.md` §12 و`docs/DEPLOY-stage5.md`.
 
 Publish كالمعتاد إلى الاستضافة. ضع الأسرار (سلسلة الاتصال، بريد Gmail، `TeamApi:Key`، `Seed`) في `appsettings.Production.json` على الخادم أو في متغيرات البيئة، لا في المستودع. مجلدا `wwwroot/uploads` و`wwwroot/logos` على الخادم هما المصدر الوحيد للصور المرفوعة — لا تفعّل خيار "حذف الملفات الإضافية" عند النشر.

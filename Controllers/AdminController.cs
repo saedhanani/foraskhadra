@@ -90,7 +90,7 @@ namespace Foras_Khadra.Controllers
 
         // ===== التحليلات الداخلية بلا كوكيز (Services/Analytics) =====
         [HttpGet]
-        public async Task<IActionResult> Analytics(int days = 7)
+        public async Task<IActionResult> Analytics([FromServices] IKpiReport kpi, int days = 7)
         {
             days = days switch { 30 => 30, 90 => 90, _ => 7 };
             var to = DateOnly.FromDateTime(DateTime.Now);
@@ -126,7 +126,8 @@ namespace Foras_Khadra.Controllers
                 ZeroResultSearches = events.Where(e => e.Event == "search.zero" && e.Label != null).GroupBy(e => e.Label!)
                     .Select(g => (g.Key, g.Sum(e => e.Count))).OrderByDescending(x => x.Item2).Take(30).ToList(),
                 TopOpportunities = topOpportunities.Select(x => (x.Id, titles.TryGetValue(x.Id, out var t) ? t : $"#{x.Id}", x.Views, x.Clicks)).ToList(),
-                ApplyClicks = oppStats.Sum(s => s.ApplyClicks)
+                ApplyClicks = oppStats.Sum(s => s.ApplyClicks),
+                Kpi = await kpi.BuildAsync(from, to, DateTime.Now)
             };
             return View(vm);
         }

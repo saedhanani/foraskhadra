@@ -197,6 +197,7 @@ public async Task<IActionResult> Create()
                 // فرص المنظمات غير الموثَّقة تنتظر اعتماد المدير؛ المنظمة الموقوفة لا تنشر
                 if (org.IsSuspended) return Forbid();
                 opportunity.Status = review.StatusFor(org);
+                if (opportunity.Status == OpportunityStatus.PendingReview) opportunity.SubmittedAt = DateTime.Now; // زمن المراجعة (5.1)
             }
 
             _context.Opportunities.Add(opportunity);
@@ -343,10 +344,13 @@ public async Task<IActionResult> Create()
             {
                 // تعديل المنظمة يعيد الفرصة إلى المراجعة ما لم تكن موثَّقة؛ الموقوفة لا تعدّل
                 if (org.IsSuspended) return Forbid();
+                var wasPending = opportunity.Status == OpportunityStatus.PendingReview;
                 if (opportunity.Status != OpportunityStatus.Draft)
                 {
                     opportunity.Status = review.StatusFor(org);
                     opportunity.ReviewNote = null;
+                    // زمن المراجعة (5.1): يبدأ عند دخول الطابور؛ تعديل فرصة معلّقة أصلًا لا يصفّر العدّاد
+                    if (opportunity.Status == OpportunityStatus.PendingReview && (!wasPending || opportunity.SubmittedAt == null)) opportunity.SubmittedAt = DateTime.Now;
                 }
             }
 

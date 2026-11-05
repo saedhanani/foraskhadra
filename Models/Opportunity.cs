@@ -98,6 +98,8 @@ namespace Foras_Khadra.Models
         public string? ReviewNote { get; set; }
         /// <summary>وقت آخر اعتماد أو رفض.</summary>
         public DateTime? ReviewedAt { get; set; }
+        /// <summary>وقت دخول الفرصة طابور المراجعة (PendingReview من منظمة غير موثَّقة، أو Draft من منصة الفريق) — زمن المراجعة في لوحة المؤشرات = ReviewedAt − SubmittedAt (المرحلة 5.1). داخلي؛ ليس من منصة الكتابة.</summary>
+        public DateTime? SubmittedAt { get; set; }
         /// <summary>الرابط الذي رُصدت منه الفرصة (قد يختلف عن رابط التقديم).</summary>
         public string? SourceUrl { get; set; }
         /// <summary>رقم الفرصة في مسار الفرص على منصة الفريق.</summary>
