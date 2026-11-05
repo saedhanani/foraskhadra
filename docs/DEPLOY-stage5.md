@@ -2,6 +2,13 @@
 
 **الإصدار الحي قبل النشر:** `4335350` (المرحلة 4) · **هذا الإصدار:** آخر commit على `main` · لا تغيير في الإطار.
 
+## ✅ نُشر — 5 نوفمبر 2026 (الإصدار الحي `da2985d`)
+
+- نسخة احتياطية من القاعدة (نشط)، ثم `2026-11-stage5.sql` في تنفيذ واحد في SQL Studio → `has_submitted_at = 8`، `migration_recorded = 1`.
+- الحزمة من أداة النشر الجديدة (`.\tools\deploy.ps1`): ملفان (DLL + PDB) في `update-da2985d.zip` (3.1 MB) مع `app_offline.htm` → فك إلى `/site1` (النجاح) → إعادة تسمية `app_offline` إلى `app_offline-used-2026-11-05-d.txt`. ثم `--sync --sha da2985d` حدّث `publish/site-files-current` و`LIVE-SHA.txt`.
+- **التحقق على الإنتاج:** `.\tools\deploy.ps1 --verify https://www.foraskhadra.com` → 16/16 ناجحة (`/health` Healthy، الرئيسية بثلاث لغات، صفحات الأنواع، «تنتهي قريبًا»، الأدلة، الأثر، البوابة، الخلاصة، sitemap، assetlinks، `/api/team/ping` 401، `/Admin/Dashboard` 302، 404 لصفحة غير موجودة) · `/Admin/Analytics` يحوّل إلى الدخول · `Foras_Khadra.dll` على الخادم 6.5 MB بحجم الحزمة. لوحة المؤشرات نفسها تحتاج دخول المدير على الإنتاج؛ تم التحقق منها محليًا ببيانات حقيقية قبل النشر، واختبار التكامل يفتحها بحساب مدير.
+- **ما بقي للمالك:** فتح `/Admin/Analytics` بعد الدخول للاطمئنان على اللوحة؛ تدوير كلمتَي سر القاعدة وGmail؛ حذف `update-*.zip` و`app_offline-used-*` من `/site1`. CI على GitHub أخضر لهذه الدفعة.
+
 ## ما في هذه الدفعة
 
 | # | البند | ما يراه المستخدم |
