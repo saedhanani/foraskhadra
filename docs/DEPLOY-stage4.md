@@ -2,6 +2,13 @@
 
 **الإصدار الحي قبل النشر:** `a87cfef` (المرحلة 3) · **هذا الإصدار:** آخر commit على `main` · لا تغيير في الإطار.
 
+## ✅ نُشر — 5 نوفمبر 2026 (الإصدار الحي `4335350`)
+
+- نسخة احتياطية من القاعدة، ثم `2026-11-growth.sql` في تنفيذ واحد (has_sponsored/has_guides/has_stories/has_questions/has_tasks/has_boosts كلها موجودة)، ثم `Migrations/Sql/2026-11-guides-seed.sql` (مولَّد من `ApplicationGuideSeed` ومُجرَّب مرتين على LocalDB) → `guides = 8`. زر «استيراد الدفعة الأولى» في `/Admin/Guides` لم يعد يضيف شيئًا (يتخطى المفاتيح الموجودة).
+- حزمة الفرق: 6 ملفات (DLL + PDB + `staticwebassets.endpoints.json` + `brand.css` مع gz/br) مع `app_offline.htm` → فك إلى `/site1` (النجاح) → إعادة تسمية `app_offline` إلى `app_offline-used-2026-11-05-c.txt`. `publish/site-files-current` مُحدَّث إلى `4335350`.
+- **التحقق على الإنتاج (كله ناجح):** `/health` 200 · `/feed/opportunities.xml` و`/feed/jobs.xml` و`/en/feed/egypt.xml` 200 بـ`application/atom+xml` (الخلاصة العامة 50 مدخلًا) مع autodiscovery في الصفحة الرئيسية وفي `/opportunities/closing-soon` (تشير إلى `?within=7`) · `/opportunities/closing-soon` و`?within=15` 200 بلا `noindex` وبcanonical ذاتي · `/guides` يعرض الأدلة الثمانية و`/guides/chevening` 200 مع `FAQPage` و`/fr/guides` 200 · `/impact` و`/en/impact` و`/for-organizations/packages` و`/ambassadors/universities` 200 · `/.well-known/assetlinks.json` يعيد `[]` · `/stories/new` و`/ambassador` و`/Admin/Guides` تحوّل إلى الدخول · صفحة الفرصة 355 فيها قسم «أسئلة وأجوبة» وشريط الثقة · `brand.css` الحي يحمل `.sponsored-tag` · روابط التذييل الخمسة الجديدة ظاهرة.
+- **ما بقي للمالك:** لا شيء إلزامي. اختياري: `Telegram:BotToken` + `Telegram:ChannelId` لتفعيل القناة؛ `Android:*` لتطبيق Play (`docs/ANDROID.md`)؛ أسئلة منسَّقة من `/Admin/Questions` وتفعيل الإبراز من `/Admin/Promote` عند أول عميل؛ ملء `/Admin/Facets`؛ تدوير كلمتَي سر القاعدة وGmail؛ حذف `update-part1.zip` و`update-a87cfef.zip` و`update-4335350.zip` و`app_offline-used-*` من `/site1`.
+
 ## ما في هذه الدفعة
 
 | # | البند | ما يراه المستخدم |
