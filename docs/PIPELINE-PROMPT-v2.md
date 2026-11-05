@@ -70,7 +70,7 @@
 > | `startDate` / `venue` | للمؤتمرات والمسابقات والدورات: تاريخ بدء الحدث (ليس الموعد النهائي للتقديم) ومكانه. `EndDate` القديم يبقى **الموعد النهائي للتقديم**. |
 > | `hostOrganization` | **الجهة التي تقدّم الفرصة فعلاً** (الجامعة، الوزارة، المنظمة، الشركة)، لا الموقع الذي نُشرت فيه ولا "فرص خضراء". `name` إلزامي؛ `url` موقعها الرسمي إن وُجد. |
 > | `employmentType` | للوظائف والتدريب والتطوع فقط: `FULL_TIME` `PART_TIME` `CONTRACTOR` `TEMPORARY` `INTERN` (للتدريب) `VOLUNTEER` (للتطوع). غير ذلك `null`. |
-> | `programKey` | مفتاح ثابت صغير بالإنجليزية للبرنامج المتكرر سنوياً، **نفسه كل عام**: `chevening`, `daad-epos`, `erasmus-mundus`, `turkiye-burslari`, `mext`, `fulbright`, `rcoy-mena`. استعمل `GET /api/team/opportunities/search?q=` لترى المفتاح المستعمل في الدورة السابقة. فرصة لمرة واحدة → `null`. |
+> | `programKey` | مفتاح ثابت صغير بالإنجليزية للبرنامج المتكرر سنوياً، **نفسه كل عام**: `chevening`, `daad-epos`, `erasmus-mundus`, `turkiye-burslari`, `mext`, `fulbright`, `csc`, `mastercard-foundation`, `rcoy-mena` (المفاتيح الثمانية الأولى تربط الفرصة بدليل التقديم في `/guides`). استعمل `GET /api/team/opportunities/search?q=` لترى المفتاح المستعمل في الدورة السابقة. فرصة لمرة واحدة → `null`. |
 > | `benefitsSummary` | 2–5 عبارات قصيرة لكل لغة (≤ 8 كلمات) تُعرض على البطاقة. |
 >
 > #### 4. التحقق قبل الإرسال
