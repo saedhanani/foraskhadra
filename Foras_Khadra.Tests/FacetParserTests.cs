@@ -63,7 +63,7 @@ namespace Foras_Khadra.Tests
             Assert.Equal("daad-epos", o.ProgramKey);
             Assert.Contains("راتب شهري", o.BenefitsSummaryJson);
             Assert.DoesNotContain("ignored", o.BenefitsSummaryJson);
-            Assert.Equal(new[] { "XA", "EG", "DE" }, FacetParser.EligibleCodes(o));
+            Assert.Equal(new[] { "XA", "DE" }, FacetParser.EligibleCodes(o)); // XA تغني عن EG
         }
 
         [Fact]

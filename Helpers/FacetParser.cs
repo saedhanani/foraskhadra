@@ -248,15 +248,21 @@ namespace Foras_Khadra.Helpers
             _ => null
         };
 
-        /// <summary>رموز الدول المؤهَّلة كما تُعرض/تُصدَّر: XA و XW والرموز العربية وغيرها.</summary>
+        /// <summary>
+        /// رموز الدول المؤهَّلة كما تُعرض/تُصدَّر: XA و XW والرموز العربية وغيرها.
+        /// مطويّة كما في Opportunity.DisplayCountries: XW وحدها تغني عن كل شيء، وXA عن الدول العربية
+        /// (نموذج التعديل يحفظ الدول كلها مع الاختيار الشامل، فلا تُرسَل 23 رمزًا لمنصة الفريق).
+        /// </summary>
         public static IEnumerable<string> EligibleCodes(Opportunity o)
         {
-            foreach (var c in o.AvailableCountries ?? Enumerable.Empty<Country>())
+            var shown = o.DisplayCountries;
+            foreach (var c in shown)
             {
                 if (c.Id == WorldCountryId) yield return WorldCode;
                 else if (c.Id == ArabWorldCountryId) yield return ArabWorldCode;
                 else if (!string.IsNullOrEmpty(c.IsoCode)) yield return c.IsoCode;
             }
+            if (shown.Any(c => c.Id == WorldCountryId)) yield break;
             if (!string.IsNullOrEmpty(o.EligibleCountriesIso))
                 foreach (var code in o.EligibleCountriesIso.Split(',', StringSplitOptions.RemoveEmptyEntries)) yield return code;
         }

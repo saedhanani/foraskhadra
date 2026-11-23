@@ -30,6 +30,16 @@ namespace Foras_Khadra.Tests
             Assert.Equal(new[] { 4, 15 }, Ids(Jordan, Egypt));
 
         [Fact]
+        public void Api_codes_after_world_edit_are_only_XW() =>
+            Assert.Equal(new[] { "XW" }, Foras_Khadra.Helpers.FacetParser.EligibleCodes(
+                new Opportunity { AvailableCountries = new List<Country> { World, ArabWorld, Jordan, Egypt }, EligibleCountriesIso = "DE,FR" }));
+
+        [Fact]
+        public void Api_codes_after_arab_world_edit_keep_non_arab_codes() =>
+            Assert.Equal(new[] { "XA", "DE", "FR" }, Foras_Khadra.Helpers.FacetParser.EligibleCodes(
+                new Opportunity { AvailableCountries = new List<Country> { Jordan, ArabWorld, Egypt, Germany }, EligibleCountriesIso = "FR" }));
+
+        [Fact]
         public void No_countries_gives_empty_list()
         {
             Assert.Empty(new Opportunity { AvailableCountries = null! }.DisplayCountries);
