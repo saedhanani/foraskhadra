@@ -182,23 +182,7 @@
 
             <div class="field">
                 <label class="form-label">@Localizer["OpportunityCountries"] </label>
-                <div class="countries-checkboxes-grid">
-                    @foreach (var country in Model.CountriesSelectList)
-                    {
-                        <div class="country-checkbox-item">
-                            <input class="country-checkbox-input"
-                                   type="checkbox"
-                                   name="AvailableCountryIds"
-                                   value="@country.Value"
-                                   id="country_@country.Value"
-                                   @(Model.AvailableCountryIds.Contains(int.Parse(country.Value)) ? "checked" : "") />
-                            <label class="country-checkbox-label" for="country_@country.Value">
-                                @country.Text  <!-- هنا اسم الدولة حسب اللغة -->
-                            </label>
-                        </div>
-                    }
-
-                </div>
+                @await Html.PartialAsync("_CountryCheckboxes", ((IEnumerable<SelectListItem>)Model.CountriesSelectList, (ICollection<int>)(Model.AvailableCountryIds ?? new List<int>())))
                 <span asp-validation-for="AvailableCountryIds" class="text-danger"></span>
             </div>
             

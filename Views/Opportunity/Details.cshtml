@@ -352,7 +352,7 @@
 
                 <span class="info-label">@Localizer["AvailableCountries"]</span>
                 <span class="info-value">
-                    @string.Join(", ", Model.AvailableCountries.Select(c =>
+                    @string.Join(", ", Model.DisplayCountries.Select(c =>
                         lang switch
                         {
                             "en" => c.NameEn,

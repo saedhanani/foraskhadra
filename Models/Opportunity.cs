@@ -152,6 +152,26 @@ namespace Foras_Khadra.Models
         [NotMapped]
         public bool IsSponsoredNow => IsSponsored && (SponsoredUntil == null || SponsoredUntil.Value.Date >= DateTime.Now.Date);
 
+        /// <summary>
+        /// الدول للعرض: «كل دول العالم» تغني عن كل ما سواها، و«الوطن العربي» عن الدول العربية
+        /// (نموذج الإضافة/التعديل يحدّد الدول كلها مع الاختيار الشامل، فلا تُسرد 24 دولة على البطاقة والتفاصيل).
+        /// </summary>
+        [NotMapped]
+        public IReadOnlyList<Country> DisplayCountries
+        {
+            get
+            {
+                var list = AvailableCountries?.ToList() ?? new List<Country>();
+                var world = list.FirstOrDefault(c => c.Id == Helpers.FacetParser.WorldCountryId);
+                if (world != null) return new[] { world };
+                var arabWorld = list.FirstOrDefault(c => c.Id == Helpers.FacetParser.ArabWorldCountryId);
+                if (arabWorld == null) return list;
+                return new[] { arabWorld }
+                    .Concat(list.Where(c => c.Id != arabWorld.Id && !(c.IsoCode != null && Helpers.CompassMatcher.ArabIso.Contains(c.IsoCode))))
+                    .ToList();
+            }
+        }
+
         [NotMapped]
         public string AvailableCountriesNames
         {
@@ -162,7 +182,7 @@ namespace Foras_Khadra.Models
                 if (AvailableCountries == null || !AvailableCountries.Any())
                     return string.Empty;
 
-                return string.Join(", ", AvailableCountries.Select(c => lang switch
+                return string.Join(", ", DisplayCountries.Select(c => lang switch
                 {
                     "en" => c.NameEn,
                     "fr" => c.NameFr,

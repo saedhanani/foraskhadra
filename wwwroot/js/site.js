@@ -326,6 +326,40 @@ window.addEventListener('pageshow', function () {
     });
 });
 
+// ===== «دول الفرصة» (Views/Opportunity/_CountryCheckboxes): «كل دول العالم» يحدّد كل الدول، و«الوطن العربي» كل الدول العربية =====
+// إلغاء دولة يلغي الاختيار الشامل الذي يضمّها، وتحديد كل الدول العربية يدويًا يحدّد «الوطن العربي».
+// الاستماع في طور الالتقاط ليُكمل التحديد قبل مستمعي الصفحة (زر الحفظ في Create يقرأ المربعات المحددة).
+(function () {
+    function boxes(picker, region) {
+        return [].slice.call(picker.querySelectorAll(region ? 'input[data-region="' + region + '"]' : 'input[data-region]'));
+    }
+    function set(list, value) { list.forEach(function (b) { b.checked = value; }); }
+    function expand(picker) {
+        if (boxes(picker, 'world').some(function (b) { return b.checked; })) set(boxes(picker), true);
+        else if (boxes(picker, 'arab-world').some(function (b) { return b.checked; })) set(boxes(picker, 'arab'), true);
+    }
+    document.addEventListener('change', function (e) {
+        var box = e.target;
+        var picker = box && box.closest && box.closest('[data-country-picker]');
+        if (!picker || !box.dataset.region) return;
+        var region = box.dataset.region;
+        if (region === 'world') { set(boxes(picker), box.checked); return; }
+        if (region === 'arab-world') {
+            set(boxes(picker, 'arab'), box.checked);
+            if (!box.checked) set(boxes(picker, 'world'), false);
+            return;
+        }
+        if (!box.checked) {
+            set(boxes(picker, 'world'), false);
+            if (region === 'arab') set(boxes(picker, 'arab-world'), false);
+        } else if (region === 'arab' && boxes(picker, 'arab').every(function (b) { return b.checked; })) {
+            set(boxes(picker, 'arab-world'), true);
+        }
+    }, true);
+    // فرصة قديمة محفوظة بـ«كل دول العالم» أو «الوطن العربي» وحده: تظهر دولها محددة عند فتح التعديل
+    document.querySelectorAll('[data-country-picker]').forEach(expand);
+})();
+
 // ===== قائمة الهاتف: تُغلق عند النقر خارجها (الروابط تغلقها بـ data-close-menu أعلاه) =====
 document.addEventListener('click', function (e) {
     var nav = document.getElementById('navContent');

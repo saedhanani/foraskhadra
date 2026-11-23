@@ -1,0 +1,36 @@
+@* مربعات «دول الفرصة» في صفحتي الإضافة والتعديل. كل مربع يحمل data-region يقرأه site.js:
+   «كل دول العالم» (world) يحدّد كل الدول، و«الوطن العربي» (arab-world) يحدّد الدول العربية (arab)،
+   وإلغاء دولة يلغي الاختيار الشامل الذي يضمّها. *@
+@model (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem> Items, ICollection<int> Selected)
+@using Microsoft.EntityFrameworkCore
+@inject Foras_Khadra.Data.ApplicationDbContext Db
+@{
+    var arabIds = (await Db.Countries.AsNoTracking()
+            .Where(c => c.IsoCode != null)
+            .Select(c => new { c.Id, c.IsoCode })
+            .ToListAsync())
+        .Where(c => CompassMatcher.ArabIso.Contains(c.IsoCode!))
+        .Select(c => c.Id)
+        .ToHashSet();
+}
+<div class="countries-checkboxes-grid" data-country-picker>
+    @foreach (var country in Model.Items)
+    {
+        var id = int.Parse(country.Value);
+        var region = id == FacetParser.WorldCountryId ? "world"
+            : id == FacetParser.ArabWorldCountryId ? "arab-world"
+            : arabIds.Contains(id) ? "arab" : "other";
+        <div class="country-checkbox-item">
+            <input class="country-checkbox-input"
+                   type="checkbox"
+                   name="AvailableCountryIds"
+                   value="@country.Value"
+                   id="country_@country.Value"
+                   data-region="@region"
+                   @(Model.Selected.Contains(id) ? "checked" : "") />
+            <label class="country-checkbox-label" for="country_@country.Value">
+                @country.Text
+            </label>
+        </div>
+    }
+</div>

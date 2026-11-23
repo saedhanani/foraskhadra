@@ -746,7 +746,7 @@ public async Task<IActionResult> Create()
                         DescriptionAr = o.DescriptionAr,
                         DescriptionEn = o.DescriptionEn,
                         DescriptionFr = o.DescriptionFr,
-                        AvailableCountries = o.AvailableCountries?.ToList() ?? new List<Country>(),
+                        AvailableCountries = o.DisplayCountries.ToList(), // «كل دول العالم»/«الوطن العربي» تُعرض بلا قائمة دولها
                         Type = o.Type,
                         PublishDate = o.PublishDate,
                         ImagePath = o.ImagePath,
