@@ -305,12 +305,23 @@ document.addEventListener('submit', function (e) {
     if (e.defaultPrevented || !form.hasAttribute('data-submit-once')) return;
     if (form.dataset.submitting) { e.preventDefault(); return; }
     form.dataset.submitting = '1';
+    // الزر المعطَّل لا يُرسل اسمه وقيمته (مثل Publish=true في «حفظ ونشر»)؛ فننسخهما إلى حقل مخفي قبل التعطيل
+    var submitter = e.submitter;
+    if (submitter && submitter.name) {
+        var carry = document.createElement('input');
+        carry.type = 'hidden';
+        carry.name = submitter.name;
+        carry.value = submitter.value;
+        carry.setAttribute('data-submitter-carry', '');
+        form.appendChild(carry);
+    }
     // حالة تحميل مرئية ومعلَنة (3.5): الزر يتعطل ويظهر عليه مؤشر دوران
     form.querySelectorAll('[type="submit"]').forEach(function (b) { b.disabled = true; b.setAttribute('aria-busy', 'true'); b.classList.add('is-loading'); });
 });
 window.addEventListener('pageshow', function () {
     document.querySelectorAll('form[data-submit-once]').forEach(function (form) {
         delete form.dataset.submitting;
+        form.querySelectorAll('[data-submitter-carry]').forEach(function (i) { i.remove(); });
         form.querySelectorAll('[type="submit"]').forEach(function (b) { b.disabled = false; b.removeAttribute('aria-busy'); b.classList.remove('is-loading'); });
     });
 });
