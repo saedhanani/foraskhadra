@@ -28,6 +28,47 @@ namespace Foras_Khadra.Tests.Integration
             Assert.Equal("Healthy", await res.Content.ReadAsStringAsync());
         }
 
+        /// <summary>قمع «بوصلة»: إجابات الزائر ← النتيجة بدرجاتها ← تسجيل ببريد وكلمة مرور بسيطة (8 أحرف ورقم، بلا تأكيد) ← بوصلتي.</summary>
+        [Fact]
+        public async Task CompassVisitorRegistersWithASimplePasswordAndLandsOnTheirCompass()
+        {
+            var admin = await _site.CreateUserAsync(Email("compass-admin"), "Admin");
+            await _site.SeedOpportunityAsync(admin.Id, OpportunityType.Scholarships); // بلا بيانات أهلية ⇒ «تحتاج مراجعة»
+            var client = _site.Client();
+
+            var token = await SiteFactory.AntiforgeryAsync(client, "/compass");
+            var answers = await client.PostAsync("/compass", new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["A.Residence"] = "JO", ["A.Nationality"] = "JO", ["A.Goals"] = "Scholarships", ["__RequestVerificationToken"] = token
+            }));
+            Assert.Equal(HttpStatusCode.Redirect, answers.StatusCode);
+            Assert.Contains("/compass/result", answers.Headers.Location!.ToString());
+
+            var result = await client.GetAsync("/compass/result");
+            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+            var resultHtml = await result.Content.ReadAsStringAsync();
+            Assert.Contains("cp-chip--likely", resultHtml);
+            Assert.DoesNotContain("cp-chip--confirmed", resultHtml);
+
+            var registerHtml = await (await client.GetAsync("/compass/register")).Content.ReadAsStringAsync();
+            Assert.Contains("cp-auth__submit", registerHtml);
+            Assert.DoesNotContain("ConfirmPassword", registerHtml);
+
+            var email = Email("compass");
+            var registerToken = await SiteFactory.AntiforgeryAsync(client, "/compass/register");
+            var register = await client.PostAsync("/compass/register", new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["Email"] = email, ["Password"] = "compass2026", ["__RequestVerificationToken"] = registerToken
+            }));
+            Assert.Equal(HttpStatusCode.Redirect, register.StatusCode);
+            Assert.Contains("/compass/me", register.Headers.Location!.ToString());
+
+            var me = await client.GetAsync("/compass/me");
+            Assert.Equal(HttpStatusCode.OK, me.StatusCode);
+            Assert.Contains("cp-chip--likely", await me.Content.ReadAsStringAsync());
+            Assert.True(_site.InDb(db => db.EligibilityProfiles.Any(p => p.User!.Email == email && p.ResidenceIso == "JO")));
+        }
+
         [Fact]
         public async Task PublicPageCarriesSecurityHeadersAndArabicDefault()
         {
@@ -106,6 +147,15 @@ namespace Foras_Khadra.Tests.Integration
             Assert.Equal("/Admin/Dashboard", adminLogin.Headers.Location!.ToString());
             Assert.Equal(HttpStatusCode.OK, (await adminClient.GetAsync("/Admin/Dashboard")).StatusCode);
             Assert.Equal(HttpStatusCode.OK, (await adminClient.GetAsync("/Admin/Analytics?days=30")).StatusCode);
+
+            // تعبئة بيانات الأهلية: التبويب القديم وتبويب «تمنع تأكيد البوصلة»
+            await _site.SeedOpportunityAsync(admin.Id, OpportunityType.Scholarships);
+            Assert.Equal(HttpStatusCode.OK, (await adminClient.GetAsync("/Admin/Facets")).StatusCode);
+            var compassGaps = await adminClient.GetAsync("/Admin/Facets?gap=compass");
+            Assert.Equal(HttpStatusCode.OK, compassGaps.StatusCode);
+            var compassGapsHtml = await compassGaps.Content.ReadAsStringAsync();
+            Assert.Contains("alert-warning", compassGapsHtml);
+            Assert.Contains("name=\"gap\" value=\"compass\"", compassGapsHtml);
         }
 
         [Fact]

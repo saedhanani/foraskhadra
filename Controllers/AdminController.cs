@@ -315,13 +315,24 @@ namespace Foras_Khadra.Controllers
         private const int FacetsPageSize = 10;
 
         [HttpGet]
-        public async Task<IActionResult> Facets(int page = 1)
+        public async Task<IActionResult> Facets(int page = 1, string? gap = null)
         {
             page = Math.Clamp(page, 1, 10000);
-            var q = _context.Opportunities.AsNoTracking()
-                .Where(o => o.Status == OpportunityStatus.Published && o.FundingType == FundingType.Unknown
-                            && (o.EndDate == null || o.EndDate >= DateTime.Now.Date));
-            ViewData["Remaining"] = await q.CountAsync();
+            var today = DateTime.Now.Date;
+            var open = _context.Opportunities.AsNoTracking()
+                .Where(o => o.Status == OpportunityStatus.Published && (o.EndDate == null || o.EndDate >= today));
+            var legacy = open.Where(o => o.FundingType == FundingType.Unknown);
+            // gap=compass: ما يمنع «بوصلة» من تأكيد الأهلية (CompassMatch.Verify) — شرط اللغة أو المرحلة غير محدد
+            var compass = open.Where(o => o.LanguageRequirement == LanguageRequirement.Unknown || o.DegreeLevels == DegreeLevels.None);
+            var isCompass = gap == "compass";
+            var q = isCompass ? compass : legacy;
+            ViewData["Gap"] = isCompass ? "compass" : null;
+            ViewData["LegacyRemaining"] = await legacy.CountAsync();
+            ViewData["CompassRemaining"] = await compass.CountAsync();
+            ViewData["OpenTotal"] = await open.CountAsync();
+            ViewData["NoCountries"] = await open.CountAsync(o => !o.AvailableCountries.Any() && (o.EligibleCountriesIso == null || o.EligibleCountriesIso == ""));
+            ViewData["NoProgramKey"] = await open.CountAsync(o => o.Type == OpportunityType.Scholarships && (o.ProgramKey == null || o.ProgramKey == ""));
+            ViewData["Remaining"] = isCompass ? ViewData["CompassRemaining"] : ViewData["LegacyRemaining"];
             ViewData["Page"] = page;
             ViewBag.FieldOptions = await _context.Fields.OrderBy(f => f.SortOrder).ToListAsync();
             var list = await q.Include(o => o.Fields).OrderByDescending(o => o.PublishDate)
@@ -330,16 +341,17 @@ namespace Foras_Khadra.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> SaveFacets(int id, FacetFormVM facets, int page = 1)
+        public async Task<IActionResult> SaveFacets(int id, FacetFormVM facets, int page = 1, string? gap = null)
         {
+            gap = gap == "compass" ? gap : null;
             var opp = await _context.Opportunities.Include(o => o.Fields).FirstOrDefaultAsync(o => o.Id == id);
             if (opp == null) return NotFound();
             var error = facets.ApplyTo(opp, await _context.Fields.ToListAsync());
-            if (error != null) { TempData["FacetMessage"] = "لم يُحفظ: " + error; return RedirectToAction(nameof(Facets), new { page }); }
+            if (error != null) { TempData["FacetMessage"] = "لم يُحفظ: " + error; return RedirectToAction(nameof(Facets), new { page, gap }); }
             opp.LastCheckedAt = DateTime.Now;
             await _context.SaveChangesAsync();
             TempData["FacetMessage"] = $"حُفظت بيانات «{opp.TitleAr}».";
-            return RedirectToAction(nameof(Facets), new { page });
+            return RedirectToAction(nameof(Facets), new { page, gap });
         }
 
         // ===== النسخ الاحتياطي اليومي (Services/BackupExporter) =====

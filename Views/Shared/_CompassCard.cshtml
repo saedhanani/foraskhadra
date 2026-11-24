@@ -12,10 +12,18 @@
     var savedIds = ViewData["SavedIds"] as HashSet<int>;
     var img = string.IsNullOrEmpty(o.ImagePath) ? "/images/default-opportunity.jpg" : o.ImagePath;
 }
-<article class="cp-card @(Model.Eligible ? "" : "cp-card--partial")">
+<article class="cp-card @(Model.Confirmed ? "" : Model.Eligible ? "cp-card--likely" : "cp-card--partial")">
     <a class="cp-card__img" href="@url" tabindex="-1" aria-hidden="true"><img src="@img" alt="" loading="lazy" decoding="async" /></a>
     <div class="cp-card__body">
         <div class="cp-card__meta">
+            @if (Model.Confirmed)
+            {
+                <span class="cp-chip cp-chip--confirmed"><i class="bi bi-patch-check-fill"></i> @T("أهلية مؤكَّدة", "Eligibility confirmed", "Éligibilité confirmée")</span>
+            }
+            else if (Model.Eligible)
+            {
+                <span class="cp-chip cp-chip--likely"><i class="bi bi-search"></i> @T("راجع الشروط", "Check requirements", "Vérifiez les conditions")</span>
+            }
             <span class="cp-chip">@o.Type.GetDisplayName(lang)</span>
             @if (Model.DaysLeft is >= 0)
             {
@@ -39,6 +47,10 @@
             @if (Model.Gap != null)
             {
                 <li class="gap"><i class="bi bi-exclamation-circle-fill"></i> @Model.Gap</li>
+            }
+            @foreach (var v in Model.Verify.Take(2))
+            {
+                <li class="verify"><i class="bi bi-question-circle-fill"></i> @v</li>
             }
         </ul>
     </div>

@@ -9,9 +9,11 @@
     ViewData["Title"] = T("بوصلتي", "My compass", "Ma boussole");
     ViewData["Description"] = ViewData["Title"];
     ViewData["SavedIds"] = Model.SavedIds;
-    var eligible = r.Now.Where(m => m.Eligible).Take(12).ToList();
+    var confirmed = r.Now.Where(m => m.Confirmed).Take(12).ToList();
+    var likely = r.Now.Where(m => m.Eligible && !m.Confirmed).Take(12).ToList();
     var partial = r.Now.Where(m => !m.Eligible).Take(6).ToList();
-    var shareText = T($"مؤهَّل لـ{r.NowCount} فرصة هذا الشهر على فرص خضراء — اكتشف فرصك في دقيقتين:", $"I qualify for {r.NowCount} opportunities this month on Foras Khadra — find yours in two minutes:", $"Je suis éligible à {r.NowCount} opportunités ce mois-ci sur Foras Khadra — trouvez les vôtres en deux minutes :");
+    var shareText = T($"وجدت {r.NowCount} فرصة تناسبني هذا الشهر على فرص خضراء — اكتشف فرصك في دقيقتين:", $"I found {r.NowCount} opportunities that fit me this month on Foras Khadra — find yours in two minutes:", $"J'ai trouvé {r.NowCount} opportunités qui me correspondent ce mois-ci sur Foras Khadra — trouvez les vôtres en deux minutes :");
+    var newText = r.NewThisWeek > 0 ? T($" — {r.NewThisWeek} جديدة هذا الأسبوع", $" — {r.NewThisWeek} new this week", $" — {r.NewThisWeek} nouvelles cette semaine") : "";
     string MonthName(DateTime d) => d.ToString("MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo(lang == "ar" ? "ar-EG" : lang == "fr" ? "fr-FR" : "en-GB"));
 }
 <link asp-append-version="true" rel="stylesheet" href="~/css/compass.css" />
@@ -19,13 +21,20 @@
 <div class="cp-page" dir="@dir">
     <section class="cp-hero">
         <span class="cp-kicker"><i class="bi bi-compass"></i> @T("بوصلتي", "My compass", "Ma boussole") · @Model.Answers.CompletionPercent%</span>
-        <h1>@T("أهلًا ", "Hi ", "Bonjour ")@Model.FirstName@T("، أنت مؤهَّل الآن لـ", ", you qualify right now for ", ", vous êtes éligible maintenant à ")<b>@r.NowCount</b> @T("فرصة", "opportunities", "opportunités")@(r.NewThisWeek > 0 ? T($" — منها {r.NewThisWeek} جديدة هذا الأسبوع", $" — {r.NewThisWeek} of them new this week", $" — dont {r.NewThisWeek} nouvelles cette semaine") : "").</h1>
-        <p>@T("تتجدد كل يوم مع كل فرصة تُنشر. كل بطاقة تشرح لماذا تناسبك وما ينقصك.", "Refreshed every day as opportunities are published. Each card explains why it fits and what is missing.", "Mise à jour chaque jour. Chaque carte explique pourquoi elle vous convient et ce qu'il manque.")</p>
+        @if (r.ConfirmedCount > 0)
+        {
+            <h1>@T("أهلًا ", "Hi ", "Bonjour ")@Model.FirstName@T("، أنت مؤهَّل الآن لـ", ", you qualify right now for ", ", vous êtes éligible maintenant à ")<b>@r.ConfirmedCount</b> @T("فرصة", "opportunities", "opportunités")@(r.LikelyCount > 0 ? T($"، و{r.LikelyCount} أخرى تحتاج مراجعة شروطها", $", and {r.LikelyCount} more need a requirements check", $", et {r.LikelyCount} autres demandent une vérification") : "")@newText.</h1>
+        }
+        else
+        {
+            <h1>@T("أهلًا ", "Hi ", "Bonjour ")@Model.FirstName@T("، وجدنا لك ", ", we found ", ", nous avons trouvé ")<b>@r.LikelyCount</b> @T("فرصة تناسبك — راجع شروطها قبل التقديم", "opportunities that fit you — check their requirements before applying", "opportunités qui vous correspondent — vérifiez leurs conditions avant de postuler")@newText.</h1>
+        }
+        <p>@T("تتجدد كل يوم مع كل فرصة تُنشر. كل بطاقة تشرح لماذا تناسبك، وما ينقصك، وما لم نتحقق منه.", "Refreshed every day as opportunities are published. Each card explains why it fits, what is missing and what we could not verify.", "Mise à jour chaque jour. Chaque carte explique pourquoi elle vous convient, ce qu'il manque et ce que nous n'avons pas pu vérifier.")</p>
         <div class="cp-stats">
-            <div class="cp-stat"><b>@r.NowCount</b><span>@T("مؤهَّل الآن", "eligible now", "éligible maintenant")</span></div>
-            <div class="cp-stat"><b>@r.PartialCount</b><span>@T("تنقصها شهادة", "one certificate away", "à un certificat près")</span></div>
+            <div class="cp-stat"><b>@r.ConfirmedCount</b><span>@T("أهلية مؤكَّدة", "confirmed", "confirmées")</span></div>
+            <div class="cp-stat"><b>@r.LikelyCount</b><span>@T("تحتاج مراجعة", "to check", "à vérifier")</span></div>
+            <div class="cp-stat"><b>@r.PartialCount</b><span>@T("ينقصها شرط", "one requirement away", "à une condition près")</span></div>
             <div class="cp-stat"><b>@r.Soon.Count</b><span>@T("تفتح قريبًا", "opening soon", "bientôt ouvertes")</span></div>
-            <div class="cp-stat"><b>@r.ReadinessPercent%</b><span>@T("جاهزية أوراقك", "documents ready", "documents prêts")</span></div>
         </div>
         <div class="cp-links">
             <a href="@Url.Action("Index", "Compass", new { edit = true })"><i class="bi bi-pencil"></i> @T("عدّل إجاباتك", "Edit answers", "Modifier mes réponses")</a>
@@ -51,18 +60,28 @@
     }
 
     <section class="cp-section">
-        <h2><i class="bi bi-lightning-charge"></i> @T("الآن", "Now", "Maintenant")</h2>
-        <p class="sub">@T("مرتبة بدرجة التطابق والموعد. احفظ ما يعنيك لتتابعه بقائمة أوراق خاصة به.", "Ranked by match and deadline. Save what matters to track it with its own checklist.", "Classées par correspondance et échéance. Enregistrez ce qui vous intéresse pour le suivre.")</p>
-        @if (eligible.Count == 0)
+        <h2><i class="bi bi-patch-check"></i> @T("الآن — أهلية مؤكَّدة", "Now — eligibility confirmed", "Maintenant — éligibilité confirmée")</h2>
+        <p class="sub">@T("كل شرط نعرفه عن هذه الفرص طابق إجاباتك. مرتبة بدرجة التطابق والموعد؛ احفظ ما يعنيك لتتابعه بقائمة أوراق خاصة به.", "Every requirement we know for these matches your answers. Ranked by match and deadline; save what matters to track it with its own checklist.", "Chaque condition connue correspond à vos réponses. Classées par correspondance et échéance ; enregistrez ce qui vous intéresse.")</p>
+        @if (confirmed.Count == 0)
         {
-            <p class="sub">@T("لا فرصة مؤهَّل لها تمامًا اليوم. وسّع أهدافك أو أزل «الممولة بالكامل فقط»، وسنعلمك فور نشر ما يناسبك.", "Nothing fully matching today. Widen your goals or remove “fully funded only”; we'll notify you when a match is published.", "Rien d'entièrement correspondant aujourd'hui. Élargissez vos objectifs ; nous vous préviendrons dès qu'une opportunité correspond.")</p>
+            <p class="sub">@(likely.Count > 0
+                ? T("لا فرصة تأكدنا من كل شروطها اليوم. الفرص أدناه تناسبك وتحتاج مراجعة شرط أو اثنين — وأكمل إجاباتك لنتحقق من المزيد.", "Nothing fully verified today. The ones below fit you and need a requirement or two checked — complete your answers so we can verify more.", "Rien d'entièrement vérifié aujourd'hui. Celles ci-dessous vous correspondent et demandent une ou deux vérifications — complétez vos réponses.")
+                : T("لا فرصة مطابقة اليوم. وسّع أهدافك أو أزل «الممولة بالكامل فقط».", "Nothing matching today. Widen your goals or remove “fully funded only”.", "Rien de correspondant aujourd'hui. Élargissez vos objectifs ou retirez « entièrement financées seulement »."))</p>
         }
         <div class="cp-cards">
-            @foreach (var m in eligible) { @await Html.PartialAsync("_CompassCard", m) }
+            @foreach (var m in confirmed) { @await Html.PartialAsync("_CompassCard", m) }
         </div>
+        @if (likely.Count > 0)
+        {
+            <h2 style="margin-top:18px;"><i class="bi bi-search"></i> @T("تناسبك — راجع الشروط", "Fits you — check the requirements", "Vous correspond — vérifiez les conditions")</h2>
+            <p class="sub">@T("لا نقص معروف، لكن شرطًا لم يُذكر في بياناتنا أو لم تُجب عنه. البطاقة تقول أيّ شرط.", "No known gap, but a requirement is missing from our data or your answers. The card says which.", "Aucun manque connu, mais une condition manque dans nos données ou vos réponses. La carte précise laquelle.")</p>
+            <div class="cp-cards">
+                @foreach (var m in likely) { @await Html.PartialAsync("_CompassCard", m) }
+            </div>
+        }
         @if (partial.Count > 0)
         {
-            <h2 style="margin-top:18px;"><i class="bi bi-exclamation-circle"></i> @T("تنقصك شهادة واحدة", "One certificate away", "À un certificat près")</h2>
+            <h2 style="margin-top:18px;"><i class="bi bi-exclamation-circle"></i> @T("ينقصك شرط واحد", "One requirement away", "À une condition près")</h2>
             <div class="cp-cards">
                 @foreach (var m in partial) { @await Html.PartialAsync("_CompassCard", m) }
             </div>

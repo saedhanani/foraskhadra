@@ -6,17 +6,40 @@
     var pageNo = (int)(ViewData["Page"] ?? 1);
     var total = (int)(ViewData["Remaining"] ?? 0);
     var fields = ViewData["FieldOptions"] as List<Field> ?? new List<Field>();
+    var gap = ViewData["Gap"] as string;
+    var isCompass = gap == "compass";
+    var legacyRemaining = (int)(ViewData["LegacyRemaining"] ?? 0);
+    var compassRemaining = (int)(ViewData["CompassRemaining"] ?? 0);
+    var openTotal = (int)(ViewData["OpenTotal"] ?? 0);
+    var noCountries = (int)(ViewData["NoCountries"] ?? 0);
+    var noProgramKey = (int)(ViewData["NoProgramKey"] ?? 0);
 }
 
 <div class="container py-4" dir="rtl">
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h2 class="m-0">تعبئة بيانات الأهلية <span class="badge bg-secondary">@total فرصة بلا بيانات</span></h2>
+        <h2 class="m-0">تعبئة بيانات الأهلية <span class="badge bg-secondary">@total فرصة</span></h2>
         <a asp-controller="Admin" asp-action="Dashboard" class="btn btn-outline-secondary">لوحة التحكم</a>
     </div>
-    <p class="text-muted">
-        الفرص المنشورة التي ما زال نوع تمويلها «غير محدد». الحقول مقترحة آليًا من كلمات العنوان والنص — راجعها ثم اضغط «حفظ».
-        الفرص الجديدة من منصة الكتابة تصل بهذه البيانات جاهزة (docs/PIPELINE-PROMPT-v2.md).
-    </p>
+    <ul class="nav nav-pills mb-3">
+        <li class="nav-item"><a class="nav-link @(isCompass ? "" : "active")" asp-controller="Admin" asp-action="Facets">بلا بيانات (@legacyRemaining)</a></li>
+        <li class="nav-item"><a class="nav-link @(isCompass ? "active" : "")" asp-controller="Admin" asp-action="Facets" asp-route-gap="compass">تمنع تأكيد البوصلة (@compassRemaining)</a></li>
+    </ul>
+    @if (isCompass)
+    {
+        <div class="alert alert-warning">
+            <b>جودة بيانات «بوصلة»:</b> من @openTotal فرصة مفتوحة، @compassRemaining بلا شرط لغة أو مرحلة دراسية محددة،
+            و@noCountries بلا دول مؤهَّلة (تُعدَّل من صفحة تعديل الفرصة)، و@noProgramKey منحة بلا مفتاح برنامج (فلا تظهر في «قريبًا» ولا تُدمج دوراتها).
+            البوصلة تعرض هذه الفرص «تحتاج مراجعة» ولا تعدّها «أهلية مؤكَّدة» حتى تُحدَّد.
+            إن لم يشترط المصدر شهادة لغة اختر «لا تشترط»، وإن كانت مفتوحة لكل المراحل علّم كل المراحل.
+        </div>
+    }
+    else
+    {
+        <p class="text-muted">
+            الفرص المنشورة التي ما زال نوع تمويلها «غير محدد». الحقول مقترحة آليًا من كلمات العنوان والنص — راجعها ثم اضغط «حفظ».
+            الفرص الجديدة من منصة الكتابة تصل بهذه البيانات جاهزة (docs/PIPELINE-PROMPT-v2.md).
+        </p>
+    }
     @if (TempData["FacetMessage"] is string msg)
     {
         <div class="alert alert-success">@msg</div>
@@ -47,6 +70,7 @@
         <form asp-controller="Admin" asp-action="SaveFacets" method="post" class="card mb-3 shadow-sm">
             <input type="hidden" name="id" value="@opp.Id" />
             <input type="hidden" name="page" value="@pageNo" />
+            <input type="hidden" name="gap" value="@gap" />
             <div class="card-body">
                 <div class="d-flex gap-3 flex-wrap align-items-start">
                     <img src="@(string.IsNullOrEmpty(opp.ImagePath) ? "/images/default.jpg" : opp.ImagePath)" alt="" style="width:110px;height:74px;object-fit:cover;border-radius:8px" />
@@ -69,9 +93,9 @@
         <div class="d-flex gap-2 justify-content-center mt-3">
             @if (pageNo > 1)
             {
-                <a class="btn btn-outline-primary" asp-controller="Admin" asp-action="Facets" asp-route-page="@(pageNo - 1)">السابق</a>
+                <a class="btn btn-outline-primary" asp-controller="Admin" asp-action="Facets" asp-route-page="@(pageNo - 1)" asp-route-gap="@gap">السابق</a>
             }
-            <a class="btn btn-outline-primary" asp-controller="Admin" asp-action="Facets" asp-route-page="@(pageNo + 1)">التالي</a>
+            <a class="btn btn-outline-primary" asp-controller="Admin" asp-action="Facets" asp-route-page="@(pageNo + 1)" asp-route-gap="@gap">التالي</a>
         </div>
     }
 </div>

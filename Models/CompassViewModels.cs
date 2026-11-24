@@ -39,10 +39,8 @@ namespace Foras_Khadra.Models
         [Required, EmailAddress, StringLength(256)]
         public string Email { get; set; } = string.Empty;
 
+        /// <summary>بلا حقل تأكيد: في الصفحة زر إظهار. القواعد من Identity (Program.cs): 8 أحرف ورقم.</summary>
         [Required, DataType(DataType.Password), StringLength(100, MinimumLength = 8)]
         public string Password { get; set; } = string.Empty;
-
-        [Required, DataType(DataType.Password), Compare(nameof(Password))]
-        public string ConfirmPassword { get; set; } = string.Empty;
     }
 }

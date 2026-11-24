@@ -23,9 +23,16 @@ namespace Foras_Khadra.Services
 
     public sealed class CompassResult
     {
+        /// <summary>أفضل المطابقات للعرض (حتى MaxNow)؛ الأعداد أدناه من كل المطابقات لا من المعروض فقط.</summary>
         public List<CompassMatch> Now { get; init; } = new();
-        public int NowCount => Now.Count(m => m.Eligible);
-        public int PartialCount => Now.Count(m => !m.Eligible);
+        /// <summary>أهلية مؤكَّدة: كل شرط نعرفه تحققنا منه.</summary>
+        public int ConfirmedCount { get; init; }
+        /// <summary>تناسبك ولا نقص معروف، لكن شرطًا أو أكثر لم نتحقق منه.</summary>
+        public int LikelyCount { get; init; }
+        /// <summary>مؤكَّدة + تحتاج مراجعة.</summary>
+        public int NowCount => ConfirmedCount + LikelyCount;
+        /// <summary>ينقصها شرط واحد معروف (شهادة لغة أو درجتها).</summary>
+        public int PartialCount { get; init; }
         public int NewThisWeek { get; init; }
         public List<SoonProgram> Soon { get; init; } = new();
         public int SoonWithin3Months => Soon.Count(s => s.MonthsUntil is <= 3);
@@ -70,12 +77,15 @@ namespace Foras_Khadra.Services
             string T(string ar, string en, string fr) => lang == "en" ? en : lang == "fr" ? fr : ar;
 
             var open = await OpenOpportunitiesAsync(ct);
-            var now = open.Select(o => CompassMatcher.Evaluate(a, o, today, lang))
+            var all = open.Select(o => CompassMatcher.Evaluate(a, o, today, lang))
                 .Where(m => m != null).Select(m => m!)
-                .OrderByDescending(m => m.Eligible).ThenByDescending(m => m.Score).ThenBy(m => m.DaysLeft ?? int.MaxValue)
-                .Take(MaxNow)
+                // دورتان مفتوحتان من البرنامج نفسه (ProgramKey): تبقى الأحدث نشرًا فقط
+                .GroupBy(m => string.IsNullOrWhiteSpace(m.Opportunity.ProgramKey) ? "#" + m.Opportunity.Id : m.Opportunity.ProgramKey!.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderByDescending(m => m.Opportunity.PublishDate).ThenByDescending(m => m.Opportunity.Id).First())
+                .OrderByDescending(m => m.Confirmed).ThenByDescending(m => m.Eligible).ThenByDescending(m => m.Score).ThenBy(m => m.DaysLeft ?? int.MaxValue)
                 .ToList();
-            var eligible = now.Where(m => m.Eligible).ToList();
+            var now = all.Take(MaxNow).ToList();
+            var eligible = all.Where(m => m.Eligible).ToList();
             var openKeys = open.Where(o => o.ProgramKey != null).Select(o => o.ProgramKey!).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             // قريبًا: آخر دورة مغلقة من كل برنامج متكرر لا دورة مفتوحة له الآن
@@ -122,6 +132,9 @@ namespace Foras_Khadra.Services
             return new CompassResult
             {
                 Now = now,
+                ConfirmedCount = all.Count(m => m.Confirmed),
+                LikelyCount = all.Count(m => m.Eligible && !m.Confirmed),
+                PartialCount = all.Count(m => !m.Eligible),
                 NewThisWeek = eligible.Count(m => m.Opportunity.PublishDate >= today.AddDays(-7)),
                 Soon = soon,
                 Readiness = readiness,

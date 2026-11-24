@@ -42,11 +42,13 @@ builder.Services.AddDataProtection()
 // ===== إعداد Identity =====
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
+    // الحد الأدنى للموقع كله: 8 أحرف ورقم (تسجيل البوصلة المختصر). نماذج التسجيل الأخرى تبقي شرطها الأشد
+    // (حرف كبير وصغير ورمز) عبر RegularExpression في نماذجها. القفل بعد 5 محاولات يحمي من التخمين.
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
-    options.Password.RequireNonAlphanumeric = true;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireLowercase = true;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
     options.Password.RequiredUniqueChars = 1;
 
     // قفل الحساب 15 دقيقة بعد 5 محاولات فاشلة (ضد تخمين كلمات المرور)

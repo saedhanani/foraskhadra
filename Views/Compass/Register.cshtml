@@ -1,4 +1,4 @@
-@* تسجيل مختصر من البوصلة: بريد وكلمة مرور فقط؛ الاسم والباقي لاحقًا من الملف الشخصي *@
+@* تسجيل مختصر من البوصلة: بريد وكلمة مرور فقط (بلا تأكيد — زر الإظهار يكفي)؛ الاسم والباقي لاحقًا من الملف الشخصي *@
 @model Foras_Khadra.Models.CompassRegisterVM
 @{
     var lang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
@@ -8,41 +8,51 @@
     var loginUrl = Url.Action("Login", "Account", new { returnUrl = Url.Action("Me", "Compass") });
 }
 <meta name="robots" content="noindex" />
+<link asp-append-version="true" rel="stylesheet" href="~/css/compass.css" />
 
-<div class="auth-page" dir="@dir">
-    <div class="auth-bg-circle"></div>
-    <div class="auth-card">
-        <h1 class="auth-title">@T("أنشئ حسابك في دقيقة", "Create your account in a minute", "Créez votre compte en une minute")</h1>
-        <p class="auth-subtitle">@T("بريد وكلمة مرور فقط. بوصلتك محفوظة وستفتح كاملة فور الدخول.", "Just an email and a password. Your compass is saved and opens fully right away.", "Un e-mail et un mot de passe. Votre boussole est enregistrée et s'ouvre entièrement.")</p>
+<div class="cp-page cp-auth" dir="@dir">
+    <div class="cp-auth__card">
+        <span class="cp-kicker"><i class="bi bi-compass"></i> @T("بوصلة", "Compass", "Boussole")</span>
+        <h1>@T("أنشئ حسابك في دقيقة", "Create your account in a minute", "Créez votre compte en une minute")</h1>
+        <p class="cp-auth__sub">@T("بريد وكلمة مرور فقط. بوصلتك محفوظة وستفتح كاملة فور الدخول.", "Just an email and a password. Your compass is saved and opens fully right away.", "Un e-mail et un mot de passe. Votre boussole est enregistrée et s'ouvre entièrement.")</p>
 
-        <form asp-controller="Compass" asp-action="Register" method="post" class="mt-4" data-submit-once>
+        <form asp-controller="Compass" asp-action="Register" method="post" data-submit-once>
             @Html.AntiForgeryToken()
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <div asp-validation-summary="ModelOnly" class="cp-err cp-auth__summary"></div>
 
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label auth-label">@T("البريد الإلكتروني", "Email", "E-mail")</label>
-                <input asp-for="Email" class="form-control auth-control" type="email" autocomplete="email" dir="ltr" />
-                <span asp-validation-for="Email" class="text-danger small"></span>
+            <div class="cp-field">
+                <label asp-for="Email">@T("البريد الإلكتروني", "Email", "E-mail")</label>
+                <input asp-for="Email" type="email" autocomplete="email" inputmode="email" dir="ltr" />
+                <span asp-validation-for="Email" class="cp-err"></span>
             </div>
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label auth-label">@T("كلمة المرور", "Password", "Mot de passe")</label>
-                <input asp-for="Password" class="form-control auth-control" type="password" autocomplete="new-password" dir="ltr" />
-                <span asp-validation-for="Password" class="text-danger small"></span>
-                <small class="text-muted">@T("8 أحرف على الأقل، فيها حرف كبير وصغير ورقم ورمز.", "At least 8 characters with upper and lower case, a digit and a symbol.", "Au moins 8 caractères, majuscule, minuscule, chiffre et symbole.")</small>
-            </div>
-            <div class="mb-3">
-                <label asp-for="ConfirmPassword" class="form-label auth-label">@T("تأكيد كلمة المرور", "Confirm password", "Confirmer le mot de passe")</label>
-                <input asp-for="ConfirmPassword" class="form-control auth-control" type="password" autocomplete="new-password" dir="ltr" />
-                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+            <div class="cp-field">
+                <label asp-for="Password">@T("كلمة المرور", "Password", "Mot de passe")</label>
+                <div class="cp-auth__pw">
+                    <input asp-for="Password" type="password" autocomplete="new-password" dir="ltr" />
+                    <button type="button" class="cp-auth__eye" data-toggle-password aria-label="@T("إظهار كلمة المرور أو إخفاؤها", "Show or hide the password", "Afficher ou masquer le mot de passe")"><i class="bi bi-eye"></i></button>
+                </div>
+                <span asp-validation-for="Password" class="cp-err"></span>
+                <small>@T("8 أحرف على الأقل، وفيها رقم واحد.", "At least 8 characters, including one digit.", "Au moins 8 caractères, dont un chiffre.")</small>
             </div>
 
-            <button type="submit" class="btn auth-btn w-100"><i class="bi bi-compass"></i> @T("احفظ بوصلتي وافتح النتائج", "Save my compass and unlock results", "Enregistrer et débloquer")</button>
-
-            <div class="auth-footer">
-                <span>@T("لديك حساب؟", "Already have an account?", "Vous avez déjà un compte ?")</span>
-                <a href="@loginUrl" class="auth-link ms-1">@T("سجّل الدخول", "Sign in", "Se connecter")</a>
-            </div>
+            <button type="submit" class="cp-btn cp-btn--orange cp-auth__submit"><i class="bi bi-unlock"></i> @T("احفظ بوصلتي وافتح النتائج", "Save my compass and unlock results", "Enregistrer et débloquer")</button>
         </form>
-        <p class="text-muted small mt-3 mb-0">@T("نرسل رابط تأكيد للبريد؛ التأكيد مطلوب فقط عند الضغط على «قدّم الآن».", "We email a confirmation link; confirmation is only needed when you press “Apply now”.", "Nous envoyons un lien de confirmation ; il n'est requis qu'au moment de postuler.")</p>
+
+        <p class="cp-auth__foot">@T("لديك حساب؟", "Already have an account?", "Vous avez déjà un compte ?") <a href="@loginUrl">@T("سجّل الدخول", "Sign in", "Se connecter")</a></p>
+        <p class="cp-privacy">@T("نرسل رابط تأكيد للبريد؛ التأكيد مطلوب فقط عند الضغط على «قدّم الآن».", "We email a confirmation link; confirmation is only needed when you press “Apply now”.", "Nous envoyons un lien de confirmation ; il n'est requis qu'au moment de postuler.")</p>
     </div>
 </div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script>
+        document.querySelectorAll('[data-toggle-password]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var input = btn.parentElement.querySelector('input');
+                var show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                btn.querySelector('i').className = show ? 'bi bi-eye-slash' : 'bi bi-eye';
+            });
+        });
+    </script>
+}
