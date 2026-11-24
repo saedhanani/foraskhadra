@@ -16,11 +16,14 @@ namespace Foras_Khadra.Services
             _mailSettings = mailSettings.Value;
         }
 
-        public async Task SendEmailAsync(Contact contact)
+        public async Task SendEmailAsync(Contact contact) => await SendAsync(BuildContactMessage(_mailSettings, contact));
+
+        /// <summary>رسالة «تواصل معنا» إلى صندوق الموقع (MailSettings:ContactTo، افتراضيًا info@foraskhadra.com)؛ الرد يذهب إلى الزائر.</summary>
+        public static MimeMessage BuildContactMessage(MailSettings settings, Contact contact)
         {
             var email = new MimeMessage();
-            email.From.Add(new MailboxAddress(_mailSettings.DisplayName, _mailSettings.Mail));
-            email.To.Add(MailboxAddress.Parse("suppforaskhadra@gmail.com")); // البريد المستلم
+            email.From.Add(new MailboxAddress(settings.DisplayName, settings.Mail));
+            email.To.Add(MailboxAddress.Parse(settings.ContactInbox));
             email.ReplyTo.Add(MailboxAddress.Parse(contact.Email));
             email.Subject = $"New Contact Message from {contact.FirstName} {contact.LastName}".Replace("\r", " ").Replace("\n", " ");
 
@@ -33,9 +36,13 @@ namespace Foras_Khadra.Services
             };
             email.Body = builder.ToMessageBody();
             email.MessageId = MimeUtils.GenerateMessageId();
+            return email;
+        }
 
-            using var smtp = new SmtpClient();
-            await smtp.ConnectAsync(_mailSettings.Host, _mailSettings.Port, SecureSocketOptions.StartTls);
+        private async Task SendAsync(MimeMessage email)
+        {
+            using var smtp = new SmtpClient { Timeout = 20000 };
+            await smtp.ConnectAsync(_mailSettings.Host, _mailSettings.Port, EmailSender.SocketOptionsFor(_mailSettings.Port));
             await smtp.AuthenticateAsync(_mailSettings.Mail, _mailSettings.Password);
             await smtp.SendAsync(email);
             await smtp.DisconnectAsync(true);

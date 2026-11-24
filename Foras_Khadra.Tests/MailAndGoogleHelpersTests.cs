@@ -34,6 +34,21 @@ namespace Foras_Khadra.Tests
             Assert.Contains("link: https://x.test", message.TextBody);
         }
 
+        [Fact]
+        public void ContactForm_GoesToInfoByDefaultAndRepliesToTheVisitor()
+        {
+            var contact = new Contact { FirstName = "Sara", LastName = "A", Email = "sara@test.local", Phone = "+962790000000", MessageContent = "<b>hi</b>\nthere" };
+            var settings = new MailSettings { Mail = "sender@test.local", DisplayName = "Foras Khadra" };
+
+            var message = Foras_Khadra.Services.MailService.BuildContactMessage(settings, contact);
+            Assert.Equal("info@foraskhadra.com", ((MailboxAddress)message.To.Single()).Address);
+            Assert.Equal("sara@test.local", ((MailboxAddress)message.ReplyTo.Single()).Address);
+            Assert.Contains("&lt;b&gt;hi&lt;/b&gt;<br />there", message.HtmlBody);
+
+            settings.ContactTo = "  team@test.local ";
+            Assert.Equal("team@test.local", ((MailboxAddress)Foras_Khadra.Services.MailService.BuildContactMessage(settings, contact).To.Single()).Address);
+        }
+
         [Theory]
         [InlineData(587, SecureSocketOptions.StartTls)]
         [InlineData(25, SecureSocketOptions.StartTls)]
