@@ -2,6 +2,7 @@
 using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
 using Foras_Khadra.ViewModels;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -311,6 +312,126 @@ namespace Foras_Khadra.Controllers
             return RedirectToAction("Index", "Home");
         }
 
+        // ===== الدخول والتسجيل بحساب Google (للأفراد؛ يظهر الزر فقط إذا ضُبطت مفاتيح Google) =====
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [EnableRateLimiting("auth")]
+        public async Task<IActionResult> ExternalLogin(string provider, string? returnUrl)
+        {
+            returnUrl = SafeReturnUrl(returnUrl);
+            var schemes = await _signInManager.GetExternalAuthenticationSchemesAsync();
+            if (provider != GoogleSignIn.Scheme || !schemes.Any(s => s.Name == provider))
+                return RedirectToAction("Login", new { returnUrl });
+
+            var redirectUrl = Url.Action("ExternalLoginCallback", "Account", new { returnUrl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+            return Challenge(properties, provider);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExternalLoginCallback(string? returnUrl, string? remoteError, [FromServices] IAnalytics analytics)
+        {
+            returnUrl = SafeReturnUrl(returnUrl);
+            var notCompleted = T("لم يكتمل الدخول بحساب Google. حاول مرة أخرى أو ادخل ببريدك وكلمة المرور.",
+                "Signing in with Google did not complete. Try again or sign in with your email and password.",
+                "La connexion avec Google n'a pas abouti. Réessayez ou connectez-vous avec votre e-mail et mot de passe.");
+            if (!string.IsNullOrEmpty(remoteError)) return ExternalLoginFailed(returnUrl, notCompleted);
+
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null) return ExternalLoginFailed(returnUrl, notCompleted);
+
+            // 1) حساب Google مربوط من قبل
+            var signIn = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: true, bypassTwoFactor: true);
+            if (signIn.Succeeded)
+            {
+                analytics.Event("login.done");
+                analytics.Event("login.google");
+                return await RedirectAfterSignInAsync(await _userManager.FindByLoginAsync(info.LoginProvider, info.ProviderKey), returnUrl);
+            }
+            if (signIn.IsLockedOut) return ExternalLoginFailed(returnUrl, _localizer["AccountLockedOut"].Value);
+
+            var email = GoogleSignIn.Email(info.Principal);
+            if (email == null || !GoogleSignIn.IsEmailVerified(info.Principal))
+                return ExternalLoginFailed(returnUrl, T("حساب Google لم يشارك بريدًا مُتحقَّقًا منه. أنشئ حسابًا ببريدك وكلمة مرور.",
+                    "Your Google account did not share a verified email. Create an account with your email and a password.",
+                    "Votre compte Google n'a pas partagé d'e-mail vérifié. Créez un compte avec votre e-mail et un mot de passe."));
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user != null)
+            {
+                // 2) البريد مسجَّل من قبل بكلمة مرور: Google أثبت ملكيته، فيُربط الحسابان ويُؤكَّد البريد.
+                // حسابات المنظمات لا تُربط (لها صفحة دخول خاصة) — الرسالة نفسها التي يراها عند الدخول بكلمة المرور.
+                if (await _userManager.IsInRoleAsync(user, "Organization"))
+                {
+                    await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+                    TempData["OrgLoginAlert"] = _localizer["OrgLoginAlert"].Value;
+                    TempData["OrgLoginRedirectText"] = _localizer["OrgLoginRedirectText"].Value;
+                    TempData["OrgLoginRedirect"] = Url.Action("Login", "Organization", new { returnUrl });
+                    return RedirectToAction("Login", new { returnUrl });
+                }
+                if (await _userManager.IsLockedOutAsync(user)) return ExternalLoginFailed(returnUrl, _localizer["AccountLockedOut"].Value);
+
+                var linked = await _userManager.AddLoginAsync(user, info);
+                if (!linked.Succeeded) return ExternalLoginFailed(returnUrl, notCompleted);
+                if (!user.EmailConfirmed)
+                {
+                    user.EmailConfirmed = true;
+                    await _userManager.UpdateAsync(user);
+                }
+                await _signInManager.SignInAsync(user, isPersistent: true, info.LoginProvider);
+                await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+                analytics.Event("login.done");
+                analytics.Event("login.google");
+                return await RedirectAfterSignInAsync(user, returnUrl);
+            }
+
+            // 3) جديد: حساب بلا كلمة مرور وبريد مؤكَّد (روابط «قدّم الآن» مفتوحة فورًا)
+            var (first, last) = GoogleSignIn.Names(info.Principal, email);
+            user = new ApplicationUser
+            {
+                UserName = email,
+                Email = email,
+                EmailConfirmed = true,
+                FirstName = first,
+                LastName = last,
+                FullName = $"{first} {last}".Trim(),
+                Language = Lang,
+                Role = UserRole.User,
+                CreatedAt = System.DateTime.Now
+            };
+            var created = await _userManager.CreateAsync(user);
+            if (!created.Succeeded) return ExternalLoginFailed(returnUrl, notCompleted);
+            await _userManager.AddToRoleAsync(user, "User");
+            await _userManager.AddLoginAsync(user, info);
+
+            if (Request.Cookies.TryGetValue(ReferralCookie, out var refCode))
+            {
+                await _referrals.ApplyAsync(user, refCode);
+                Response.Cookies.Delete(ReferralCookie);
+            }
+
+            await _signInManager.SignInAsync(user, isPersistent: true, info.LoginProvider);
+            await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
+            analytics.Event("register.done");
+            analytics.Event("register.google");
+            // لا دولة ولا اهتمامات بعد: «بوصلتي» تستورد إجاباته إن أجاب كزائر، وإلا تسأله أسئلة البوصلة
+            return returnUrl != null ? LocalRedirect(returnUrl) : RedirectToAction("Me", "Compass");
+        }
+
+        private IActionResult ExternalLoginFailed(string? returnUrl, string message)
+        {
+            TempData["ExternalLoginError"] = message;
+            return RedirectToAction("Login", new { returnUrl });
+        }
+
+        /// <summary>بعد الدخول: إلى ما كان يفعله، وإلا لوحة المدير أو «صفحتي» (كالدخول بكلمة المرور).</summary>
+        private async Task<IActionResult> RedirectAfterSignInAsync(ApplicationUser? user, string? returnUrl)
+        {
+            if (returnUrl != null) return LocalRedirect(returnUrl);
+            if (user != null && await _userManager.IsInRoleAsync(user, "Admin")) return RedirectToAction("Dashboard", "Admin");
+            return RedirectToAction("Dashboard", "User");
+        }
+
         // ===== مساعد لجلب الدول والجنسية =====
         private List<string> GetCountries(string culture = null)
         {
@@ -382,11 +503,11 @@ namespace Foras_Khadra.Controllers
             //  توليد Token
             var token = await _userManager.GeneratePasswordResetTokenAsync(user);
 
-            //  توليد رابط إعادة التعيين
+            //  توليد رابط إعادة التعيين — الرمز base64url (كالمنظمات): رمز Identity الخام فيه + و/ و= تُكسر في بعض برامج البريد
             var resetLink = Url.Action(
                 "ResetPassword",
                 "Account",
-                new { email = user.Email, token = token },
+                new { email = user.Email, token = TokenCodec.Encode(token) },
                 Request.Scheme
             );
 
@@ -464,10 +585,27 @@ namespace Foras_Khadra.Controllers
             if (user == null)
                 return RedirectToAction("ResetPasswordConfirmation"); // لا نكشف إذا الإيميل موجود
 
-            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
+            var rawToken = TokenCodec.Decode(model.Token);
+            if (rawToken == null)
+            {
+                ModelState.AddModelError("", T("الرابط غير صالح أو منتهي الصلاحية. اطلب رابطًا جديدًا.",
+                    "This link is not valid or has expired. Request a new one.",
+                    "Ce lien n'est pas valide ou a expiré. Demandez-en un nouveau."));
+                return View(model);
+            }
+
+            var result = await _userManager.ResetPasswordAsync(user, rawToken, model.Password);
             if (result.Succeeded)
             {
-                // كلمة المرور نجحت → Redirect للـ Confirmation
+                // الرابط وصل إلى البريد وفُتح منه: هذا يثبت ملكيته، فيُؤكَّد البريد إن لم يكن مؤكَّدًا،
+                // ويُرفع قفل الـ15 دقيقة الذي يسببه نسيان كلمة المرور نفسه
+                if (!user.EmailConfirmed)
+                {
+                    user.EmailConfirmed = true;
+                    await _userManager.UpdateAsync(user);
+                }
+                await _userManager.ResetAccessFailedCountAsync(user);
+                await _userManager.SetLockoutEndDateAsync(user, null);
                 return RedirectToAction("ResetPasswordConfirmation");
             }
 
@@ -536,6 +674,15 @@ namespace Foras_Khadra.Controllers
             if (emailChangeRequested)
             {
                 // تغيير بريد الدخول: كلمة المرور الحالية + رابط تأكيد إلى العنوان الجديد؛ البريد الحالي يبقى حتى التأكيد
+                if (!await _userManager.HasPasswordAsync(user))
+                {
+                    // حساب أُنشئ بـ Google بلا كلمة مرور: يضع كلمة مرور أولًا من «نسيت كلمة المرور» (رابط إلى بريده الحالي)
+                    ModelState.AddModelError("CurrentPassword", T("حسابك يدخل بـ Google بلا كلمة مرور. ضع كلمة مرور أولًا من «نسيت كلمة المرور» ثم غيّر البريد.",
+                        "Your account signs in with Google and has no password. Set one first via \"Forgot password\", then change the email.",
+                        "Votre compte se connecte avec Google sans mot de passe. Définissez-en un via « Mot de passe oublié », puis changez l'e-mail."));
+                    model.Email = user.Email!;
+                    return View(model);
+                }
                 if (string.IsNullOrEmpty(model.CurrentPassword) || !await _userManager.CheckPasswordAsync(user, model.CurrentPassword))
                 {
                     ModelState.AddModelError("CurrentPassword", T("أدخل كلمة المرور الحالية لتغيير البريد", "Enter your current password to change the email", "Saisissez votre mot de passe actuel pour changer l'e-mail"));

@@ -3,6 +3,7 @@ using Foras_Khadra.Helpers;
 using Foras_Khadra.Models;
 using Foras_Khadra.Services;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Authentication; // MapJsonKey (مطالبات Google)
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Localization;
@@ -58,6 +59,29 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
+
+// ===== الدخول والتسجيل بحساب Google (للأفراد) =====
+// يعمل فقط إذا ضُبط Authentication:Google:ClientId و ClientSecret في الإعدادات؛ بدونهما لا يظهر الزر.
+// عنوان الرجوع الذي يُسجَّل في Google Cloud Console: https://www.foraskhadra.com/signin-google
+if (GoogleSignIn.IsConfigured(builder.Configuration))
+{
+    builder.Services.AddAuthentication().AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+        // Google يتحقق من البريد؛ لا نربط بريدًا بحساب موجود إلا إذا قال Google إنه مُتحقَّق منه
+        options.ClaimActions.MapJsonKey(GoogleSignIn.EmailVerifiedClaim, "email_verified");
+        options.Events.OnRemoteFailure = ctx =>
+        {
+            // ألغى المستخدم أو انتهت الجلسة: يعود إلى صفحة الدخول برسالة بدل صفحة خطأ (بلغته وreturnUrl إن عُرفا)
+            var back = ctx.Properties?.RedirectUri;
+            if (string.IsNullOrEmpty(back) || !back.StartsWith('/') || back.StartsWith("//")) back = "/Account/ExternalLoginCallback";
+            ctx.Response.Redirect(Microsoft.AspNetCore.WebUtilities.QueryHelpers.AddQueryString(back, "remoteError", "1"));
+            ctx.HandleResponse();
+            return Task.CompletedTask;
+        };
+    });
+}
 
 // ===== إعداد الكوكيز =====
 builder.Services.ConfigureApplicationCookie(options =>

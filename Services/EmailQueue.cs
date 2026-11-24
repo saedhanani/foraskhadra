@@ -52,6 +52,8 @@ namespace Foras_Khadra.Services
                 var finished = await Task.WhenAny(send, Task.Delay(SendTimeout, ct));
                 if (finished != send) throw new TimeoutException($"SMTP لم يرد خلال {SendTimeout.TotalSeconds} ثانية");
                 await send; // يرفع الاستثناء إن فشل
+                // سطر نجاح في السجل: بدونه لا يظهر في logs/ إلا الفشل، فلا يُعرف هل يصل البريد أصلًا
+                _log.LogInformation("Email sent (attempt {Attempt}): {Subject}", job.Attempt + 1, job.Subject);
                 return true;
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)

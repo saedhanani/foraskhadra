@@ -463,6 +463,14 @@ namespace Foras_Khadra.Controllers
                     ModelState.AddModelError("", error.Description);
                 return View(model);
             }
+            // الرابط فُتح من البريد: يثبت ملكيته، ويُرفع قفل المحاولات الفاشلة
+            if (!user.EmailConfirmed)
+            {
+                user.EmailConfirmed = true;
+                await _userManager.UpdateAsync(user);
+            }
+            await _userManager.ResetAccessFailedCountAsync(user);
+            await _userManager.SetLockoutEndDateAsync(user, null);
             return View("ResetPasswordConfirmation");
         }
     }

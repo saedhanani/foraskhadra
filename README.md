@@ -104,4 +104,6 @@ dotnet test
 
 أداة النشر `.\tools\deploy.ps1` (المرحلة 5.3) تبني وتقارن بـ`publish/site-files-current` وتحزم المتغيّر فقط وتجمع سكربتات `Migrations/Sql` الجديدة بالترتيب وتكتب `publish/deploy-<sha>/CHECKLIST.md`؛ بعد الرفع `--verify <url>`، وبعد نجاحه `--sync --sha <sha>`. التفاصيل في `docs/ROADMAP-2026.md` §12 و`docs/DEPLOY-stage5.md`.
 
-Publish كالمعتاد إلى الاستضافة. ضع الأسرار (سلسلة الاتصال، بريد Gmail، `TeamApi:Key`، `Seed`) في `appsettings.Production.json` على الخادم أو في متغيرات البيئة، لا في المستودع. مجلدا `wwwroot/uploads` و`wwwroot/logos` على الخادم هما المصدر الوحيد للصور المرفوعة — لا تفعّل خيار "حذف الملفات الإضافية" عند النشر.
+Publish كالمعتاد إلى الاستضافة. ضع الأسرار (سلسلة الاتصال، بريد Gmail، `TeamApi:Key`، `Seed`، `Authentication:Google`) في `appsettings.Production.json` على الخادم أو في متغيرات البيئة، لا في المستودع.
+
+**الدخول بحساب Google (اختياري):** أنشئ «OAuth client ID» من نوع Web application في Google Cloud Console، وأضف عنوان الرجوع `https://www.foraskhadra.com/signin-google`، ثم ضع `Authentication:Google:ClientId` و`ClientSecret` في إعدادات الخادم. بدونهما لا يظهر الزر. مجلدا `wwwroot/uploads` و`wwwroot/logos` على الخادم هما المصدر الوحيد للصور المرفوعة — لا تفعّل خيار "حذف الملفات الإضافية" عند النشر.

@@ -24,6 +24,8 @@
             <!-- Left: Main form -->
             <div class="reg-main">
 
+                <div class="reg-google">@await Html.PartialAsync("_GoogleSignIn")</div>
+
                 <form asp-action="RegisterUser" asp-route-returnUrl="@(ViewData["ReturnUrl"] as string)" method="post" data-submit-once id="registerWizard">
                     @Html.AntiForgeryToken()
 

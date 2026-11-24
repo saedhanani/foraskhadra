@@ -16,6 +16,9 @@
         <h1>@T("أنشئ حسابك في دقيقة", "Create your account in a minute", "Créez votre compte en une minute")</h1>
         <p class="cp-auth__sub">@T("بريد وكلمة مرور فقط. بوصلتك محفوظة وستفتح كاملة فور الدخول.", "Just an email and a password. Your compass is saved and opens fully right away.", "Un e-mail et un mot de passe. Votre boussole est enregistrée et s'ouvre entièrement.")</p>
 
+        @{ ViewData["GoogleReturnUrl"] = Url.Action("Me", "Compass"); }
+        @await Html.PartialAsync("_GoogleSignIn")
+
         <form asp-controller="Compass" asp-action="Register" method="post" data-submit-once>
             @Html.AntiForgeryToken()
             <div asp-validation-summary="ModelOnly" class="cp-err cp-auth__summary"></div>
