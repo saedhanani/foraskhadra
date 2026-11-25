@@ -34,18 +34,25 @@ namespace Foras_Khadra.Controllers
             // if (string.IsNullOrEmpty(recaptchaToken))
             //     return Json(new { success = false, message = "reCAPTCHA token is missing." });
 
-            var phoneUtil = PhoneNumberUtil.GetInstance();
-            try
+            // الهاتف اختياري: الرسالة لا تحتاجه، والبريد في ReplyTo يكفي للرد
+            if (!string.IsNullOrWhiteSpace(contact.Phone))
             {
-                var phoneNumber = phoneUtil.Parse(contact.Phone, null);
-                if (!phoneUtil.IsValidNumber(phoneNumber))
-                    return Json(new { success = false, message = "رقم الهاتف غير صالح" });
+                var phoneUtil = PhoneNumberUtil.GetInstance();
+                try
+                {
+                    // الصفحة ترسل E.164 مع ‎+‎؛ لو وصل بلا ‎+‎ نضيف كود الدولة إن وُجد
+                    var raw = contact.Phone.Trim();
+                    if (!raw.StartsWith('+')) raw = (contact.CountryCode?.Trim() ?? "+") + raw;
+                    var phoneNumber = phoneUtil.Parse(raw, null);
+                    if (!phoneUtil.IsValidNumber(phoneNumber))
+                        return Json(new { success = false, message = "رقم الهاتف غير صالح" });
 
-                contact.Phone = phoneUtil.Format(phoneNumber, PhoneNumberFormat.E164);
-            }
-            catch
-            {
-                return Json(new { success = false, message = "كود الدولة أو رقم الهاتف غير صحيح" });
+                    contact.Phone = phoneUtil.Format(phoneNumber, PhoneNumberFormat.E164);
+                }
+                catch
+                {
+                    return Json(new { success = false, message = "كود الدولة أو رقم الهاتف غير صحيح" });
+                }
             }
 
             contact.SubmissionDateTime = DateTime.UtcNow;

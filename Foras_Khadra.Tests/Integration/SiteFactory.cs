@@ -55,6 +55,9 @@ namespace Foras_Khadra.Tests.Integration
                     services.Remove(d);
                 services.RemoveAll<IEmailSender>();
                 services.AddTransient<IEmailSender, NullEmailSender>();
+                // نموذج التواصل يرسل عبر IMailService مباشرة (SMTP حقيقي): نستبدله بمسجّل في الذاكرة
+                services.RemoveAll<IMailService>();
+                services.AddSingleton<IMailService>(Contacts);
 
                 // المخطط قبل أن يبدأ Program.cs بإنشاء الأدوار
                 using var db = new ApplicationDbContext(new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options);
@@ -173,6 +176,22 @@ namespace Foras_Khadra.Tests.Integration
         private sealed class NullEmailSender : IEmailSender
         {
             public Task SendEmailAsync(string email, string subject, string htmlMessage) => Task.CompletedTask;
+        }
+
+        /// <summary>رسائل «تواصل معنا» التي وصلت إلى طبقة الإرسال (بدل SMTP حقيقي في الاختبار).</summary>
+        public RecordingMailService Contacts { get; } = new();
+
+        public sealed class RecordingMailService : IMailService
+        {
+            public readonly List<Contact> Sent = new();
+            public Exception? Throw;
+
+            public Task SendEmailAsync(Contact contact)
+            {
+                if (Throw != null) throw Throw;
+                Sent.Add(contact);
+                return Task.CompletedTask;
+            }
         }
     }
 }

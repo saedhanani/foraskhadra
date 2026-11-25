@@ -21,12 +21,14 @@ public class Contact
         [StringLength(255, ErrorMessage = "Email can't exceed 100 characters ")]
         public string Email { get; set; }
 
-        [Required(ErrorMessage = "Country code is required")]
+        // نموذج التواصل لا يرسل هذا الحقل: مكتبة الهاتف في الصفحة تضع الرقم كاملًا بصيغة E.164 (‎+962…) في Phone.
+        // كان [Required] فيُرفض كل إرسال (ModelState غير صالح) — أُبقي اختياريًا للتوافق مع أي نموذج قديم.
         [RegularExpression(@"^\+\d{1,4}$", ErrorMessage = "Invalid country code")] // مثال: +970, +1
-        public string CountryCode { get; set; }
+        public string? CountryCode { get; set; }
 
-        [RegularExpression(@"^\d{7,15}$", ErrorMessage = "Invalid phone number")]
-        public string Phone { get; set; }
+        /// <summary>رقم بصيغة E.164 مع ‎+‎ (كما ترسله الصفحة)، أو أرقام فقط. اختياري.</summary>
+        [RegularExpression(@"^\+?\d{7,15}$", ErrorMessage = "Invalid phone number")]
+        public string? Phone { get; set; }
 
         [StringLength(5000, ErrorMessage = "Email can't exceed 5000 characters ")]
 

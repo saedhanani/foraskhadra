@@ -172,6 +172,11 @@
                     .then(async response => {
                         const data = await response.text();
                         if (!response.ok) throw new Error(data || 'Something went wrong');
+                        // الخادم يرد 200 حتى عند الرفض، ومعه success=false: بدون هذا الفحص كان الزائر
+                        // يرى «تم الإرسال» ولا تصل رسالته أبدًا
+                        let parsed = null;
+                        try { parsed = JSON.parse(data); } catch (e) { /* رد غير متوقع: نعامله كنجاح كالسابق */ }
+                        if (parsed && parsed.success === false) throw new Error(parsed.message || 'Something went wrong');
                         return data;
                     })
                     .then(data => {
@@ -193,7 +198,7 @@
                         Swal.fire({
                             icon: 'error',
                             title: "@Localizer["ErrorTitle"]", //this was thowing an error in french because of the single qoute '
-                            text: '@Localizer["ErrorText"]'
+                            text: err && err.message ? err.message : '@Localizer["ErrorText"]'
                         });
                     });
             });

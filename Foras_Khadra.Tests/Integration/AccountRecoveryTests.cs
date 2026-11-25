@@ -156,6 +156,66 @@ namespace Foras_Khadra.Tests.Integration
         }
     }
 
+    /// <summary>
+    /// نموذج «تواصل معنا» كما ترسله الصفحة: الهاتف بصيغة E.164 مع ‎+‎ وبلا حقل CountryCode.
+    /// كان هذا يُرفض دائمًا (CountryCode إلزامي، والهاتف يمنع ‎+‎) فلا تصل أي رسالة، والصفحة تعرض «تم الإرسال».
+    /// </summary>
+    public class ContactFormTests : IClassFixture<SiteFactory>
+    {
+        private readonly SiteFactory _site;
+        public ContactFormTests(SiteFactory site) => _site = site;
+
+        private async Task<string> PostAsync(IDictionary<string, string> fields)
+        {
+            var client = _site.Client();
+            var token = await SiteFactory.AntiforgeryAsync(client, "/contact");
+            fields["__RequestVerificationToken"] = token;
+            var res = await client.PostAsync("/contact", new FormUrlEncodedContent(fields));
+            Assert.Equal(HttpStatusCode.OK, res.StatusCode);
+            return await res.Content.ReadAsStringAsync();
+        }
+
+        [Theory]
+        [InlineData("+962790000000")] // ما ترسله الصفحة فعلًا
+        [InlineData("")]              // بلا هاتف: الحقل اختياري
+        public async Task MessageFromThePageReachesTheMailService(string phone)
+        {
+            var before = _site.Contacts.Sent.Count;
+            var body = await PostAsync(new Dictionary<string, string>
+            {
+                ["FirstName"] = "Sara", ["LastName"] = "Ahmad", ["Email"] = "sara@test.local",
+                ["Phone"] = phone, ["MessageContent"] = "رسالة اختبار"
+            });
+            Assert.Contains("\"success\":true", body);
+            Assert.Equal(before + 1, _site.Contacts.Sent.Count);
+            var sent = _site.Contacts.Sent[^1];
+            Assert.Equal("sara@test.local", sent.Email);
+            if (phone.Length > 0) Assert.Equal("+962790000000", sent.Phone);
+        }
+
+        [Fact]
+        public async Task MissingNameOrMessageIsRefusedAndNothingIsSent()
+        {
+            var before = _site.Contacts.Sent.Count;
+            var body = await PostAsync(new Dictionary<string, string> { ["Email"] = "sara@test.local" });
+            Assert.Contains("\"success\":false", body);
+            Assert.Equal(before, _site.Contacts.Sent.Count);
+        }
+
+        [Fact]
+        public async Task HoneypotSubmissionIsRefused()
+        {
+            var before = _site.Contacts.Sent.Count;
+            var body = await PostAsync(new Dictionary<string, string>
+            {
+                ["FirstName"] = "Bot", ["LastName"] = "Bot", ["Email"] = "bot@test.local",
+                ["MessageContent"] = "spam", ["Honeypot"] = "filled"
+            });
+            Assert.Contains("\"success\":false", body);
+            Assert.Equal(before, _site.Contacts.Sent.Count);
+        }
+    }
+
     public class GoogleSignInTests : IClassFixture<GoogleSiteFactory>
     {
         private readonly GoogleSiteFactory _site;
