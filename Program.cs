@@ -158,6 +158,9 @@ builder.Services.AddHttpClient(WebPushSender.HttpClientName, c => c.Timeout = Ti
 builder.Services.AddScoped<IWebPushSender, WebPushSender>();
 builder.Services.AddScoped<IPushDispatcher, PushDispatcher>();
 builder.Services.AddHostedService<NotificationSweepHostedService>();
+// إعادة إرسال روابط التأكيد لمن سجّل أثناء عطل البريد (لوحة المدير → إعادة إرسال التأكيدات): دفعة صغيرة كل دقيقة
+builder.Services.AddSingleton<IConfirmationResend, ConfirmationResend>();
+builder.Services.AddHostedService<ConfirmationResendHostedService>();
 // نسخة احتياطية يومية (App_Data/backups، 14 يومًا) — Backup:Enabled / Backup:Hour / Backup:KeepDays في الإعدادات
 builder.Services.AddScoped<IBackupExporter, BackupExporter>();
 builder.Services.AddHostedService<BackupHostedService>();

@@ -31,6 +31,8 @@ namespace Foras_Khadra.Tests.Integration
     {
         private readonly ConcurrentQueue<(string To, string Subject, string Html)> _sent = new();
 
+        public IReadOnlyCollection<(string To, string Subject, string Html)> All => _sent.ToArray();
+
         public Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
             _sent.Enqueue((email, subject, htmlMessage));

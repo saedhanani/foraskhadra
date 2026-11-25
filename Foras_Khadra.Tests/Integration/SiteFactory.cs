@@ -12,8 +12,10 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Foras_Khadra.Tests.Integration
 {
@@ -27,6 +29,7 @@ namespace Foras_Khadra.Tests.Integration
         public const string Password = "Test#Pass123";
 
         private readonly SqliteConnection _connection = new("DataSource=:memory:");
+        private readonly string _resendStatePath = Path.Combine(Path.GetTempPath(), $"fk-resend-{Guid.NewGuid():N}.json");
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
@@ -51,8 +54,16 @@ namespace Foras_Khadra.Tests.Integration
                 foreach (var d in services.Where(d => d.ServiceType == typeof(IHostedService) && d.ImplementationType != null
                              && (d.ImplementationType == typeof(AnalyticsFlushService)
                                  || d.ImplementationType == typeof(NotificationSweepHostedService)
+                                 || d.ImplementationType == typeof(ConfirmationResendHostedService)
                                  || d.ImplementationType == typeof(BackupHostedService))).ToList())
                     services.Remove(d);
+
+                // حالة حملة إعادة الإرسال في ملف مؤقت خاص بالاختبار، لا في App_Data داخل المستودع
+                services.RemoveAll<IConfirmationResend>();
+                services.AddSingleton<IConfirmationResend>(sp => new ConfirmationResend(
+                    path: _resendStatePath, sp.GetRequiredService<IServiceScopeFactory>(),
+                    sp.GetRequiredService<IConfiguration>(),
+                    sp.GetRequiredService<ILogger<ConfirmationResend>>()));
                 services.RemoveAll<IEmailSender>();
                 services.AddTransient<IEmailSender, NullEmailSender>();
                 // نموذج التواصل يرسل عبر IMailService مباشرة (SMTP حقيقي): نستبدله بمسجّل في الذاكرة
@@ -68,7 +79,9 @@ namespace Foras_Khadra.Tests.Integration
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
-            if (disposing) _connection.Dispose();
+            if (!disposing) return;
+            _connection.Dispose();
+            try { if (File.Exists(_resendStatePath)) File.Delete(_resendStatePath); } catch { /* ملف مؤقت */ }
         }
 
         /// <summary>عميل بلا تتبع تلقائي للتحويلات (نفحص Location بأنفسنا) وعلى https (كالإنتاج).</summary>

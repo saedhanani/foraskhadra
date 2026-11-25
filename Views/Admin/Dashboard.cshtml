@@ -632,6 +632,10 @@
                         <i class="bi bi-cloud-download"></i>
                         <span>@(isArabic ? "النسخ الاحتياطي" : "Backups")</span>
                     </a>
+                    <a asp-controller="Admin" asp-action="ResendConfirmations" class="nav-link-item">
+                        <i class="bi bi-envelope-check"></i>
+                        <span>@(isArabic ? "إعادة إرسال التأكيدات" : "Resend confirmations")</span>
+                    </a>
                 </div>
             </div>
 

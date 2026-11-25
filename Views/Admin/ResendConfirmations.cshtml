@@ -1,0 +1,88 @@
+@model Foras_Khadra.Services.ResendProgress
+@{
+    ViewData["Title"] = "إعادة إرسال روابط التأكيد";
+    ViewData["HideNavAndFooter"] = true;
+    var message = TempData["ResendMessage"] as string;
+    var running = Model.Enabled;
+}
+
+<div class="container py-5" dir="rtl" style="max-width: 760px;">
+    <h2 class="mb-3">@ViewData["Title"]</h2>
+
+    <p class="text-muted">
+        تُرسل هذه الأداة رابط تأكيد جديدًا لكل عضو سجّل أثناء عطل البريد ولم تصله رسالته. الإرسال رسالة واحدة كل دقيقة
+        (نحو ٦٠ في الساعة) لا دفعة واحدة، لأن مئات الرسائل فجأة تُرجَّح أن تُصنَّف بريدًا مزعجًا أو يُقيَّد حساب الإرسال.
+        من أُرسل إليه يُسجَّل، فلا تصله الرسالة مرتين ولو أُعيد تشغيل الموقع أو أُوقفت الحملة واستُؤنفت.
+        حسابات المنظمات مستثناة.
+    </p>
+
+    @if (!string.IsNullOrEmpty(message))
+    {
+        <div class="alert alert-info">@message</div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <table class="table table-sm mb-0">
+                <tbody>
+                    <tr>
+                        <th style="width: 45%;">الحالة</th>
+                        <td>
+                            @if (running)
+                            {
+                                <span class="badge bg-success">تعمل الآن</span>
+                            }
+                            else if (Model.StartedAt == null)
+                            {
+                                <span class="badge bg-secondary">لم تبدأ</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">متوقفة</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr><th>أُرسل حتى الآن</th><td>@Model.Sent</td></tr>
+                    <tr><th>المتبقّي</th><td>@(Model.StartedAt == null ? "—" : Model.Pending.ToString())</td></tr>
+                    <tr><th>فشل</th><td>@Model.Failed</td></tr>
+                    <tr><th>يشمل من سجّل منذ</th><td>@Model.Since.ToString("yyyy-MM-dd")</td></tr>
+                    <tr><th>بدأت</th><td>@(Model.StartedAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</td></tr>
+                    <tr><th>آخر دفعة</th><td>@(Model.LastRunAt?.ToString("yyyy-MM-dd HH:mm") ?? "—")</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @if (!running)
+    {
+        <form asp-action="StartResendConfirmations" method="post" class="card mb-3">
+            @Html.AntiForgeryToken()
+            <div class="card-body">
+                <label class="form-label fw-bold" for="since">ابدأ بمن سجّل منذ</label>
+                <input type="date" id="since" name="since" class="form-control mb-3"
+                       value="@(Model.StartedAt == null ? "2026-10-28" : Model.Since.ToString("yyyy-MM-dd"))" />
+                <button type="submit" class="btn btn-success">
+                    @(Model.StartedAt == null ? "ابدأ الإرسال" : "استأنف الإرسال")
+                </button>
+            </div>
+        </form>
+    }
+    else
+    {
+        <form asp-action="StopResendConfirmations" method="post" class="mb-3">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-danger">أوقف الحملة</button>
+        </form>
+
+        <form asp-action="SendResendBatch" method="post" class="mb-3">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="count" value="1" />
+            <button type="submit" class="btn btn-outline-secondary btn-sm">أرسل رسالة واحدة الآن (للتجربة)</button>
+        </form>
+    }
+
+    <p class="small text-muted mb-0">
+        الرسالة تعتذر عن التأخير وتوضح أن الحساب سليم ولا يحتاج تسجيلًا جديدًا، وتصل بلغة العضو.
+        تابع نجاح الإرسال في سجل الخادم (أسطر <code>Email sent</code>).
+    </p>
+</div>

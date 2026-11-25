@@ -379,6 +379,36 @@ namespace Foras_Khadra.Controllers
             return PhysicalFile(path, "application/gzip", name);
         }
 
+        // ===== إعادة إرسال روابط التأكيد لمن سجّل أثناء عطل البريد (نوفمبر 2026) =====
+        [HttpGet]
+        public async Task<IActionResult> ResendConfirmations([FromServices] IConfirmationResend resend)
+            => View(await resend.ProgressAsync(HttpContext.RequestAborted));
+
+        [HttpPost]
+        public async Task<IActionResult> StartResendConfirmations(DateTime? since, [FromServices] IConfirmationResend resend)
+        {
+            await resend.StartAsync(since ?? new DateTime(2026, 10, 28), HttpContext.RequestAborted);
+            TempData["ResendMessage"] = "بدأت الحملة: تُرسل رسالة واحدة كل دقيقة. تستطيع إيقافها في أي لحظة.";
+            return RedirectToAction(nameof(ResendConfirmations));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> StopResendConfirmations([FromServices] IConfirmationResend resend)
+        {
+            await resend.StopAsync(HttpContext.RequestAborted);
+            TempData["ResendMessage"] = "أُوقفت الحملة. من أُرسل إليه لن تتكرر رسالته عند الاستئناف.";
+            return RedirectToAction(nameof(ResendConfirmations));
+        }
+
+        /// <summary>دفعة يدوية واحدة لتجربة الرسالة قبل ترك الحملة تعمل وحدها.</summary>
+        [HttpPost]
+        public async Task<IActionResult> SendResendBatch(int count, [FromServices] IConfirmationResend resend)
+        {
+            var sent = await resend.SendBatchAsync(Math.Clamp(count, 1, 20), HttpContext.RequestAborted);
+            TempData["ResendMessage"] = sent > 0 ? $"أُرسلت {sent} رسالة الآن." : "لم تُرسل أي رسالة (الحملة متوقفة أو لم يبقَ أحد).";
+            return RedirectToAction(nameof(ResendConfirmations));
+        }
+
         // ===== تحسين الصور المخزّنة (تصغير وإعادة ترميز الصور المرفوعة سابقًا) =====
         [HttpGet]
         public IActionResult OptimizeImages()

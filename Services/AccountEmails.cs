@@ -16,6 +16,19 @@ namespace Foras_Khadra.Services
             T(lang, "تأكيد البريد", "Confirm email", "Confirmer l'e-mail"), link,
             T(lang, "إن لم تنشئ هذا الحساب فتجاهل هذه الرسالة.", "If you did not create this account, ignore this message.", "Si vous n'avez pas créé ce compte, ignorez ce message."));
 
+        /// <summary>
+        /// إعادة إرسال رابط التأكيد لمن سجّل أثناء عطل البريد (28 أكتوبر – 25 نوفمبر 2026) ولم تصله رسالته.
+        /// نذكر سبب التأخير صراحةً: رسالة تأكيد تصل بعد أسابيع من التسجيل تبدو بلا سياق.
+        /// </summary>
+        public static Message ConfirmEmailResent(string lang, string link, string? firstName = null) => Build(lang,
+            T(lang, "رابط تأكيد بريدك في فرص خضراء", "Your Foras Khadra confirmation link", "Votre lien de confirmation Foras Khadra"),
+            T(lang, $"مرحبًا {Name(firstName, lang)}،", $"Hello {Name(firstName, lang)},", $"Bonjour {Name(firstName, lang)},"),
+            T(lang, "سجّلت معنا مؤخرًا ولم تصلك رسالة التأكيد، لأن إرسال البريد عندنا كان معطّلًا. نعتذر عن ذلك. حسابك سليم ولا تحتاج إلى التسجيل من جديد: اضغط الزر لتأكيد بريدك، فتُفتح لك روابط «قدّم الآن».",
+                    "You registered with us recently but never received your confirmation email, because our email sending was broken. We're sorry about that. Your account is fine and you do not need to register again: click the button to confirm your email and unlock the apply links.",
+                    "Vous vous êtes inscrit récemment sans recevoir l'e-mail de confirmation, car notre envoi d'e-mails était en panne. Nous nous en excusons. Votre compte est intact et vous n'avez pas à vous réinscrire : cliquez sur le bouton pour confirmer votre e-mail et débloquer les liens de candidature."),
+            T(lang, "تأكيد البريد", "Confirm email", "Confirmer l'e-mail"), link,
+            T(lang, "إن لم تنشئ هذا الحساب فتجاهل هذه الرسالة.", "If you did not create this account, ignore this message.", "Si vous n'avez pas créé ce compte, ignorez ce message."));
+
         public static Message ChangeEmail(string lang, string link, string newEmail) => Build(lang,
             T(lang, "تأكيد بريدك الجديد في فرص خضراء", "Confirm your new email — Foras Khadra", "Confirmez votre nouvel e-mail — Foras Khadra"),
             T(lang, "مرحبًا،", "Hello,", "Bonjour,"),
